@@ -4,6 +4,12 @@
     "module": "src/index.ts",
     "main": "bin/index.js",
     "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/liontariai/samarium",
+        "directory": "."
+    },
+    "homepage": "https://github.com/liontariai/samarium",
     "bin": {
         "samarium": "bin/samarium"
     },
