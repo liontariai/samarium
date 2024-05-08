@@ -1,4 +1,4 @@
-[<img src="./docs/images/logo-round-shadow.png" style="display: block; margin: auto; " width="250"/>](./docs/images/logo-round-shadow.png)
+[<img src="https://github.com/liontariai/samarium/blob/main/docs/images/logo-round-shadow.png?raw=true" style="display: block; margin: auto; " width="250"/>](https://github.com/liontariai/samarium/blob/main/docs/images/logo-round-shadow.png?raw=true)
 
 # Samarium
 
