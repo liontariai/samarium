@@ -7,6 +7,9 @@
     "bin": {
         "samarium": "bin/samarium"
     },
+    "publishConfig": {
+        "access": "public"
+    },
     "files": [
         "bin/**/*",
         "README.md",
