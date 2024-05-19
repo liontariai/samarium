@@ -181,3 +181,6 @@ dist
 # publish & build & rollup
 bin
 .rollup.cache
+
+
+examples/
