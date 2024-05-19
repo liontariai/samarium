@@ -415,8 +415,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     }", r, this, parent?.collector, parent?.args, parent?.argsMeta);
                     _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
                     
-                    const result = _result as unknown as T;
-                    Object.keys(r).forEach((key) => (result as T)[key as keyof T]);
+                    Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+                    const result = _result as unknown as T${this.typeMeta.isList ? "[]" : ""};
                     return result;
                 }
                 return innerFn.bind(new OperationSelectionCollector("${selectionFunctionName}", parent?.collector))();
