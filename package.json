@@ -1,6 +1,6 @@
 {
     "name": "@liontari.ai/samarium",
-    "version": "0.1.8",
+    "version": "0.1.9",
     "module": "src/index.ts",
     "main": "bin/index.js",
     "type": "module",
