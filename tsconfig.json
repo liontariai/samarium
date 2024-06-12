@@ -16,14 +16,13 @@
         "allowSyntheticDefaultImports": true,
         "forceConsistentCasingInFileNames": true,
         "allowJs": true,
-        "types": [
-            "bun-types" // add Bun global
-        ],
+        "types": ["bun-types"],
         "rootDir": ".",
         "baseUrl": "./src",
         "paths": {
             "@/*": ["*"]
         },
         "verbatimModuleSyntax": true
-    }
+    },
+    "include": ["src/**/*", "package.json"]
 }
