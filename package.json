@@ -1,57 +1,57 @@
 {
-  "name": "@liontari.ai/samarium",
-  "version": "0.1.11",
-  "module": "src/index.ts",
-  "main": "bin/index.js",
-  "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/liontariai/samarium",
-    "directory": "."
-  },
-  "homepage": "https://github.com/liontariai/samarium",
-  "bin": {
-    "samarium": "bin/samarium"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "bin/**/*",
-    "README.md",
-    "package.json"
-  ],
-  "scripts": {
-    "prettier": "prettier --write .",
-    "prepublishOnly": "./prepublish.sh",
-    "release": "cross-env RELEASE_MODE=true np --no-tests"
-  },
-  "prettier": {
-    "tabWidth": 4
-  },
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^25.0.7",
-    "@rollup/plugin-json": "^6.1.0",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^11.1.6",
-    "bun-types": "latest",
-    "cross-env": "^7.0.3",
-    "np": "^10.0.5",
-    "rollup": "^4.17.2",
-    "rollup-plugin-brfs": "^1.0.1",
-    "rollup-plugin-exclude-dependencies-from-bundle": "^1.1.23",
-    "tslib": "^2.6.2"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "@inquirer/prompts": "^5.0.5",
-    "commander": "^11.1.0",
-    "detect-indent": "^7.0.1",
-    "graphql": "^16.8.1",
-    "graphql-request": "^6.1.0",
-    "prettier": "^3.2.5"
-  }
+    "name": "@liontari.ai/samarium",
+    "version": "0.1.11",
+    "module": "src/index.ts",
+    "main": "bin/index.js",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/liontariai/samarium",
+        "directory": "."
+    },
+    "homepage": "https://github.com/liontariai/samarium",
+    "bin": {
+        "samarium": "bin/samarium"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "bin/**/*",
+        "README.md",
+        "package.json"
+    ],
+    "scripts": {
+        "prettier": "prettier --write .",
+        "prepublishOnly": "./prepublish.sh",
+        "release": "cross-env RELEASE_MODE=true np --no-tests"
+    },
+    "prettier": {
+        "tabWidth": 4
+    },
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^25.0.7",
+        "@rollup/plugin-json": "^6.1.0",
+        "@rollup/plugin-node-resolve": "^15.2.3",
+        "@rollup/plugin-terser": "^0.4.4",
+        "@rollup/plugin-typescript": "^11.1.6",
+        "bun-types": "latest",
+        "cross-env": "^7.0.3",
+        "np": "^10.0.5",
+        "rollup": "^4.17.2",
+        "rollup-plugin-brfs": "^1.0.1",
+        "rollup-plugin-exclude-dependencies-from-bundle": "^1.1.23",
+        "tslib": "^2.6.2"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@inquirer/prompts": "^5.0.5",
+        "commander": "^11.1.0",
+        "detect-indent": "^7.0.1",
+        "graphql": "^16.8.1",
+        "graphql-request": "^6.1.0",
+        "prettier": "^3.2.5"
+    }
 }
