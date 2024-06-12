@@ -31,6 +31,7 @@ export async function introspectGraphQLSchema(
         return schema;
     } catch (error: any) {
         // Handle any errors that may occur during introspection
-        throw new Error(`Error introspecting GraphQL schema: ${error.message}`);
+        throw error;
+        // throw new Error(`Error introspecting GraphQL schema: ${error.message}`);
     }
 }
