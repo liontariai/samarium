@@ -4,9 +4,10 @@ import { Flavors, Generator } from "@/lib/codegen";
 
 import fs from "fs";
 import path from "path";
-import { input, select } from "@inquirer/prompts";
+import { confirm, input, select } from "@inquirer/prompts";
 import detectIndent from "detect-indent";
 
+import packageJson from "../../package.json";
 import chalk from "chalk";
 
 const chalkSyntaxHighlights = {
@@ -27,7 +28,7 @@ export const ui = async () => {
 \\____/  \\__,_||_| |_| |_| \\__,_||_|   |_| \\__,_||_| |_| |_|
 `);
     console.log(" ");
-    console.log(`v${require("../../package.json").version}`);
+    console.log(`v${packageJson.version}`);
     console.log(" ");
     console.log("Welcome to the Samarium CLI Assistant");
     console.log(" ");
@@ -178,10 +179,10 @@ export const ui = async () => {
 
     if (
         fs.existsSync("tsconfig.json") &&
-        confirm(
-            `
+        (await confirm({
+            message: `
 File 'tsconfig.json' detected. Do you want to add an import alias for the generated file?`,
-        )
+        }))
     ) {
         console.log(" ");
 
@@ -193,7 +194,6 @@ File 'tsconfig.json' detected. Do you want to add an import alias for the genera
         let jsonstr = fs.readFileSync("tsconfig.json", "utf-8");
         // remove comments
         jsonstr = jsonstr.replace(/\/\/.*/g, "");
-        jsonstr = jsonstr.replace(/\/\*[\s\S]*?\*\//g, "");
 
         const indent = detectIndent(jsonstr).indent || "  ";
 

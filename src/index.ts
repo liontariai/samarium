@@ -18,7 +18,7 @@ program
     .command("ui", { isDefault: true })
     .description("Start the assistant UI")
     .action(async () => {
-        await ui();
+        await ui().catch((error) => {});
     });
 
 // Example command
