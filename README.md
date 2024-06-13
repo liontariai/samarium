@@ -1,4 +1,4 @@
-[<img src="https://github.com/liontariai/samarium/blob/main/docs/images/logo-round-shadow.png?raw=true" style="display: block; margin: auto; " width="250"/>](https://github.com/liontariai/samarium/blob/main/docs/images/logo-round-shadow.png?raw=true)
+![](https://samarium.liontari.ai/assets/demo-CavLQwfh.gif)
 
 # Samarium
 
@@ -29,17 +29,17 @@ const { aliasedQuery } = await spacex(({ query }) => ({
 ## Usage
 
 ```bash
-npx @liontari.ai/samarium generate <url> <output>
+npx @liontari.ai/samarium
 ```
 
 ```bash
-bunx @liontari.ai/samarium generate <url> <output>
+bunx @liontari.ai/samarium
 ```
 
 ```bash
-yarn dlx @liontari.ai/samarium generate <url> <output>
+yarn dlx @liontari.ai/samarium
 ```
 
 ```bash
-pnpm dlx @liontari.ai/samarium generate <url> <output>
+pnpm dlx @liontari.ai/samarium
 ```
