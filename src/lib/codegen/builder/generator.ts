@@ -22,9 +22,13 @@ export class Generator {
     public async generate({
         schema,
         options,
+        authConfig,
     }: {
         schema: GraphQLSchema;
         options: CodegenOptions;
+        authConfig?: {
+            headerName: string;
+        };
     }): Promise<string> {
         const collector = new Collector();
         gatherMeta(schema, options, collector);
@@ -73,7 +77,11 @@ export class Generator {
                     ([type]) => !type.isScalar && !type.isEnum && !type.isInput,
                 )
                 .map(([_, code]) => code),
-            this.Codegen.makeRootOperationFunction(schema, collector),
+            this.Codegen.makeRootOperationFunction(
+                schema,
+                collector,
+                authConfig,
+            ),
         ].join("\n");
 
         const prettyCode = await prettier.format(code, {

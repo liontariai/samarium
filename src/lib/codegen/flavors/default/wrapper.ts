@@ -12,7 +12,7 @@ export class RootOperation {
     public registerRootCollector(collector: OperationSelectionCollector) {
         this.rootCollector = collector;
     }
-    public async execute() {
+    public async execute(headers: Record<string, string> = {}) {
         if (!this.rootCollector) {
             throw new Error("RootOperation has no registered collector");
         }
@@ -53,7 +53,10 @@ export class RootOperation {
             await Promise.all([
                 ...Object.entries(ops).map(
                     async ([opName, op]) =>
-                        [opName, await this.executeOperation(op)] as const,
+                        [
+                            opName,
+                            await this.executeOperation(op, headers),
+                        ] as const,
                 ),
             ]),
         );
@@ -61,11 +64,15 @@ export class RootOperation {
         return results;
     }
 
-    private async executeOperation(query: { query: string; variables: any }) {
+    private async executeOperation(
+        query: { query: string; variables: any },
+        headers: Record<string, string> = {},
+    ) {
         const res = await fetch("[ENDPOINT]", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                ...headers,
             },
             body: JSON.stringify({
                 query: query.query,
@@ -85,7 +92,13 @@ export class RootOperation {
         return data;
     }
 }
+
+const OPTIONS = Symbol("OPTIONS");
 export class OperationSelectionCollector {
+    public static [OPTIONS] = {
+        headers: {},
+    };
+
     constructor(
         public readonly name?: string,
         public readonly parent?: OperationSelectionCollector,
@@ -96,13 +109,16 @@ export class OperationSelectionCollector {
 
     private executed = false;
     private operationResult: any | undefined = undefined;
-    public async execute() {
+    public async execute(
+        headers: Record<string, string> = OperationSelectionCollector[OPTIONS]
+            .headers,
+    ) {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
             );
         }
-        this.operationResult = await this.op.execute();
+        this.operationResult = await this.op.execute(headers);
         this.executed = true;
     }
     public get isExecuted() {

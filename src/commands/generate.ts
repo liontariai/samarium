@@ -13,6 +13,9 @@ export const generate = async (
     const code = await generator.generate({
         schema,
         options: {},
+        authConfig: remote.headers
+            ? { headerName: "Authorization" }
+            : undefined,
     });
 
     fs.writeFileSync(output, code.replace("[ENDPOINT]", remote.url));
