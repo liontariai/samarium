@@ -52,6 +52,7 @@ export const ui = async () => {
     }
 
     let schema: GraphQLSchema | undefined;
+    let authHeaderName: string | undefined;
     try {
         schema = await introspectGraphQLSchema(url);
     } catch (e: any) {
@@ -86,6 +87,7 @@ export const ui = async () => {
                 schema = await introspectGraphQLSchema(url, [
                     `${headerKey}=${headerValue}`,
                 ]);
+                authHeaderName = headerKey;
             } catch (e: any) {
                 console.error("Error: ", e.message);
                 return;
@@ -168,6 +170,9 @@ export const ui = async () => {
         const code = await generator.generate({
             schema,
             options: {},
+            authConfig: authHeaderName
+                ? { headerName: authHeaderName }
+                : undefined,
         });
 
         fs.writeFileSync(outpath, code.replace("[ENDPOINT]", url));
