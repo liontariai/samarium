@@ -35,7 +35,7 @@ program
         async (
             url: string,
             output: string,
-            { headers }: { headers?: string[] } = {},
+            { header: headers }: { header?: string[] } = {},
         ) => {
             await introspect({ url, headers }, output);
         },
@@ -55,7 +55,7 @@ program
         async (
             url: string,
             output: string,
-            { headers }: { headers?: string[] } = {},
+            { header: headers }: { header?: string[] } = {},
         ) => {
             await generate({ url, headers }, "default", output);
         },
