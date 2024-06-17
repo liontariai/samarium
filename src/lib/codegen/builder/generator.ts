@@ -55,9 +55,15 @@ export class Generator {
         const code = [
             this.Codegen.FieldValueWrapperType,
             this.Codegen.HelperTypes,
-            ...[...collector.enumsTypes.entries()].map(([_, code]) => code),
-            ...[...collector.argumentTypes.entries()].map(([_, code]) => code),
-            ...[...collector.argumentMeta.entries()].map(([_, code]) => code),
+            ...[...collector.enumsTypes.entries()]
+                .map(([_, code]) => code)
+                .filter((code, index, arr) => arr.indexOf(code) === index),
+            ...[...collector.argumentTypes.entries()]
+                .map(([_, code]) => code)
+                .filter((code, index, arr) => arr.indexOf(code) === index),
+            ...[...collector.argumentMeta.entries()]
+                .map(([_, code]) => code)
+                .filter((code, index, arr) => arr.indexOf(code) === index),
             ...[...collector.selectionTypes.entries()]
                 .filter(([type]) => !type.isScalar && !type.isEnum)
                 .map(([_, code]) => code)
