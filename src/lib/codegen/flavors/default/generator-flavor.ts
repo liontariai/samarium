@@ -430,6 +430,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     public static makeRootOperationFunction(
         schema: GraphQLSchema,
         collector: Collector,
+        authConfig?: {
+            headerName: string;
+        },
     ): string {
         // get the root operation types
         const QueryTypeName = schema.getQueryType()?.name;
@@ -485,7 +488,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     }
                 } as const;
             };
-            export default function <
+
+            ${
+                authConfig
+                    ? `type __AuthenticationArg__ =
+            | string
+            | { [key: string]: string }
+            | (() => string | { [key: string]: string })
+            | (() => Promise<string | { [key: string]: string }>);`
+                    : ""
+            }
+            function __client__ <
                 T extends object,
                 F extends _RootOperationSelectionFields>(
                 this: any, 
@@ -496,15 +509,97 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const r = s(selection);
                 const result = new SelectionWrapper(undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (result as T)[key as keyof T]);
-                return new Promise((resolve, reject) => {
-                    root.execute()
-                        .then(() => {
-                            resolve(result);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                }) as Promise<T>;
+                
+                let headers: Record<string, string> | undefined = undefined;
+                const finalPromise = {
+                    then: (resolve: (value: T) => void, reject: (reason: any) => void) => {
+                        root.execute(headers)
+                            .then(() => {
+                                resolve(result);
+                            })
+                            .catch(reject);
+                    },
+                };
+                ${
+                    authConfig
+                        ? `
+                Object.defineProperty(finalPromise, "auth", {
+                    enumerable: false,
+                    get: function () {
+                        return function (
+                            auth: __AuthenticationArg__,
+                        ) {
+                            if (typeof auth === "string") {
+                                headers = { "${authConfig.headerName}": auth };
+                            } else if (typeof auth === "function") {
+                                const tokenOrPromise = auth();
+                                if (tokenOrPromise instanceof Promise) {
+                                    return tokenOrPromise.then((t) => {
+                                        if (typeof t === "string")
+                                            headers = { "${authConfig.headerName}": t };
+                                        else headers = t;
+
+                                        return finalPromise as Promise<T>;
+                                    });
+                                }
+                                if (typeof tokenOrPromise === "string") {
+                                    headers = { "${authConfig.headerName}": tokenOrPromise };
+                                } else {
+                                    headers = tokenOrPromise;
+                                }
+                            } else {
+                                headers = auth;
+                            }
+
+                            return finalPromise as Promise<T>;
+                        };
+                    },
+                });
+
+                return finalPromise as Promise<T> & {
+                    auth: (
+                        auth: __AuthenticationArg__,
+                    ) => Promise<T>;
+                };
+                `
+                        : `
+                return finalPromise as Promise<T>;
+                `
+                }
+            };
+
+            const __init__ = (options: {
+                ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
+                headers?: { [key: string]: string };
+            }) => {
+                ${
+                    authConfig
+                        ? `
+                if (typeof options.auth === "string") {
+                    OperationSelectionCollector[OPTIONS].headers = {
+                        "${authConfig.headerName}": options.auth,
+                    };
+                } else if (options.auth) {
+                    OperationSelectionCollector[OPTIONS].headers = options.auth;
+                }
+                `
+                        : ""
+                }
+
+                if (options.headers) {
+                    OperationSelectionCollector[OPTIONS].headers = {
+                        ...OperationSelectionCollector[OPTIONS].headers,
+                        ...options.headers,
+                    };
+                }
+            };
+            Object.defineProperty(__client__, "init", {
+                enumerable: false,
+                value: __init__,
+            });
+
+            export default __client__ as typeof __client__ & {
+                init: typeof __init__;
             };
         `;
 
