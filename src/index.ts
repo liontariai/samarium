@@ -1,3 +1,5 @@
+import packageJson from "../package.json";
+
 import { Command } from "commander";
 import { introspect } from "./commands/introspect";
 import { generate } from "./commands/generate";
@@ -12,7 +14,7 @@ const program = new Command();
 program
     .name("samarium") // Name of the CLI
     .description("CLI Description") // Description of the CLI
-    .version("0.1.0"); // Version of the CLI
+    .version(packageJson.version); // Version of the CLI
 
 program
     .command("ui", { isDefault: true })
