@@ -97,6 +97,12 @@ const OPTIONS = Symbol("OPTIONS");
 export class OperationSelectionCollector {
     public static [OPTIONS] = {
         headers: {},
+        scalars: {
+            DateTime: (value: string) => new Date(value),
+            Date: (value: string) => new Date(value),
+            Time: (value: string) => new Date(value),
+            JSON: (value: string) => JSON.parse(value),
+        },
     };
 
     constructor(
@@ -194,16 +200,62 @@ export class OperationSelectionCollector {
 
     private utilGet = (obj: Record<string, any>, path: string[]) =>
         path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(path: string[] = []): T {
+    public getOperationResultPath<T>(
+        path: string[] = [],
+        typeName?: string,
+    ): T {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
             );
         }
 
-        if (path.length === 0) return this.operationResult as T;
+        let result = this.operationResult;
 
-        return this.utilGet(this.operationResult, path) as T;
+        if (path.length === 0) return result as T;
+
+        result = this.utilGet(result, path) as T;
+
+        if (typeName && result) {
+            const type = typeName
+                .replaceAll("!", "")
+                .replaceAll("[", "")
+                .replaceAll("]", "");
+
+            if (type in OperationSelectionCollector[OPTIONS].scalars) {
+                let depth = 0;
+                let finalResult =
+                    result instanceof Array ? [...result] : result;
+
+                while (result instanceof Array) {
+                    result = result[0];
+                    depth++;
+                }
+
+                const deepParse = (
+                    res: any | any[],
+                    depth: number,
+                    parse: (v: string) => any,
+                ) => {
+                    if (depth === 0) {
+                        return parse(res);
+                    }
+                    return res.map((rarr: any) =>
+                        deepParse(rarr, depth - 1, parse),
+                    );
+                };
+
+                return deepParse(
+                    finalResult,
+                    depth,
+                    OperationSelectionCollector[OPTIONS].scalars[
+                        type as keyof (typeof OperationSelectionCollector)[typeof OPTIONS]["scalars"]
+                    ],
+                ) as T;
+            }
+        }
+
+        return result as T;
     }
 }
 
@@ -409,6 +461,7 @@ export class SelectionWrapper<
                                 ROOT_OP_COLLECTOR
                             ]!.getOperationResultPath<valueT>(
                                 t[SLW_OP_PATH]?.split(".") ?? [],
+                                t[SLW_FIELD_TYPE],
                             );
                             return data;
                         };

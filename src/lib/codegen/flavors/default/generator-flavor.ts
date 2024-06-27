@@ -179,7 +179,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ) ?? "any";
 
         if (fieldMeta.isList) {
-            return `Array<${type}>`;
+            return `${Array.from({ length: fieldMeta.isList })
+                .map((_) => "Array<")
+                .join("")}${type}${Array.from({ length: fieldMeta.isList })
+                .map((_) => ">")
+                .join("")}`;
         }
         return type;
     }
@@ -571,6 +575,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const __init__ = (options: {
                 ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
                 headers?: { [key: string]: string };
+                scalars?: { 
+                    DateTime?: (value: string) => Date,
+                    Date?: (value: string) => Date,
+                    Time?: (value: string) => Date,
+                    JSON?: (v: string) => any 
+                };
             }) => {
                 ${
                     authConfig
@@ -590,6 +600,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     OperationSelectionCollector[OPTIONS].headers = {
                         ...OperationSelectionCollector[OPTIONS].headers,
                         ...options.headers,
+                    };
+                }
+                if (options.scalars) {
+                    OperationSelectionCollector[OPTIONS].scalars = {
+                        ...OperationSelectionCollector[OPTIONS].scalars,
+                        ...options.scalars,
                     };
                 }
             };
