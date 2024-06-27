@@ -84,7 +84,7 @@ Not yet implemented GraphQL features:
 | Feature                                 | Supported | Description                                                                                                        |
 | --------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------ |
 | Authentication                          | ✅        | Provide a way to authenticate the requests.                                                                        |
-| Custom scalar types                     | ❌        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code.    |
+| Custom scalar types                     | ✅        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code.    |
 | Lazy Queries                            | ❌        | Currently queries are sent directly, when the operation function is awaited.                                       |
 | Lazy Mutations                          | ❌        | Currently mutations are sent directly, when the operation function is awaited.                                     |
 | Shortcuts for selections                | ❌        | Provide helper functions to select all or specific fields of a type without writing them all out in the selection. |
