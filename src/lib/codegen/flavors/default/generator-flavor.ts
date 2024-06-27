@@ -179,7 +179,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ) ?? "any";
 
         if (fieldMeta.isList) {
-            return `Array<${type}>`;
+            return `${Array.from({ length: fieldMeta.isList })
+                .map((_) => "Array<")
+                .join("")}${type}${Array.from({ length: fieldMeta.isList })
+                .map((_) => ">")
+                .join("")}`;
         }
         return type;
     }
