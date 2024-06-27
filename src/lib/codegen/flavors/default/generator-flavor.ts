@@ -113,7 +113,43 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         argsMeta?: Record<string, string>;
 
         isRootType?: "Query" | "Mutation" | "Subscription";
-    } | undefined
+    } | undefined;
+
+    type CleanupNever<A> = Omit<A, keyof A> & {
+        [K in keyof A as A[K] extends never ? never : K]: A[K];
+    };
+    type Prettify<T> = {
+        [K in keyof T]: T[K];
+    } & {};
+
+    type ScalarsFromSelection<
+        S,
+        T,
+        R = {
+            [K in keyof S]: S[K] extends SelectionWrapperImpl<
+                infer FN,
+                infer TN,
+                infer VT,
+                infer AT
+            >
+                ? FN extends keyof T
+                    ? T[FN]
+                    : never
+                : never;
+        },
+    > = Prettify<CleanupNever<R>>;
+    
+    type SelectionHelpers<S, T> = {
+        $scalars: () => ScalarsFromSelection<S, T>;
+    };
+    `;
+    public static readonly HelperFunctions = `
+    const selectScalars = <S>(selection: Record<string, any>) =>
+    Object.fromEntries(
+        Object.entries(selection).filter(
+            ([k, v]) => v instanceof SelectionWrapperImpl,
+        ),
+    ) as S;
     `;
 
     constructor(
@@ -402,11 +438,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             ),
                         )
                         .join("\n")}
+
+                    $scalars: () =>
+                        selectScalars(
+                            make${selectionFunctionName}Input.bind(this)(),
+                        ) as ScalarsFromSelection<
+                            ReturnType<typeof make${selectionFunctionName}Input>,
+                            ${this.typeName}SelectionFields
+                        >,
                 } as const;
             };
             export function ${selectionFunctionName} <
                 T extends object,
-                F extends ${this.typeName}SelectionFields>(
+                F extends ${this.typeName}SelectionFields & SelectionHelpers<ReturnType<typeof make${selectionFunctionName}Input>, ${this.typeName}SelectionFields> >(
                 this: any, 
                 s: (selection: F) => T
             ) {
