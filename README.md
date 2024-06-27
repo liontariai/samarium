@@ -62,13 +62,13 @@ pnpm dlx @liontari.ai/samarium
 
 Implemented GraphQL features:
 
-| Feature             | Supported | Description                                                                                                                                                                            |
-| ------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Queries             | ✅        | Queries are fully typed functions.                                                                                                                                                     |
-| Mutations           | ✅        | All mutations are fully typed functions just like queries.                                                                                                                             |
-| Variables           | ✅        | All arguments used in queries and mutations are collected and hoisted to the top level as variables.                                                                                   |
-| Aliases             | ✅        | Aliases are supported for all fields.                                                                                                                                                  |
-| Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in one request, in the order they are defined. |
+| Feature             | Supported | Description                                                                                                                                                            |
+| ------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Queries             | ✅        | Queries are fully typed functions.                                                                                                                                     |
+| Mutations           | ✅        | All mutations are fully typed functions just like queries.                                                                                                             |
+| Variables           | ✅        | All arguments used in queries and mutations are collected and hoisted to the top level as variables.                                                                   |
+| Aliases             | ✅        | Aliases are supported for all fields.                                                                                                                                  |
+| Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in the order they are defined. |
 
 Not yet implemented GraphQL features:
 
