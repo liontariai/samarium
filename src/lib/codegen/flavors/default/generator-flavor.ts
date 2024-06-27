@@ -575,6 +575,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const __init__ = (options: {
                 ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
                 headers?: { [key: string]: string };
+                scalars?: { [key: string]: (v: string) => any };
             }) => {
                 ${
                     authConfig
@@ -594,6 +595,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     OperationSelectionCollector[OPTIONS].headers = {
                         ...OperationSelectionCollector[OPTIONS].headers,
                         ...options.headers,
+                    };
+                }
+                if (options.scalars) {
+                    OperationSelectionCollector[OPTIONS].scalars = {
+                        ...OperationSelectionCollector[OPTIONS].scalars,
+                        ...options.scalars,
                     };
                 }
             };
