@@ -59,6 +59,7 @@ export class Generator {
         const code = [
             this.Codegen.FieldValueWrapperType,
             this.Codegen.HelperTypes,
+            this.Codegen.HelperFunctions,
             ...[...collector.enumsTypes.entries()]
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
