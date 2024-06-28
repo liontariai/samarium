@@ -21,6 +21,12 @@ export abstract class GeneratorSelectionTypeFlavor {
     public static readonly HelperTypes: string;
 
     /**
+     * The code for the helper functions.
+     * The helper functions are functions that are used by the selection type flavor.
+     */
+    public static readonly HelperFunctions: string;
+
+    /**
      * The metadata for the GraphQL type. Gathered from the schema.
      * @see gatherMeta for more information.
      * @see TypeMeta for more information.
