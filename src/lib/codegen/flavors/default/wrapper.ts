@@ -174,7 +174,12 @@ export class OperationSelectionCollector {
                     variables: subVars,
                 } = value[SLW_COLLECTOR].renderSelections(subPath, opVars);
 
-                result[key] = `${fieldSelection} ${subSelection}`;
+                if (value[SLW_IS_ON_TYPE_FRAGMENT]) {
+                    result[key] =
+                        `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
+                } else {
+                    result[key] = `${fieldSelection} ${subSelection}`;
+                }
 
                 Object.assign(variables, subVars);
                 Object.assign(opVars, subVars);
@@ -184,8 +189,11 @@ export class OperationSelectionCollector {
         let rendered = "{ ";
         for (const [key, value] of Object.entries(result)) {
             const isSubSelection = value.toString().startsWith("{");
+            const isOnType = value.toString().startsWith("... on");
             if (key === value) {
                 rendered += `${key} `;
+            } else if (isOnType) {
+                rendered += `${value} `;
             } else {
                 rendered += `${key}${!isSubSelection ? ":" : ""} ${value} `;
             }
@@ -263,7 +271,7 @@ export const SLW_UID = Symbol("SLW_UID");
 export const SLW_FIELD_NAME = Symbol("SLW_FIELD_NAME");
 export const SLW_FIELD_TYPE = Symbol("SLW_FIELD_TYPE");
 export const SLW_IS_ROOT_TYPE = Symbol("SLW_IS_ROOT_TYPE");
-export const SLW_SET_IS_ROOT_TYPE = Symbol("SLW_IS_ROOT_TYPE");
+export const SLW_IS_ON_TYPE_FRAGMENT = Symbol("SLW_IS_ON_TYPE_FRAGMENT");
 export const SLW_VALUE = Symbol("SLW_VALUE");
 export const SLW_ARGS = Symbol("SLW_ARGS");
 export const SLW_ARGS_META = Symbol("SLW_ARGS_META");
@@ -298,6 +306,7 @@ export class SelectionWrapperImpl<
     [SLW_VALUE]?: valueT;
 
     [SLW_IS_ROOT_TYPE]?: "Query" | "Mutation" | "Subscription";
+    [SLW_IS_ON_TYPE_FRAGMENT]?: string;
 
     [SLW_ARGS]?: argsT;
     [SLW_ARGS_META]?: Record<string, string>;
@@ -419,6 +428,7 @@ export class SelectionWrapper<
                         prop === SLW_FIELD_NAME ||
                         prop === SLW_FIELD_TYPE ||
                         prop === SLW_IS_ROOT_TYPE ||
+                        prop === SLW_IS_ON_TYPE_FRAGMENT ||
                         prop === SLW_VALUE ||
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
