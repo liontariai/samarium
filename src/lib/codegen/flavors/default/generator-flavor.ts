@@ -114,6 +114,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
         isRootType?: "Query" | "Mutation" | "Subscription";
         onTypeFragment?: string;
+        isFragment?: string;
     } | undefined;
 
     type CleanupNever<A> = Omit<A, keyof A> & {
@@ -139,8 +140,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 : never;
         },
     > = Prettify<CleanupNever<R>>;
+    type ReturnTypeFromFragment<T> = T extends (
+        this: any,
+        ...args: any[]
+    ) => infer R
+        ? R
+        : never;
     
     type SelectionHelpers<S, T> = {
+        $fragment: <F extends (this: any, ...args: any[]) => any>(
+            f: F,
+        ) => ReturnTypeFromFragment<F>;
         $scalars: () => ScalarsFromSelection<S, T>;
     };
     `;
@@ -334,7 +344,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
         let selectionType = "";
 
-        if (this.typeMeta.isUnion || this.typeMeta.isInterface) {
+        if (this.typeMeta.isUnion) {
             const types = this.typeMeta.possibleTypes
                 .map(
                     (t) =>
@@ -462,6 +472,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             `;
         } else {
             helperFunctions = `
+            $fragment: (f: (this: any, ...args: any) => any) =>
+                f.bind({
+                    collector: this,
+                    fieldName: "",
+                    isFragment: f.name,
+                })(),
             $scalars: () =>
                 selectScalars(
                         make${selectionFunctionName}Input.bind(this)(),
@@ -507,6 +523,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     }", r, this, parent?.collector, parent?.args, parent?.argsMeta);
                     _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
                     _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
+                    _result[SLW_IS_FRAGMENT] = parent?.isFragment;
                     
                     Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                     const result = _result as unknown as T${this.typeMeta.isList ? "[]" : ""};
@@ -514,8 +531,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     if (parent?.onTypeFragment) {
                         return {
                             [parent.onTypeFragment]: result,
-                        };
+                        } as unknown as typeof result;
                     }
+                    if (parent?.isFragment) {
+                        return {
+                            [parent.isFragment]: result,
+                        } as unknown as typeof result;
+                    }
+
                     return result;
                 }
                 return innerFn.bind(new OperationSelectionCollector("${selectionFunctionName}", parent?.collector))();

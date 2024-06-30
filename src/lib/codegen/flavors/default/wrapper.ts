@@ -43,9 +43,17 @@ export class RootOperation {
                     } ${op.selection}
                     `,
                     variables: op.variables,
+                    fragments: op.usedFragments,
                 },
             }),
-            {} as Record<string, { query: string; variables: any }>,
+            {} as Record<
+                string,
+                {
+                    query: string;
+                    variables: any;
+                    fragments: Map<string, string>;
+                }
+            >,
         );
         // const subscription = `{${subscriptions.join("")}}`;
 
@@ -65,7 +73,11 @@ export class RootOperation {
     }
 
     private async executeOperation(
-        query: { query: string; variables: any },
+        query: {
+            query: string;
+            variables: any;
+            fragments: Map<string, string>;
+        },
         headers: Record<string, string> = {},
     ) {
         const res = await fetch("[ENDPOINT]", {
@@ -75,7 +87,10 @@ export class RootOperation {
                 ...headers,
             },
             body: JSON.stringify({
-                query: query.query,
+                query: `
+                ${[...query.fragments.values()].join("\n")}
+                ${query.query}
+                `,
                 variables: query.variables,
             }),
         });
@@ -145,6 +160,7 @@ export class OperationSelectionCollector {
     public renderSelections(
         path: string[] = [],
         opVars: Record<string, any> = {},
+        usedFragments: Map<string, string> = new Map(),
     ) {
         const result: Record<string, any> = {};
         const varDefs: string[] = [];
@@ -172,11 +188,25 @@ export class OperationSelectionCollector {
                     selection: subSelection,
                     variableDefinitions: subVarDefs,
                     variables: subVars,
-                } = value[SLW_COLLECTOR].renderSelections(subPath, opVars);
+                } = value[SLW_COLLECTOR].renderSelections(
+                    subPath,
+                    opVars,
+                    usedFragments,
+                );
 
                 if (value[SLW_IS_ON_TYPE_FRAGMENT]) {
                     result[key] =
                         `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
+                } else if (value[SLW_IS_FRAGMENT]) {
+                    result[key] = `...${key}`;
+                    const fragment = `fragment ${key} on ${value[SLW_FIELD_TYPE]} ${subSelection}`;
+                    if (!usedFragments.has(key)) {
+                        usedFragments.set(key, fragment);
+                    } else if (usedFragments.get(key) !== fragment) {
+                        console.warn(
+                            `Fragment ${key} is already defined with a different selection`,
+                        );
+                    }
                 } else {
                     result[key] = `${fieldSelection} ${subSelection}`;
                 }
@@ -190,9 +220,10 @@ export class OperationSelectionCollector {
         for (const [key, value] of Object.entries(result)) {
             const isSubSelection = value.toString().startsWith("{");
             const isOnType = value.toString().startsWith("... on");
+            const isFragment = value.toString().startsWith("...");
             if (key === value) {
                 rendered += `${key} `;
-            } else if (isOnType) {
+            } else if (isOnType || isFragment) {
                 rendered += `${value} `;
             } else {
                 rendered += `${key}${!isSubSelection ? ":" : ""} ${value} `;
@@ -203,6 +234,7 @@ export class OperationSelectionCollector {
             selection: rendered,
             variableDefinitions: varDefs,
             variables,
+            usedFragments,
         };
     }
 
@@ -272,6 +304,7 @@ export const SLW_FIELD_NAME = Symbol("SLW_FIELD_NAME");
 export const SLW_FIELD_TYPE = Symbol("SLW_FIELD_TYPE");
 export const SLW_IS_ROOT_TYPE = Symbol("SLW_IS_ROOT_TYPE");
 export const SLW_IS_ON_TYPE_FRAGMENT = Symbol("SLW_IS_ON_TYPE_FRAGMENT");
+export const SLW_IS_FRAGMENT = Symbol("SLW_IS_FRAGMENT");
 export const SLW_VALUE = Symbol("SLW_VALUE");
 export const SLW_ARGS = Symbol("SLW_ARGS");
 export const SLW_ARGS_META = Symbol("SLW_ARGS_META");
@@ -307,6 +340,7 @@ export class SelectionWrapperImpl<
 
     [SLW_IS_ROOT_TYPE]?: "Query" | "Mutation" | "Subscription";
     [SLW_IS_ON_TYPE_FRAGMENT]?: string;
+    [SLW_IS_FRAGMENT]?: string;
 
     [SLW_ARGS]?: argsT;
     [SLW_ARGS_META]?: Record<string, string>;
@@ -429,6 +463,7 @@ export class SelectionWrapper<
                         prop === SLW_FIELD_TYPE ||
                         prop === SLW_IS_ROOT_TYPE ||
                         prop === SLW_IS_ON_TYPE_FRAGMENT ||
+                        prop === SLW_IS_FRAGMENT ||
                         prop === SLW_VALUE ||
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
