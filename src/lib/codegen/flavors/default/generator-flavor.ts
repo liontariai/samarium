@@ -113,6 +113,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         argsMeta?: Record<string, string>;
 
         isRootType?: "Query" | "Mutation" | "Subscription";
+        onTypeFragment?: string;
     } | undefined;
 
     type CleanupNever<A> = Omit<A, keyof A> & {
@@ -331,7 +332,21 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             return selectionTypeName;
         }
 
-        const selectionType = `
+        let selectionType = "";
+
+        if (this.typeMeta.isUnion || this.typeMeta.isInterface) {
+            const types = this.typeMeta.possibleTypes
+                .map(
+                    (t) =>
+                        `${this.originalTypeNameToTypescriptFriendlyName(t.name)}SelectionFields`,
+                )
+                .join(" | ");
+
+            selectionType = `
+                export type ${selectionTypeName} = ${types};
+            `;
+        } else {
+            selectionType = `
             export type ${selectionTypeName} = {
                 ${(this.typeMeta.isInput
                     ? this.typeMeta.inputFields
@@ -347,6 +362,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     .join("\n")}
             };
         `;
+        }
         this.collector.addSelectionType(this.typeMeta, selectionType);
 
         return selectionTypeName;
@@ -427,6 +443,35 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             );
         }
 
+        let helperFunctions = "";
+        if (this.typeMeta.isUnion) {
+            helperFunctions = `
+            $on: {
+                ${this.typeMeta.possibleTypes
+                    .map(
+                        (
+                            t,
+                        ) => `${t.name}: ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
+                        collector: this,
+                        fieldName: "",
+                        onTypeFragment: "${t.name}",
+                    }),`,
+                    )
+                    .join("\n")}
+                }
+            `;
+        } else {
+            helperFunctions = `
+            $scalars: () =>
+                selectScalars(
+                        make${selectionFunctionName}Input.bind(this)(),
+                    ) as ScalarsFromSelection<
+                        ReturnType<typeof make${selectionFunctionName}Input>,
+                        ${this.typeName}SelectionFields
+                    >,
+            `;
+        }
+
         const selectionFunction = `
             export function make${selectionFunctionName}Input(this: any) {
                 return {
@@ -439,18 +484,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         )
                         .join("\n")}
 
-                    $scalars: () =>
-                        selectScalars(
-                            make${selectionFunctionName}Input.bind(this)(),
-                        ) as ScalarsFromSelection<
-                            ReturnType<typeof make${selectionFunctionName}Input>,
-                            ${this.typeName}SelectionFields
-                        >,
+                    ${helperFunctions}
                 } as const;
             };
             export function ${selectionFunctionName} <
                 T extends object,
-                F extends ${this.typeName}SelectionFields & SelectionHelpers<ReturnType<typeof make${selectionFunctionName}Input>, ${this.typeName}SelectionFields> >(
+                F extends ${
+                    this.typeMeta.isUnion
+                        ? `ReturnType<typeof make${selectionFunctionName}Input>`
+                        : `${this.typeName}SelectionFields & SelectionHelpers<ReturnType<typeof make${selectionFunctionName}Input>, ${this.typeName}SelectionFields>`
+                }
+            >(
                 this: any, 
                 s: (selection: F) => T
             ) {
@@ -462,9 +506,16 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         this.originalFullTypeName
                     }", r, this, parent?.collector, parent?.args, parent?.argsMeta);
                     _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
+                    _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
                     
                     Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                     const result = _result as unknown as T${this.typeMeta.isList ? "[]" : ""};
+
+                    if (parent?.onTypeFragment) {
+                        return {
+                            [parent.onTypeFragment]: result,
+                        };
+                    }
                     return result;
                 }
                 return innerFn.bind(new OperationSelectionCollector("${selectionFunctionName}", parent?.collector))();
