@@ -69,12 +69,12 @@ Implemented GraphQL features:
 | Variables           | ✅        | All arguments used in queries and mutations are collected and hoisted to the top level as variables.                                                                   |
 | Aliases             | ✅        | Aliases are supported for all fields.                                                                                                                                  |
 | Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in the order they are defined. |
+| ... on Type         | ✅        | Inline fragments on Union types.                                                                                                                                       |
 
 Not yet implemented GraphQL features:
 
 | Feature       | Supported | Description                      |
 | ------------- | --------- | -------------------------------- |
-| ... on Type   | ❌        | Inline fragments on Union types. |
 | Fragments     | ❌        | Fragments are not supported.     |
 | Directives    | ❌        | Directives are not supported.    |
 | Subscriptions | ❌        | Subscriptions are not supported. |
