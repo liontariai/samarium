@@ -100,11 +100,12 @@ export abstract class GeneratorSelectionTypeFlavor {
     public abstract makeSelectionType(): string;
 
     protected abstract makeSelectionFunctionInputObjectValueForFieldWrapper(
-        fieldName: string,
-        fieldMeta: TypeMeta,
+        field: FieldMeta,
+        parents: string[],
     ): string;
     protected abstract makeSelectionFunctionInputObjectValueForField(
         field: FieldMeta,
+        parents: string[],
     ): string;
 
     public abstract makeSelectionFunction(): string;
