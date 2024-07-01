@@ -246,6 +246,52 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         parents: string[] = [],
         parentIsInput: boolean = false,
     ): string {
+        const collectArgTypes = () => {
+            const hasAtLeastOneNonNullArg = field.args.some(
+                (arg) => arg.type.isNonNull,
+            );
+
+            const argsTypeName = `${parents.join()}${field.name
+                .slice(0, 1)
+                .toUpperCase()}${field.name.slice(1)}Args`;
+            if (!this.collector.hasArgumentType(argsTypeName)) {
+                const argsTypeBody = field.args
+                    .map((arg) => {
+                        const isScalar = arg.type.isScalar;
+                        const isEnum = arg.type.isEnum;
+                        const isInput = arg.type.isInput;
+                        const argKey = `${arg.name}${
+                            arg.type.isNonNull ? "" : "?"
+                        }`;
+
+                        let argType = "any";
+                        if (isScalar) {
+                            argType =
+                                this.ScalarTypeMap.get(
+                                    arg.type.name.replaceAll("!", ""),
+                                ) ?? "any";
+                        } else if (isInput || isEnum) {
+                            argType = this.originalTypeNameToTypescriptTypeName(
+                                arg.type.name,
+                            );
+                        }
+
+                        return `${description}${argKey}: ${argType};`;
+                    })
+                    .join(" ");
+                const argsType = `{ ${argsTypeBody} }`;
+                this.collector.addArgumentType(
+                    argsTypeName,
+                    `export type ${argsTypeName} = ${argsType};`,
+                );
+            }
+
+            return {
+                argsTypeName,
+                hasAtLeastOneNonNullArg,
+            };
+        };
+
         const description = field.description
             ? `/** ${field.description} */\n`
             : "";
@@ -258,6 +304,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
             this.collector.addSelectionType(field.type, selectionType);
 
+            if (field.hasArgs) {
+                const { argsTypeName, hasAtLeastOneNonNullArg } =
+                    collectArgTypes();
+
+                return `${description}${field.name}: (args${
+                    hasAtLeastOneNonNullArg ? "" : "?"
+                }: ${argsTypeName}) => ${selectionType};`;
+            }
+
             return `${description}${field.name}${
                 field.type.isNonNull ? "" : "?"
             }: ${selectionType};`;
@@ -269,45 +324,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ).makeSelectionFunction();
 
             if (field.hasArgs) {
-                const hasAtLeastOneNonNullArg = field.args.some(
-                    (arg) => arg.type.isNonNull,
-                );
-
-                const argsTypeName = `${parents.join()}${field.name
-                    .slice(0, 1)
-                    .toUpperCase()}${field.name.slice(1)}Args`;
-                if (!this.collector.hasArgumentType(argsTypeName)) {
-                    const argsTypeBody = field.args
-                        .map((arg) => {
-                            const isScalar = arg.type.isScalar;
-                            const isEnum = arg.type.isEnum;
-                            const isInput = arg.type.isInput;
-                            const argKey = `${arg.name}${
-                                arg.type.isNonNull ? "" : "?"
-                            }`;
-
-                            let argType = "any";
-                            if (isScalar) {
-                                argType =
-                                    this.ScalarTypeMap.get(
-                                        arg.type.name.replaceAll("!", ""),
-                                    ) ?? "any";
-                            } else if (isInput || isEnum) {
-                                argType =
-                                    this.originalTypeNameToTypescriptTypeName(
-                                        arg.type.name,
-                                    );
-                            }
-
-                            return `${description}${argKey}: ${argType};`;
-                        })
-                        .join(" ");
-                    const argsType = `{ ${argsTypeBody} }`;
-                    this.collector.addArgumentType(
-                        argsTypeName,
-                        `export type ${argsTypeName} = ${argsType};`,
-                    );
-                }
+                const { argsTypeName, hasAtLeastOneNonNullArg } =
+                    collectArgTypes();
 
                 return `${description}${field.name}: (args${
                     hasAtLeastOneNonNullArg ? "" : "?"
@@ -385,24 +403,58 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     }
 
     protected makeSelectionFunctionInputObjectValueForFieldWrapper(
-        fieldName: string,
-        fieldMeta: TypeMeta,
+        field: FieldMeta,
+        parents: string[],
     ): string {
-        return `new SelectionWrapper("${fieldName}", "${fieldMeta.name}", {}, this)`;
+        const argsTypeName = `${parents.join()}${field.name
+            .slice(0, 1)
+            .toUpperCase()}${field.name.slice(1)}Args`;
+
+        return `${
+            field.hasArgs ? `(args: ${argsTypeName}) => ` : ""
+        }new SelectionWrapper("${field.name}", "${field.type.name}", {}, this, undefined, ${
+            field.hasArgs ? `args, ${argsTypeName}Meta` : ""
+        })`;
     }
 
     protected makeSelectionFunctionInputObjectValueForField(
         field: FieldMeta,
-        parents: string[] = [],
+        parents: string[],
     ): string {
+        const collectArgMeta = () => {
+            const argsTypeName = `${parents.join()}${field.name
+                .slice(0, 1)
+                .toUpperCase()}${field.name.slice(1)}Args`;
+
+            if (!this.collector.hasArgumentMeta(argsTypeName)) {
+                const argsMetaBody = field.args
+                    .map((arg) => {
+                        return `${arg.name}: "${arg.type.name}",`;
+                    })
+                    .join(" ");
+                const argsMeta = `{ ${argsMetaBody} }`;
+                this.collector.addArgumentMeta(
+                    argsTypeName,
+                    `export const ${argsTypeName}Meta = ${argsMeta} as const;`,
+                );
+            }
+
+            return {
+                argsTypeName,
+            };
+        };
+
         const fieldType = field.type;
         if (fieldType.isScalar || fieldType.isEnum) {
             let selectionFunction =
                 this.makeSelectionFunctionInputObjectValueForFieldWrapper(
-                    field.name,
-                    fieldType,
+                    field,
+                    parents,
                 );
 
+            if (field.hasArgs) {
+                collectArgMeta();
+            }
             this.collector.addSelectionFunction(fieldType, selectionFunction);
 
             return `${field.name}: ${selectionFunction},`;
@@ -414,22 +466,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ).makeSelectionFunction();
 
             if (field.hasArgs) {
-                const argsTypeName = `${parents.join()}${field.name
-                    .slice(0, 1)
-                    .toUpperCase()}${field.name.slice(1)}Args`;
-
-                if (!this.collector.hasArgumentMeta(argsTypeName)) {
-                    const argsMetaBody = field.args
-                        .map((arg) => {
-                            return `${arg.name}: "${arg.type.name}",`;
-                        })
-                        .join(" ");
-                    const argsMeta = `{ ${argsMetaBody} }`;
-                    this.collector.addArgumentMeta(
-                        argsTypeName,
-                        `export const ${argsTypeName}Meta = ${argsMeta} as const;`,
-                    );
-                }
+                const { argsTypeName } = collectArgMeta();
 
                 return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta }),`;
             }
@@ -444,11 +481,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
     public makeSelectionFunction(): string {
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
-            return this.makeSelectionFunctionInputObjectValueForFieldWrapper(
-                this.typeName,
-                this.typeMeta,
-            );
+            return `new SelectionWrapper("${this.typeName}", "${this.typeMeta.name}", {}, this)`;
         }
+
         const selectionFunctionName = `${this.typeName}Selection`;
         if (this.collector.hasSelectionFunction(this.typeMeta)) {
             return selectionFunctionName;
