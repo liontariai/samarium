@@ -198,13 +198,14 @@ export class OperationSelectionCollector {
                     result[key] =
                         `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
                 } else if (value[SLW_IS_FRAGMENT]) {
-                    result[key] = `...${key}`;
-                    const fragment = `fragment ${key} on ${value[SLW_FIELD_TYPE]} ${subSelection}`;
-                    if (!usedFragments.has(key)) {
-                        usedFragments.set(key, fragment);
-                    } else if (usedFragments.get(key) !== fragment) {
+                    const fragmentName = `${key}_${subVarDefs.map((v) => v.split(":")[0].slice(1)).join("_")}`;
+                    result[key] = `...${fragmentName}`;
+                    const fragment = `fragment ${fragmentName} on ${value[SLW_FIELD_TYPE]} ${subSelection}`;
+                    if (!usedFragments.has(fragmentName)) {
+                        usedFragments.set(fragmentName, fragment);
+                    } else if (usedFragments.get(fragmentName) !== fragment) {
                         console.warn(
-                            `Fragment ${key} is already defined with a different selection`,
+                            `Fragment ${fragmentName} is already defined with a different selection`,
                         );
                     }
                 } else {
