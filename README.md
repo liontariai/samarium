@@ -62,20 +62,20 @@ pnpm dlx @liontari.ai/samarium
 
 Implemented GraphQL features:
 
-| Feature             | Supported | Description                                                                                                                                                            |
-| ------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Queries             | ✅        | Queries are fully typed functions.                                                                                                                                     |
-| Mutations           | ✅        | All mutations are fully typed functions just like queries.                                                                                                             |
-| Variables           | ✅        | All arguments used in queries and mutations are collected and hoisted to the top level as variables.                                                                   |
-| Aliases             | ✅        | Aliases are supported for all fields.                                                                                                                                  |
-| Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in the order they are defined. |
-| ... on Type         | ✅        | Inline fragments on Union types.                                                                                                                                       |
+| Feature             | Supported | Description                                                                                                                                                                                                                                 |
+| ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Queries             | ✅        | Queries are fully typed functions.                                                                                                                                                                                                          |
+| Mutations           | ✅        | All mutations are fully typed functions just like queries.                                                                                                                                                                                  |
+| Variables           | ✅        | All arguments used in queries and mutations are collected and hoisted to the top level as variables.                                                                                                                                        |
+| Aliases             | ✅        | Aliases are supported for all fields.                                                                                                                                                                                                       |
+| Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in the order they are defined.                                                                      |
+| ... on Type         | ✅        | Inline fragments on Union types. (see https://github.com/liontariai/samarium/pull/5 for an example)                                                                                                                                         |
+| Fragments           | ✅        | Fragments are supported. As implicit and explicit fragments, also parameterized fragments (see https://github.com/graphql/graphql-spec/issues/204) are supported. ( see https://github.com/liontariai/samarium/pull/6 for more information) |
 
 Not yet implemented GraphQL features:
 
 | Feature       | Supported | Description                      |
 | ------------- | --------- | -------------------------------- |
-| Fragments     | ❌        | Fragments are not supported.     |
 | Directives    | ❌        | Directives are not supported.    |
 | Subscriptions | ❌        | Subscriptions are not supported. |
 
