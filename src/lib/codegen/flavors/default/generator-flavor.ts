@@ -159,6 +159,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
         $scalars: () => ScalarsFromSelection<S, T>;
     };
+
+    export type SLFN<T extends object, F, TN extends string, N extends string> = (
+        makeSLFNInput: () => F,
+        SLFN_typeName: TN,
+        SLFN_name: N,
+    ) => <TT = T, FF = F>(this: any, s: (selection: FF) => TT) => TT;
     `;
     public static readonly HelperFunctions = `
     const selectScalars = <S>(selection: Record<string, any>) =>
@@ -167,6 +173,57 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ([k, v]) => v instanceof SelectionWrapperImpl,
         ),
     ) as S;
+
+    const makeSLFN = <T extends object, F, TN extends string, N extends string>(
+        makeSLFNInput: () => F,
+        SLFN_typeName: TN,
+        SLFN_name: N,
+    ) => {
+        function _SLFN<TT extends T, FF extends F>(
+            this: any,
+            s: (selection: FF) => TT,
+        ) {
+            let parent: SelectionFnParent = this ?? {
+                collector: new OperationSelectionCollector(),
+            };
+            function innerFn(this: any) {
+                const selection: FF = makeSLFNInput.bind(this)() as any;
+                const r = s(selection);
+                const _result = new SelectionWrapper(
+                    parent?.fieldName,
+                    SLFN_typeName,
+                    r,
+                    this,
+                    parent?.collector,
+                    parent?.args,
+                    parent?.argsMeta,
+                );
+                _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
+                _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
+                _result[SLW_IS_FRAGMENT] = parent?.isFragment;
+
+                Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+                const result = _result as unknown as T;
+
+                if (parent?.onTypeFragment) {
+                    return {
+                        [parent.onTypeFragment]: result,
+                    } as unknown as typeof result;
+                }
+                if (parent?.isFragment) {
+                    return {
+                        [parent.isFragment]: result,
+                    } as unknown as typeof result;
+                }
+
+                return result;
+            }
+            return innerFn.bind(
+                new OperationSelectionCollector(SLFN_name, parent?.collector),
+            )();
+        }
+        return _SLFN as ReturnType<SLFN<T, F, TN, N>>;
+    };
     `;
 
     constructor(
@@ -544,46 +601,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ${helperFunctions}
                 } as const;
             };
-            export function ${selectionFunctionName} <
+            export const ${selectionFunctionName} = (<
                 T extends object,
                 F extends ${
                     this.typeMeta.isUnion
                         ? `ReturnType<typeof make${selectionFunctionName}Input>`
                         : `${this.typeName}SelectionFields & SelectionHelpers<ReturnType<typeof make${selectionFunctionName}Input>, ${this.typeName}SelectionFields>`
                 }
-            >(
-                this: any, 
-                s: (selection: F) => T
-            ) {
-                let parent: SelectionFnParent = this ?? { collector: new OperationSelectionCollector() };
-                function innerFn(this: any){
-                    const selection: F = make${selectionFunctionName}Input.bind(this)() as any;
-                    const r = s(selection);
-                    const _result = new SelectionWrapper(parent?.fieldName, "${
-                        this.originalFullTypeName
-                    }", r, this, parent?.collector, parent?.args, parent?.argsMeta);
-                    _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
-                    _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
-                    _result[SLW_IS_FRAGMENT] = parent?.isFragment;
-                    
-                    Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
-                    const result = _result as unknown as T${this.typeMeta.isList ? "[]" : ""};
-
-                    if (parent?.onTypeFragment) {
-                        return {
-                            [parent.onTypeFragment]: result,
-                        } as unknown as typeof result;
-                    }
-                    if (parent?.isFragment) {
-                        return {
-                            [parent.isFragment]: result,
-                        } as unknown as typeof result;
-                    }
-
-                    return result;
-                }
-                return innerFn.bind(new OperationSelectionCollector("${selectionFunctionName}", parent?.collector))();
-            };
+            >() =>
+               (makeSLFN as SLFN<T, F, "${this.typeName}", "${selectionFunctionName}">)(
+                    ${`make${selectionFunctionName}Input`} as any,
+                    "${this.typeName}",
+                    "${selectionFunctionName}"
+            ))();
         `;
         this.collector.addSelectionFunction(this.typeMeta, selectionFunction);
 
