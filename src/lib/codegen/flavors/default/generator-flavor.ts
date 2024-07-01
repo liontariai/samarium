@@ -146,11 +146,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     ) => infer R
         ? R
         : never;
+    type ArgumentsTypeFromFragment<T> = T extends (
+        this: any,
+        ...args: infer A
+    ) => any
+        ? A
+        : never;
     
     type SelectionHelpers<S, T> = {
         $fragment: <F extends (this: any, ...args: any[]) => any>(
             f: F,
-        ) => ReturnTypeFromFragment<F>;
+        ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
         $scalars: () => ScalarsFromSelection<S, T>;
     };
     `;
@@ -477,7 +483,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     collector: this,
                     fieldName: "",
                     isFragment: f.name,
-                })(),
+                }),
             $scalars: () =>
                 selectScalars(
                         make${selectionFunctionName}Input.bind(this)(),
