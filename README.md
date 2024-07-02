@@ -2,8 +2,9 @@
 
 # Samarium
 
-![GitHub last commit](https://img.shields.io/github/last-commit/liontariai/samarium)
-![NPM Downloads](https://img.shields.io/npm/dm/%40liontari.ai%2Fsamarium)
+[![GitHub last commit](https://img.shields.io/github/last-commit/liontariai/samarium)](https://github.com/liontariai/samarium/commits/main/)
+[![NPM Version](https://img.shields.io/npm/v/%40liontari.ai%2Fsamarium)](https://www.npmjs.com/package/@liontari.ai/samarium)
+[![NPM Downloads](https://img.shields.io/npm/dm/%40liontari.ai%2Fsamarium)](https://www.npmjs.com/package/@liontari.ai/samarium)
 
 No dependencies. No codegen steps. No graphql files. No IDE setup. No config files. No client boilerplate.
 
