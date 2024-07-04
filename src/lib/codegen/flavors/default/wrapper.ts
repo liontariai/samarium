@@ -31,30 +31,53 @@ export class RootOperation {
         type selection = ReturnType<
             typeof OperationSelectionCollector.prototype.renderSelections
         >;
-        const operations: { [key: string]: selection } = {};
+        const operations: {
+            [key: string]: {
+                selection: selection;
+                rootSlw: SelectionWrapperImpl<
+                    string,
+                    string,
+                    string,
+                    number,
+                    any
+                >;
+            };
+        } = {};
         for (const [
             opName,
             opSelection,
         ] of this.rootCollector?.selections.entries()) {
-            operations[opName] = opSelection[SLW_COLLECTOR]!.renderSelections([
-                opName,
-            ]);
+            let rootSlw = opSelection;
+            while (!rootSlw[SLW_IS_ROOT_TYPE]) {
+                if (!rootSlw[SLW_PARENT_SLW]) break;
+                rootSlw = rootSlw[SLW_PARENT_SLW]!;
+            }
+
+            const selection = rootSlw[SLW_COLLECTOR]!.renderSelections(
+                [opName],
+                {},
+                new Map(),
+                opSelection === rootSlw ? [] : [opSelection],
+            );
+
+            operations[opName] = {
+                selection,
+                rootSlw,
+            };
         }
 
         const ops = Object.entries(operations).reduce(
-            (acc, [opName, op]) => ({
+            (acc, [opName, { selection, rootSlw }]) => ({
                 ...acc,
                 [opName]: {
-                    query: `${this.rootCollector!.selections.get(opName)?.[
-                        SLW_IS_ROOT_TYPE
-                    ]?.toLowerCase()} ${opName} ${
-                        op.variableDefinitions.length
-                            ? `(${op.variableDefinitions.join(", ")})`
+                    query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${
+                        selection.variableDefinitions.length
+                            ? `(${selection.variableDefinitions.join(", ")})`
                             : ""
-                    } ${op.selection}
+                    } ${selection.selection}
                     `,
-                    variables: op.variables,
-                    fragments: op.usedFragments,
+                    variables: selection.variables,
+                    fragments: selection.usedFragments,
                 },
             }),
             {} as Record<
@@ -160,12 +183,23 @@ export class OperationSelectionCollector {
         path: string[] = [],
         opVars: Record<string, any> = {},
         usedFragments: Map<string, string> = new Map(),
+        renderOnlyTheseSelections: SelectionWrapperImpl<
+            string,
+            string,
+            string,
+            number,
+            any
+        >[] = [],
     ) {
-        const result: Record<string, any> = {};
+        const result: Record<string, string | undefined> = {};
         const varDefs: string[] = [];
         const variables: Record<string, any> = {};
 
-        for (const [key, value] of this.selections.entries()) {
+        for (const [key, value] of [...this.selections.entries()].filter(
+            ([k, v]) =>
+                renderOnlyTheseSelections.length === 0 ||
+                renderOnlyTheseSelections.includes(v),
+        )) {
             const subPath = [...path, key];
             const {
                 selection: fieldSelection,
@@ -217,13 +251,17 @@ export class OperationSelectionCollector {
             }
         }
         let rendered = "{ ";
-        for (const [key, value] of Object.entries(result)) {
-            const isSubSelection = value.toString().startsWith("{");
-            const isOnType = value.toString().startsWith("... on");
-            const isFragment = value.toString().startsWith("...");
+        for (const [key, value] of Object.entries(result).filter(
+            ([k, v]) => v !== undefined,
+        ) as [string, string][]) {
+            const keyIsFieldName =
+                value.startsWith(`${key} {`) || value.startsWith(`${key} (`);
+            const isSubSelection = value.startsWith("{");
+            const isOnType = value.startsWith("... on");
+            const isFragment = value.startsWith("...");
             if (key === value) {
                 rendered += `${key} `;
-            } else if (isOnType || isFragment) {
+            } else if (isOnType || isFragment || keyIsFieldName) {
                 rendered += `${value} `;
             } else {
                 rendered += `${key}${!isSubSelection ? ":" : ""} ${value} `;
@@ -240,10 +278,7 @@ export class OperationSelectionCollector {
 
     private utilGet = (obj: Record<string, any>, path: string[]) =>
         path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(
-        path: string[] = [],
-        typeName?: string,
-    ): T {
+    public getOperationResultPath<T>(path: string[] = [], type?: string): T {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
@@ -256,16 +291,9 @@ export class OperationSelectionCollector {
 
         result = this.utilGet(result, path) as T;
 
-        if (typeName && result) {
-            const type = typeName
-                .replaceAll("!", "")
-                .replaceAll("[", "")
-                .replaceAll("]", "");
-
-            if (type in RootOperation[OPTIONS].scalars) {
+        if (type && result && type in RootOperation[OPTIONS].scalars) {
                 let depth = 0;
-                let finalResult =
-                    result instanceof Array ? [...result] : result;
+            let finalResult = result instanceof Array ? [...result] : result;
 
                 while (result instanceof Array) {
                     result = result[0];
@@ -309,6 +337,8 @@ export const SLW_IS_FRAGMENT = Symbol("SLW_IS_FRAGMENT");
 export const SLW_VALUE = Symbol("SLW_VALUE");
 export const SLW_ARGS = Symbol("SLW_ARGS");
 export const SLW_ARGS_META = Symbol("SLW_ARGS_META");
+export const SLW_PARENT_SLW = Symbol("SLW_PARENT_SLW");
+
 export const OP = Symbol("OP");
 export const ROOT_OP_COLLECTOR = Symbol("ROOT_OP_COLLECTOR");
 export const SLW_PARENT_COLLECTOR = Symbol("SLW_PARENT_COLLECTOR");
@@ -349,6 +379,15 @@ export class SelectionWrapperImpl<
 
     [SLW_ARGS]?: argsT;
     [SLW_ARGS_META]?: Record<string, string>;
+
+    [SLW_PARENT_SLW]?: SelectionWrapperImpl<
+        string,
+        string,
+        string,
+        number,
+        any,
+        any
+    >;
 
     constructor(
         fieldName?: fieldName,
@@ -503,6 +542,7 @@ export class SelectionWrapper<
                         prop === SLW_VALUE ||
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
+                        prop === SLW_PARENT_SLW ||
                         prop === ROOT_OP_COLLECTOR ||
                         prop === SLW_PARENT_COLLECTOR ||
                         prop === SLW_COLLECTOR ||
@@ -546,7 +586,7 @@ export class SelectionWrapper<
                                 ROOT_OP_COLLECTOR
                             ]!.getOperationResultPath<valueT>(
                                 t[SLW_OP_PATH]?.split(".") ?? [],
-                                t[SLW_FIELD_TYPE],
+                                t[SLW_FIELD_TYPENAME],
                             );
                             return data;
                         };
@@ -588,6 +628,9 @@ export class SelectionWrapper<
                                 String(prop),
                                 slw_value[String(prop)],
                             );
+                        }
+                        if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
+                            slw_value[String(prop)][SLW_PARENT_SLW] = target;
                         }
                     }
 
