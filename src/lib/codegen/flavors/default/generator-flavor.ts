@@ -898,25 +898,25 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     authConfig
                         ? `
                 if (typeof options.auth === "string") {
-                    OperationSelectionCollector[OPTIONS].headers = {
+                    RootOperation[OPTIONS].headers = {
                         "${authConfig.headerName}": options.auth,
                     };
                 } else if (options.auth) {
-                    OperationSelectionCollector[OPTIONS].headers = options.auth;
+                    RootOperation[OPTIONS].headers = options.auth;
                 }
                 `
                         : ""
                 }
 
                 if (options.headers) {
-                    OperationSelectionCollector[OPTIONS].headers = {
-                        ...OperationSelectionCollector[OPTIONS].headers,
+                    RootOperation[OPTIONS].headers = {
+                        ...RootOperation[OPTIONS].headers,
                         ...options.headers,
                     };
                 }
                 if (options.scalars) {
-                    OperationSelectionCollector[OPTIONS].scalars = {
-                        ...OperationSelectionCollector[OPTIONS].scalars,
+                    RootOperation[OPTIONS].scalars = {
+                        ...RootOperation[OPTIONS].scalars,
                         ...options.scalars,
                     };
                 }

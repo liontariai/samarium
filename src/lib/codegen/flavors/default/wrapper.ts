@@ -1,7 +1,18 @@
 const Proxy = global.Proxy;
 Proxy.prototype = {};
 
+const OPTIONS = Symbol("OPTIONS");
 export class RootOperation {
+    public static [OPTIONS] = {
+        headers: {},
+        scalars: {
+            DateTime: (value: string) => new Date(value),
+            Date: (value: string) => new Date(value),
+            Time: (value: string) => new Date(value),
+            JSON: (value: string) => JSON.parse(value),
+        },
+    };
+
     private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
         path.reduce(
             (o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}),
@@ -108,18 +119,7 @@ export class RootOperation {
     }
 }
 
-const OPTIONS = Symbol("OPTIONS");
 export class OperationSelectionCollector {
-    public static [OPTIONS] = {
-        headers: {},
-        scalars: {
-            DateTime: (value: string) => new Date(value),
-            Date: (value: string) => new Date(value),
-            Time: (value: string) => new Date(value),
-            JSON: (value: string) => JSON.parse(value),
-        },
-    };
-
     constructor(
         public readonly name?: string,
         public readonly parent?: OperationSelectionCollector,
@@ -131,8 +131,7 @@ export class OperationSelectionCollector {
     private executed = false;
     private operationResult: any | undefined = undefined;
     public async execute(
-        headers: Record<string, string> = OperationSelectionCollector[OPTIONS]
-            .headers,
+        headers: Record<string, string> = RootOperation[OPTIONS].headers,
     ) {
         if (!this.op) {
             throw new Error(
@@ -263,7 +262,7 @@ export class OperationSelectionCollector {
                 .replaceAll("[", "")
                 .replaceAll("]", "");
 
-            if (type in OperationSelectionCollector[OPTIONS].scalars) {
+            if (type in RootOperation[OPTIONS].scalars) {
                 let depth = 0;
                 let finalResult =
                     result instanceof Array ? [...result] : result;
@@ -289,11 +288,10 @@ export class OperationSelectionCollector {
                 return deepParse(
                     finalResult,
                     depth,
-                    OperationSelectionCollector[OPTIONS].scalars[
-                        type as keyof (typeof OperationSelectionCollector)[typeof OPTIONS]["scalars"]
+                RootOperation[OPTIONS].scalars[
+                    type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]
                     ],
                 ) as T;
-            }
         }
 
         return result as T;
