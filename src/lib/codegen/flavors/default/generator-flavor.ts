@@ -159,7 +159,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? A
         : never;
 
-    type ReplaceReturnType<T, R> = T extends (...a: any) => any ? (...a: Parameters<T>) => R : never;
+    type ReplaceReturnType<T, R> = T extends (...a: any) => any
+    ? (
+          ...a: Parameters<T>
+      ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
+    : never;
     type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
         ? ScalarTypeMapWithCustom[TNP]
         : TNP extends keyof ScalarTypeMapDefault
@@ -202,18 +206,42 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 : TT[K];
         },
         TAD
-    >  & {
-        [k in keyof EE]: k extends REP ? 
-            EE[k] extends (...args: any) => any ? 
-                ReplaceReturnType<EE[k], 
-                    {
-                        [K in keyof TT]: TT[K];
-                    }
+    > & {
+        [k in keyof EE]: k extends REP
+            ? EE[k] extends (...args: any) => any
+                ? ReplaceReturnType<
+                    EE[k],
+                    ToTArrayWithDepth<
+                        {
+                            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                                infer FN,
+                                infer TN,
+                                infer TTNP,
+                                infer TTAD,
+                                infer VT,
+                                infer AT
+                            >
+                                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                : TT[K];
+                        },
+                        TAD
+                    >
                 >
-                :
+                : ToTArrayWithDepth<
                 {
-                    [K in keyof TT]: TT[K];
-                }
+                        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                            infer FN,
+                            infer TN,
+                            infer TTNP,
+                            infer TTAD,
+                            infer VT,
+                            infer AT
+                        >
+                            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                            : TT[K];
+                    },
+                    TAD
+                >
             : EE[k];
     };
     `;
@@ -582,7 +610,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             this.collector.addSelectionFunction(fieldType, selectionFunction);
 
-            return `${field.name}: ${selectionFunction},`;
+            return `${field.name}: ${selectionFunction}`;
         } else if (fieldType.ofType) {
             const selectionFunction = new GeneratorSelectionTypeFlavorDefault(
                 fieldType.ofType.name,
@@ -593,9 +621,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName } = collectArgMeta();
 
-                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta }),`;
+                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
             }
-            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" }),`;
+            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" })`;
         } else {
             console.error(fieldType);
             throw new Error(
@@ -664,11 +692,49 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             export function make${selectionFunctionName}Input(this: any) {
                 return {
                     ${this.typeMeta.fields
-                        .map((field) =>
+                        .map(
+                            (field) =>
+                                [
+                                    field,
                             this.makeSelectionFunctionInputObjectValueForField(
                                 field,
-                                this.typeMeta.isInput ? [] : [this.typeName],
+                                        this.typeMeta.isInput
+                                            ? []
+                                            : [this.typeName],
                             ),
+                                ] as const,
+                        )
+                        .map(([field, fieldSlfn]) =>
+                            this.collector.OperationTypeNames.includes(
+                                this.typeName,
+                            )
+                                ? `${fieldSlfn} as ReturnType<
+                                    SLFN<
+                                        {},
+                                        ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
+                                            field.type.name,
+                                        )}SelectionInput>,
+                                        "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
+                                        "${field.type.name}",
+                                        "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                                            field.type.name,
+                                        )}",
+                                        ${field.type.isList ?? 0},
+                                        { 
+                                            $lazy: (
+                                                ${
+                                                    field.hasArgs
+                                                        ? `args: ${this.typeName}${field.name
+                                                              .slice(0, 1)
+                                                              .toUpperCase()}${field.name.slice(1)}Args`
+                                                        : ""
+                                                }
+                                            ) => Promise<"T">
+                                        },
+                                        "$lazy"
+                                    >
+                                >,`
+                                : `${fieldSlfn},`,
                         )
                         .join("\n")}
 
