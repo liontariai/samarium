@@ -159,7 +159,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? A
         : never;
 
-    type ReplaceReturnType<T, R> = T extends (...a: any) => any ? (...a: Parameters<T>) => R : never;
+    type ReplaceReturnType<T, R> = T extends (...a: any) => any
+    ? (
+          ...a: Parameters<T>
+      ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
+    : never;
     type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
         ? ScalarTypeMapWithCustom[TNP]
         : TNP extends keyof ScalarTypeMapDefault
@@ -202,18 +206,42 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 : TT[K];
         },
         TAD
-    >  & {
-        [k in keyof EE]: k extends REP ? 
-            EE[k] extends (...args: any) => any ? 
-                ReplaceReturnType<EE[k], 
-                    {
-                        [K in keyof TT]: TT[K];
-                    }
+    > & {
+        [k in keyof EE]: k extends REP
+            ? EE[k] extends (...args: any) => any
+                ? ReplaceReturnType<
+                    EE[k],
+                    ToTArrayWithDepth<
+                        {
+                            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                                infer FN,
+                                infer TN,
+                                infer TTNP,
+                                infer TTAD,
+                                infer VT,
+                                infer AT
+                            >
+                                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                : TT[K];
+                        },
+                        TAD
+                    >
                 >
-                :
-                {
-                    [K in keyof TT]: TT[K];
-                }
+                : ToTArrayWithDepth<
+                    {
+                        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                            infer FN,
+                            infer TN,
+                            infer TTNP,
+                            infer TTAD,
+                            infer VT,
+                            infer AT
+                        >
+                            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                            : TT[K];
+                    },
+                    TAD
+                >
             : EE[k];
     };
     `;
@@ -582,7 +610,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             this.collector.addSelectionFunction(fieldType, selectionFunction);
 
-            return `${field.name}: ${selectionFunction},`;
+            return `${field.name}: ${selectionFunction}`;
         } else if (fieldType.ofType) {
             const selectionFunction = new GeneratorSelectionTypeFlavorDefault(
                 fieldType.ofType.name,
@@ -593,9 +621,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName } = collectArgMeta();
 
-                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta }),`;
+                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
             }
-            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" }),`;
+            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" })`;
         } else {
             console.error(fieldType);
             throw new Error(
@@ -664,34 +692,69 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             export function make${selectionFunctionName}Input(this: any) {
                 return {
                     ${this.typeMeta.fields
-                        .map((field) =>
-                            this.makeSelectionFunctionInputObjectValueForField(
-                                field,
-                                this.typeMeta.isInput ? [] : [this.typeName],
-                            ),
+                        .map(
+                            (field) =>
+                                [
+                                    field,
+                                    this.makeSelectionFunctionInputObjectValueForField(
+                                        field,
+                                        this.typeMeta.isInput
+                                            ? []
+                                            : [this.typeName],
+                                    ),
+                                ] as const,
+                        )
+                        .map(([field, fieldSlfn]) =>
+                            this.collector.OperationTypeNames.includes(
+                                this.typeName,
+                            )
+                                ? `${fieldSlfn} as ReturnType<
+                                    SLFN<
+                                        {},
+                                        ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
+                                            field.type.name,
+                                        )}SelectionInput>,
+                                        "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
+                                        "${field.type.name}",
+                                        "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                                            field.type.name,
+                                        )}",
+                                        ${field.type.isList ?? 0},
+                                        { 
+                                            $lazy: (
+                                                ${
+                                                    field.hasArgs
+                                                        ? `args: ${this.typeName}${field.name
+                                                              .slice(0, 1)
+                                                              .toUpperCase()}${field.name.slice(1)}Args`
+                                                        : ""
+                                                }
+                                            ) => Promise<"T">
+                                        },
+                                        "$lazy"
+                                    >
+                                >,`
+                                : `${fieldSlfn},`,
                         )
                         .join("\n")}
 
                     ${helperFunctions}
                 } as const;
             };
-            export const ${selectionFunctionName} = (<
-                T extends object
-            >() =>
-               (makeSLFN as SLFN<
-                    T,
+            export const ${selectionFunctionName} = (makeSLFN as SLFN<
+                    {},
                     ReturnType<typeof make${selectionFunctionName}Input>,
                     "${selectionFunctionName}",
                     "${this.typeName}",
                     "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                     ${this.typeMeta.isList ?? 0}
                 >)(
-                    ${`make${selectionFunctionName}Input`} as any,
+                    ${`make${selectionFunctionName}Input`},
                     "${selectionFunctionName}",
                     "${this.typeName}",
                     "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                     ${this.typeMeta.isList ?? 0}
-            ))();
+            );
         `;
         this.collector.addSelectionFunction(this.typeMeta, selectionFunction);
 
@@ -699,16 +762,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     }
 
     public static makeRootOperationFunction(
-        schema: GraphQLSchema,
         collector: Collector,
         authConfig?: {
             headerName: string;
         },
     ): string {
         // get the root operation types
-        const QueryTypeName = schema.getQueryType()?.name;
-        const MutationTypeName = schema.getMutationType()?.name;
-        const SubscriptionTypeName = schema.getSubscriptionType()?.name;
+        const QueryTypeName = collector.QueryTypeName;
+        const MutationTypeName = collector.MutationTypeName;
+        const SubscriptionTypeName = collector.SubscriptionTypeName;
 
         const rootOperationFunction = `
             export type _RootOperationSelectionFields<T extends object> = {
@@ -718,12 +780,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             SLFN<
                                 T, 
                                 ReturnType<typeof make${QueryTypeName}SelectionInput>,
-                                "${QueryTypeName}",
                                 "${QueryTypeName}Selection",
                                 "${QueryTypeName}",
+                                "${QueryTypeName}",
                                 0,
-                                { $lazy: () => "T" },
-                                "$lazy"
                             >
                         >;`
                         : ""
@@ -738,12 +798,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         ReturnType<typeof make${MutationTypeName}SelectionInput>,
                                         ${MutationTypeName}SelectionFields
                                     >,
-                                "${MutationTypeName}",
                                 "${MutationTypeName}Selection",
                                 "${MutationTypeName}",
+                                "${MutationTypeName}",
                                 0,
-                                { $lazy: () => "T" },
-                                "$lazy"
                             >
                         >;`
                         : ""
@@ -759,12 +817,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
                                         ${SubscriptionTypeName}SelectionFields
                                     >,
-                                "${SubscriptionTypeName}",
                                 "${SubscriptionTypeName}Selection",
                                 "${SubscriptionTypeName}",
+                                "${SubscriptionTypeName}",
                                 0,
-                                { $lazy: () => "T" },
-                                "$lazy"
                             >
                         >;`
                         : ""
@@ -822,7 +878,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const _result = new SelectionWrapper(undefined, undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                 const result = _result as {
-                    [k in keyof T]: Omit<T[k], "$lazy">;
+                    [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<
+                        ReturnType<T[k]>, "$lazy"
+                    > : Omit<
+                        T[k], "$lazy"
+                    >
                 };
                 type TR = typeof result;
                 
