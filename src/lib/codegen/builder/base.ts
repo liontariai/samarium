@@ -108,12 +108,9 @@ export abstract class GeneratorSelectionTypeFlavor {
         parents: string[],
     ): string;
 
-    public abstract makeSelectionFunction(): string;
+    public abstract makeSelectionFunction(schema: GraphQLSchema): string;
 
-    public static makeRootOperationFunction(
-        schema: GraphQLSchema,
-        collector: Collector,
-    ): string {
+    public static makeRootOperationFunction(collector: Collector): string {
         throw new Error("Method not implemented.");
     }
 }

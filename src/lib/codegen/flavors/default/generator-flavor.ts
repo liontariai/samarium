@@ -90,7 +90,7 @@ const __dirname = dirname(__filename);
  * ```
  */
 export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeFlavor {
-    public ScalarTypeMap: Map<string, string> = new Map([
+    public static ScalarTypeMap: Map<string, string> = new Map([
         ["String", "string"],
         ["Int", "number"],
         ["Float", "number"],
@@ -101,11 +101,20 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ["Time", "Date"],
         ["JSON", "Record<string, any>"],
     ]);
+    public ScalarTypeMap: Map<string, string> =
+        GeneratorSelectionTypeFlavorDefault.ScalarTypeMap;
 
     public static readonly FieldValueWrapperType = readFileSync(
         join(import.meta.dir ?? __dirname, "wrapper.ts"),
     ).toString();
     public static readonly HelperTypes = `
+    export interface ScalarTypeMapWithCustom {}
+    export interface ScalarTypeMapDefault {
+        ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
+            .map(([k, v]) => `"${k}": ${v};`)
+            .join("\n")}
+    };
+
     type SelectionFnParent = {
         collector: OperationSelectionCollector;
         fieldName?: string;
@@ -124,19 +133,16 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         [K in keyof T]: T[K];
     } & {};
 
-    type ScalarsFromSelection<
+    type SLWsFromSelection<
         S,
-        T,
         R = {
             [K in keyof S]: S[K] extends SelectionWrapperImpl<
                 infer FN,
                 infer TN,
-                infer VT,
-                infer AT
+                infer TNP,
+                infer TAD
             >
-                ? FN extends keyof T
-                    ? T[FN]
-                    : never
+                ? S[K]
                 : never;
         },
     > = Prettify<CleanupNever<R>>;
@@ -152,12 +158,91 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     ) => any
         ? A
         : never;
-    
-    type SelectionHelpers<S, T> = {
-        $fragment: <F extends (this: any, ...args: any[]) => any>(
-            f: F,
-        ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
-        $scalars: () => ScalarsFromSelection<S, T>;
+
+    type ReplaceReturnType<T, R> = T extends (...a: any) => any
+    ? (
+          ...a: Parameters<T>
+      ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
+    : never;
+    type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
+        ? ScalarTypeMapWithCustom[TNP]
+        : TNP extends keyof ScalarTypeMapDefault
+        ? ScalarTypeMapDefault[TNP]
+        : never;
+    type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
+    type ToTArrayWithDepth<T, D extends number> = D extends 0
+        ? T
+        : ToTArrayWithDepth<T[], Prev[D]>;
+
+    export type SLFN<
+        T extends object,
+        F,
+        N extends string,
+        TN extends string,
+        TNP extends string,
+        TAD extends number,
+        E extends { [key: string | number | symbol]: any } = {},
+        REP extends string | number | symbol = never,
+    > = (
+        makeSLFNInput: () => F,
+        SLFN_name: N,
+        SLFN_typeName: TN,
+        SLFN_typeNamePure: TNP,
+        SLFN_typeArrDepth: TAD,
+    ) => <TT = T, FF = F, EE = E>(
+        this: any,
+        s: (selection: FF) => TT,
+    ) => ToTArrayWithDepth<
+        {
+            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                infer FN,
+                infer TN,
+                infer TTNP,
+                infer TTAD,
+                infer VT,
+                infer AT
+            >
+                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                : TT[K];
+        },
+        TAD
+    > & {
+        [k in keyof EE]: k extends REP
+            ? EE[k] extends (...args: any) => any
+                ? ReplaceReturnType<
+                    EE[k],
+                    ToTArrayWithDepth<
+                        {
+                            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                                infer FN,
+                                infer TN,
+                                infer TTNP,
+                                infer TTAD,
+                                infer VT,
+                                infer AT
+                            >
+                                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                : TT[K];
+                        },
+                        TAD
+                    >
+                >
+                : ToTArrayWithDepth<
+                    {
+                        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                            infer FN,
+                            infer TN,
+                            infer TTNP,
+                            infer TTAD,
+                            infer VT,
+                            infer AT
+                        >
+                            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                            : TT[K];
+                    },
+                    TAD
+                >
+            : EE[k];
     };
     `;
     public static readonly HelperFunctions = `
@@ -167,6 +252,68 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ([k, v]) => v instanceof SelectionWrapperImpl,
         ),
     ) as S;
+
+    const makeSLFN = <
+        T extends object,
+        F,
+        N extends string,
+        TN extends string,
+        TNP extends string,
+        TAD extends number,
+    >(
+        makeSLFNInput: () => F,
+        SLFN_name: N,
+        SLFN_typeName: TN,
+        SLFN_typeNamePure: TNP,
+        SLFN_typeArrDepth: TAD,
+    ) => {
+        function _SLFN<TT extends T, FF extends F>(
+            this: any,
+            s: (selection: FF) => TT,
+        ) {
+            let parent: SelectionFnParent = this ?? {
+                collector: new OperationSelectionCollector(),
+            };
+            function innerFn(this: any) {
+                const selection: FF = makeSLFNInput.bind(this)() as any;
+                const r = s(selection);
+                const _result = new SelectionWrapper(
+                    parent?.fieldName,
+                    SLFN_typeName,
+                    SLFN_typeNamePure,
+                    SLFN_typeArrDepth,
+                    r,
+                    this,
+                    parent?.collector,
+                    parent?.args,
+                    parent?.argsMeta,
+                );
+                _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
+                _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
+                _result[SLW_IS_FRAGMENT] = parent?.isFragment;
+
+                Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+                const result = _result as unknown as T;
+
+                if (parent?.onTypeFragment) {
+                    return {
+                        [parent.onTypeFragment]: result,
+                    } as unknown as typeof result;
+                }
+                if (parent?.isFragment) {
+                    return {
+                        [parent.isFragment]: result,
+                    } as unknown as typeof result;
+                }
+
+                return result;
+            }
+            return innerFn.bind(
+                new OperationSelectionCollector(SLFN_name, parent?.collector),
+            )();
+        }
+        return _SLFN as ReturnType<SLFN<T, F, N, TN, TNP, TAD>>;
+    };
     `;
 
     constructor(
@@ -412,9 +559,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
         return `${
             field.hasArgs ? `(args: ${argsTypeName}) => ` : ""
-        }new SelectionWrapper("${field.name}", "${field.type.name}", {}, this, undefined, ${
-            field.hasArgs ? `args, ${argsTypeName}Meta` : ""
-        })`;
+        }new SelectionWrapper(
+            "${field.name}",
+            "${field.type.name}",
+            "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+            ${field.type.isList ?? 0},
+            {},
+            this,
+            undefined,
+            ${field.hasArgs ? `args, ${argsTypeName}Meta` : ""})`;
     }
 
     protected makeSelectionFunctionInputObjectValueForField(
@@ -457,7 +610,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             this.collector.addSelectionFunction(fieldType, selectionFunction);
 
-            return `${field.name}: ${selectionFunction},`;
+            return `${field.name}: ${selectionFunction}`;
         } else if (fieldType.ofType) {
             const selectionFunction = new GeneratorSelectionTypeFlavorDefault(
                 fieldType.ofType.name,
@@ -468,9 +621,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName } = collectArgMeta();
 
-                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta }),`;
+                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
             }
-            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" }),`;
+            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" })`;
         } else {
             console.error(fieldType);
             throw new Error(
@@ -481,7 +634,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
     public makeSelectionFunction(): string {
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
-            return `new SelectionWrapper("${this.typeName}", "${this.typeMeta.name}", {}, this)`;
+            return `new SelectionWrapper(
+                "${this.typeName}",
+                "${this.typeMeta.name}",
+                "${this.typeMeta.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                ${this.typeMeta.isList ?? 0},
+                {},
+                this
+            )`;
         }
 
         const selectionFunctionName = `${this.typeName}Selection`;
@@ -513,18 +673,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             `;
         } else {
             helperFunctions = `
-            $fragment: (f: (this: any, ...args: any) => any) =>
+            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
                 f.bind({
                     collector: this,
                     fieldName: "",
                     isFragment: f.name,
-                }),
+                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
             $scalars: () =>
                 selectScalars(
                         make${selectionFunctionName}Input.bind(this)(),
-                    ) as ScalarsFromSelection<
-                        ReturnType<typeof make${selectionFunctionName}Input>,
-                        ${this.typeName}SelectionFields
+                    ) as SLWsFromSelection<
+                        ReturnType<typeof make${selectionFunctionName}Input>
                     >,
             `;
         }
@@ -533,57 +692,69 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             export function make${selectionFunctionName}Input(this: any) {
                 return {
                     ${this.typeMeta.fields
-                        .map((field) =>
-                            this.makeSelectionFunctionInputObjectValueForField(
-                                field,
-                                this.typeMeta.isInput ? [] : [this.typeName],
-                            ),
+                        .map(
+                            (field) =>
+                                [
+                                    field,
+                                    this.makeSelectionFunctionInputObjectValueForField(
+                                        field,
+                                        this.typeMeta.isInput
+                                            ? []
+                                            : [this.typeName],
+                                    ),
+                                ] as const,
+                        )
+                        .map(([field, fieldSlfn]) =>
+                            this.collector.OperationTypeNames.includes(
+                                this.typeName,
+                            )
+                                ? `${fieldSlfn} as ReturnType<
+                                    SLFN<
+                                        {},
+                                        ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
+                                            field.type.name,
+                                        )}SelectionInput>,
+                                        "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
+                                        "${field.type.name}",
+                                        "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                                            field.type.name,
+                                        )}",
+                                        ${field.type.isList ?? 0},
+                                        { 
+                                            $lazy: (
+                                                ${
+                                                    field.hasArgs
+                                                        ? `args: ${this.typeName}${field.name
+                                                              .slice(0, 1)
+                                                              .toUpperCase()}${field.name.slice(1)}Args`
+                                                        : ""
+                                                }
+                                            ) => Promise<"T">
+                                        },
+                                        "$lazy"
+                                    >
+                                >,`
+                                : `${fieldSlfn},`,
                         )
                         .join("\n")}
 
                     ${helperFunctions}
                 } as const;
             };
-            export function ${selectionFunctionName} <
-                T extends object,
-                F extends ${
-                    this.typeMeta.isUnion
-                        ? `ReturnType<typeof make${selectionFunctionName}Input>`
-                        : `${this.typeName}SelectionFields & SelectionHelpers<ReturnType<typeof make${selectionFunctionName}Input>, ${this.typeName}SelectionFields>`
-                }
-            >(
-                this: any, 
-                s: (selection: F) => T
-            ) {
-                let parent: SelectionFnParent = this ?? { collector: new OperationSelectionCollector() };
-                function innerFn(this: any){
-                    const selection: F = make${selectionFunctionName}Input.bind(this)() as any;
-                    const r = s(selection);
-                    const _result = new SelectionWrapper(parent?.fieldName, "${
-                        this.originalFullTypeName
-                    }", r, this, parent?.collector, parent?.args, parent?.argsMeta);
-                    _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
-                    _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
-                    _result[SLW_IS_FRAGMENT] = parent?.isFragment;
-                    
-                    Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
-                    const result = _result as unknown as T${this.typeMeta.isList ? "[]" : ""};
-
-                    if (parent?.onTypeFragment) {
-                        return {
-                            [parent.onTypeFragment]: result,
-                        } as unknown as typeof result;
-                    }
-                    if (parent?.isFragment) {
-                        return {
-                            [parent.isFragment]: result,
-                        } as unknown as typeof result;
-                    }
-
-                    return result;
-                }
-                return innerFn.bind(new OperationSelectionCollector("${selectionFunctionName}", parent?.collector))();
-            };
+            export const ${selectionFunctionName} = (makeSLFN as SLFN<
+                    {},
+                    ReturnType<typeof make${selectionFunctionName}Input>,
+                    "${selectionFunctionName}",
+                    "${this.typeName}",
+                    "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                    ${this.typeMeta.isList ?? 0}
+                >)(
+                    ${`make${selectionFunctionName}Input`},
+                    "${selectionFunctionName}",
+                    "${this.typeName}",
+                    "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                    ${this.typeMeta.isList ?? 0}
+            );
         `;
         this.collector.addSelectionFunction(this.typeMeta, selectionFunction);
 
@@ -591,33 +762,67 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     }
 
     public static makeRootOperationFunction(
-        schema: GraphQLSchema,
         collector: Collector,
         authConfig?: {
             headerName: string;
         },
     ): string {
         // get the root operation types
-        const QueryTypeName = schema.getQueryType()?.name;
-        const MutationTypeName = schema.getMutationType()?.name;
-        const SubscriptionTypeName = schema.getSubscriptionType()?.name;
+        const QueryTypeName = collector.QueryTypeName;
+        const MutationTypeName = collector.MutationTypeName;
+        const SubscriptionTypeName = collector.SubscriptionTypeName;
 
         const rootOperationFunction = `
-            export type _RootOperationSelectionFields = {
+            export type _RootOperationSelectionFields<T extends object> = {
                 ${
                     QueryTypeName && collector.types.has(QueryTypeName)
-                        ? `query: typeof ${QueryTypeName}Selection;`
+                        ? `query: ReturnType<
+                            SLFN<
+                                T, 
+                                ReturnType<typeof make${QueryTypeName}SelectionInput>,
+                                "${QueryTypeName}Selection",
+                                "${QueryTypeName}",
+                                "${QueryTypeName}",
+                                0,
+                            >
+                        >;`
                         : ""
                 }
                 ${
                     MutationTypeName && collector.types.has(MutationTypeName)
-                        ? `mutation: typeof ${MutationTypeName}Selection;`
+                        ? `mutation: ReturnType<
+                            SLFN<
+                                T, 
+                                ${MutationTypeName}SelectionFields & 
+                                    SelectionHelpers<
+                                        ReturnType<typeof make${MutationTypeName}SelectionInput>,
+                                        ${MutationTypeName}SelectionFields
+                                    >,
+                                "${MutationTypeName}Selection",
+                                "${MutationTypeName}",
+                                "${MutationTypeName}",
+                                0,
+                            >
+                        >;`
                         : ""
                 }
                 ${
                     SubscriptionTypeName &&
                     collector.types.has(SubscriptionTypeName)
-                        ? `subscription: typeof ${SubscriptionTypeName}Selection;`
+                        ? `subscription: ReturnType<
+                            SLFN<
+                                T, 
+                                ${SubscriptionTypeName}SelectionFields & 
+                                    SelectionHelpers<
+                                        ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
+                                        ${SubscriptionTypeName}SelectionFields
+                                    >,
+                                "${SubscriptionTypeName}Selection",
+                                "${SubscriptionTypeName}",
+                                "${SubscriptionTypeName}",
+                                0,
+                            >
+                        >;`
                         : ""
                 }
             };
@@ -663,19 +868,27 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             function __client__ <
                 T extends object,
-                F extends _RootOperationSelectionFields>(
+                F extends _RootOperationSelectionFields<T>>(
                 this: any, 
                 s: (selection: F) => T
             ) {
                 const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
                 const selection: F = _makeRootOperationInput.bind(root)() as any;
                 const r = s(selection);
-                const result = new SelectionWrapper(undefined, undefined, r, root, undefined) as unknown as T;
-                Object.keys(r).forEach((key) => (result as T)[key as keyof T]);
+                const _result = new SelectionWrapper(undefined, undefined, undefined, undefined, r, root, undefined) as unknown as T;
+                Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+                const result = _result as {
+                    [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<
+                        ReturnType<T[k]>, "$lazy"
+                    > : Omit<
+                        T[k], "$lazy"
+                    >
+                };
+                type TR = typeof result;
                 
                 let headers: Record<string, string> | undefined = undefined;
                 const finalPromise = {
-                    then: (resolve: (value: T) => void, reject: (reason: any) => void) => {
+                    then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
                         root.execute(headers)
                             .then(() => {
                                 resolve(result);
@@ -702,7 +915,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             headers = { "${authConfig.headerName}": t };
                                         else headers = t;
 
-                                        return finalPromise as Promise<T>;
+                                        return finalPromise as Promise<TR>;
                                     });
                                 }
                                 if (typeof tokenOrPromise === "string") {
@@ -714,19 +927,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 headers = auth;
                             }
 
-                            return finalPromise as Promise<T>;
+                            return finalPromise as Promise<TR>;
                         };
                     },
                 });
 
-                return finalPromise as Promise<T> & {
+                return finalPromise as Promise<TR> & {
                     auth: (
                         auth: __AuthenticationArg__,
-                    ) => Promise<T>;
+                    ) => Promise<TR>;
                 };
                 `
                         : `
-                return finalPromise as Promise<T>;
+                return finalPromise as Promise<TR>;
                 `
                 }
             };
@@ -734,36 +947,39 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const __init__ = (options: {
                 ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
                 headers?: { [key: string]: string };
-                scalars?: { 
-                    DateTime?: (value: string) => Date,
-                    Date?: (value: string) => Date,
-                    Time?: (value: string) => Date,
-                    JSON?: (v: string) => any 
+                scalars?: {
+                    [key in keyof ScalarTypeMapDefault]?: (
+                        v: string,
+                    ) => ScalarTypeMapDefault[key];
+                } & {
+                    [key in keyof ScalarTypeMapWithCustom]?: (
+                        v: string,
+                    ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
                 ${
                     authConfig
                         ? `
                 if (typeof options.auth === "string") {
-                    OperationSelectionCollector[OPTIONS].headers = {
+                    RootOperation[OPTIONS].headers = {
                         "${authConfig.headerName}": options.auth,
                     };
                 } else if (options.auth) {
-                    OperationSelectionCollector[OPTIONS].headers = options.auth;
+                    RootOperation[OPTIONS].headers = options.auth;
                 }
                 `
                         : ""
                 }
 
                 if (options.headers) {
-                    OperationSelectionCollector[OPTIONS].headers = {
-                        ...OperationSelectionCollector[OPTIONS].headers,
+                    RootOperation[OPTIONS].headers = {
+                        ...RootOperation[OPTIONS].headers,
                         ...options.headers,
                     };
                 }
                 if (options.scalars) {
-                    OperationSelectionCollector[OPTIONS].scalars = {
-                        ...OperationSelectionCollector[OPTIONS].scalars,
+                    RootOperation[OPTIONS].scalars = {
+                        ...RootOperation[OPTIONS].scalars,
                         ...options.scalars,
                     };
                 }
