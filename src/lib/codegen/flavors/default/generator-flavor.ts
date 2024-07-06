@@ -717,12 +717,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             SLFN<
                                 T, 
                                 ReturnType<typeof make${QueryTypeName}SelectionInput>,
-                                "${QueryTypeName}",
                                 "${QueryTypeName}Selection",
                                 "${QueryTypeName}",
+                                "${QueryTypeName}",
                                 0,
-                                { $lazy: () => "T" },
-                                "$lazy"
                             >
                         >;`
                         : ""
@@ -737,12 +735,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         ReturnType<typeof make${MutationTypeName}SelectionInput>,
                                         ${MutationTypeName}SelectionFields
                                     >,
-                                "${MutationTypeName}",
                                 "${MutationTypeName}Selection",
                                 "${MutationTypeName}",
+                                "${MutationTypeName}",
                                 0,
-                                { $lazy: () => "T" },
-                                "$lazy"
                             >
                         >;`
                         : ""
@@ -758,12 +754,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
                                         ${SubscriptionTypeName}SelectionFields
                                     >,
-                                "${SubscriptionTypeName}",
                                 "${SubscriptionTypeName}Selection",
                                 "${SubscriptionTypeName}",
+                                "${SubscriptionTypeName}",
                                 0,
-                                { $lazy: () => "T" },
-                                "$lazy"
                             >
                         >;`
                         : ""
