@@ -887,11 +887,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const __init__ = (options: {
                 ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
                 headers?: { [key: string]: string };
-                scalars?: { 
-                    DateTime?: (value: string) => Date,
-                    Date?: (value: string) => Date,
-                    Time?: (value: string) => Date,
-                    JSON?: (v: string) => any 
+                scalars?: {
+                    [key in keyof ScalarTypeMapDefault]?: (
+                        v: string,
+                    ) => ScalarTypeMapDefault[key];
+                } & {
+                    [key in keyof ScalarTypeMapWithCustom]?: (
+                        v: string,
+                    ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
                 ${
