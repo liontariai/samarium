@@ -4,7 +4,24 @@ import { type TypeMeta } from "./meta";
  * Collects all recursively collected information during the code generation process.
  * This information is used to cut infinite loops in the code generation process.
  */
-export class Collector {
+export class Collector<
+    QT extends string | undefined = string | undefined,
+    MT extends string | undefined = string | undefined,
+    ST extends string | undefined = string | undefined,
+> {
+    public OperationTypeNames: (QT | MT | ST)[];
+    constructor(
+        public readonly QueryTypeName: QT,
+        public readonly MutationTypeName: MT,
+        public readonly SubscriptionTypeName: ST,
+    ) {
+        this.OperationTypeNames = [
+            QueryTypeName,
+            MutationTypeName,
+            SubscriptionTypeName,
+        ].filter((t) => t) as (QT | MT | ST)[];
+    }
+
     /**
      * The collected types.
      */

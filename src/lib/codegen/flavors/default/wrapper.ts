@@ -47,6 +47,8 @@ export class RootOperation {
             opName,
             opSelection,
         ] of this.rootCollector?.selections.entries()) {
+            if (opSelection[SLW_LAZY_FLAG]) continue;
+
             let rootSlw = opSelection;
             while (!rootSlw[SLW_IS_ROOT_TYPE]) {
                 if (!rootSlw[SLW_PARENT_SLW]) break;
@@ -174,7 +176,14 @@ export class OperationSelectionCollector {
     >();
     public registerSelection(
         id: string,
-        selection: SelectionWrapperImpl<string, string, string, number, any>,
+        selection: SelectionWrapperImpl<
+            string,
+            string,
+            string,
+            number,
+            any,
+            any
+        >,
     ) {
         this.selections.set(id, selection);
     }
@@ -198,7 +207,9 @@ export class OperationSelectionCollector {
         for (const [key, value] of [...this.selections.entries()].filter(
             ([k, v]) =>
                 renderOnlyTheseSelections.length === 0 ||
-                renderOnlyTheseSelections.includes(v),
+                renderOnlyTheseSelections.find(
+                    (r) => r[SLW_UID] === v[SLW_UID],
+                ),
         )) {
             const subPath = [...path, key];
             const {
@@ -292,34 +303,34 @@ export class OperationSelectionCollector {
         result = this.utilGet(result, path) as T;
 
         if (type && result && type in RootOperation[OPTIONS].scalars) {
-                let depth = 0;
+            let depth = 0;
             let finalResult = result instanceof Array ? [...result] : result;
 
-                while (result instanceof Array) {
-                    result = result[0];
-                    depth++;
+            while (result instanceof Array) {
+                result = result[0];
+                depth++;
+            }
+
+            const deepParse = (
+                res: any | any[],
+                depth: number,
+                parse: (v: string) => any,
+            ) => {
+                if (depth === 0) {
+                    return parse(res);
                 }
+                return res.map((rarr: any) =>
+                    deepParse(rarr, depth - 1, parse),
+                );
+            };
 
-                const deepParse = (
-                    res: any | any[],
-                    depth: number,
-                    parse: (v: string) => any,
-                ) => {
-                    if (depth === 0) {
-                        return parse(res);
-                    }
-                    return res.map((rarr: any) =>
-                        deepParse(rarr, depth - 1, parse),
-                    );
-                };
-
-                return deepParse(
-                    finalResult,
-                    depth,
+            return deepParse(
+                finalResult,
+                depth,
                 RootOperation[OPTIONS].scalars[
                     type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]
-                    ],
-                ) as T;
+                ],
+            ) as T;
         }
 
         return result as T;
@@ -338,6 +349,7 @@ export const SLW_VALUE = Symbol("SLW_VALUE");
 export const SLW_ARGS = Symbol("SLW_ARGS");
 export const SLW_ARGS_META = Symbol("SLW_ARGS_META");
 export const SLW_PARENT_SLW = Symbol("SLW_PARENT_SLW");
+export const SLW_LAZY_FLAG = Symbol("SLW_LAZY_FLAG");
 
 export const OP = Symbol("OP");
 export const ROOT_OP_COLLECTOR = Symbol("ROOT_OP_COLLECTOR");
@@ -388,6 +400,7 @@ export class SelectionWrapperImpl<
         any,
         any
     >;
+    [SLW_LAZY_FLAG]?: boolean;
 
     constructor(
         fieldName?: fieldName,
@@ -528,7 +541,37 @@ export class SelectionWrapper<
                 },
                 get: (target, prop) => {
                     if (prop === "$lazy") {
-                        return () => this;
+                        const that = this;
+                        function lazy(
+                            this: {
+                                parentSlw: SelectionWrapperImpl<
+                                    fieldName,
+                                    typeName,
+                                    typeNamePure,
+                                    typeArrDepth,
+                                    valueT,
+                                    argsT
+                                >;
+                                key: string;
+                            },
+                            args?: argsT,
+                        ) {
+                            const { parentSlw, key } = this;
+                            that[SLW_PARENT_SLW] = parentSlw;
+                            parentSlw[SLW_COLLECTOR]?.registerSelection(
+                                key,
+                                that,
+                            );
+
+                            that[SLW_ARGS] = {
+                                ...(that[SLW_ARGS] ?? {}),
+                                ...args,
+                            } as argsT;
+                            return that;
+                        }
+                        target[SLW_LAZY_FLAG] = true;
+                        lazy[SLW_LAZY_FLAG] = true;
+                        return lazy;
                     }
                     if (
                         prop === SLW_UID ||
@@ -543,6 +586,7 @@ export class SelectionWrapper<
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
                         prop === SLW_PARENT_SLW ||
+                        prop === SLW_LAZY_FLAG ||
                         prop === ROOT_OP_COLLECTOR ||
                         prop === SLW_PARENT_COLLECTOR ||
                         prop === SLW_COLLECTOR ||
@@ -564,6 +608,24 @@ export class SelectionWrapper<
                         return value;
                     }
                     if (prop === "then") {
+                        if (target[SLW_LAZY_FLAG]) {
+                            target[SLW_LAZY_FLAG] = false;
+                            target[ROOT_OP_COLLECTOR]!.registerSelection(
+                                target[SLW_FIELD_NAME]!,
+                                target,
+                            );
+                            return (resolve: (v: any) => any, reject: any) =>
+                                target[ROOT_OP_COLLECTOR]!.execute()
+                                    .catch(reject)
+                                    .then(() => {
+                                        resolve(
+                                            new Promise(() => {
+                                                resolve(this);
+                                            }),
+                                        );
+                                        target[SLW_LAZY_FLAG] = true;
+                                    });
+                        }
                         return this;
                     }
 
@@ -613,6 +675,8 @@ export class SelectionWrapper<
                             return slw;
                         } else if (slw instanceof SelectionWrapperImpl) {
                             return getResultDataForTarget(slw);
+                        } else if (slw[SLW_LAZY_FLAG]) {
+                            return slw;
                         }
 
                         return getResultDataForTarget(target);
@@ -631,6 +695,17 @@ export class SelectionWrapper<
                         }
                         if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
                             slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                        }
+                    }
+                    if (slw_value?.[String(prop)]?.[SLW_LAZY_FLAG]) {
+                        if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
+                            const lazyFn = slw_value[String(prop)];
+                            slw_value[String(prop)] = lazyFn.bind({
+                                parentSlw: target,
+                                key: String(prop),
+                            });
+                            slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                            slw_value[String(prop)][SLW_LAZY_FLAG] = true;
                         }
                     }
 
