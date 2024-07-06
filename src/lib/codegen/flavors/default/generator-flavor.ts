@@ -675,23 +675,20 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ${helperFunctions}
                 } as const;
             };
-            export const ${selectionFunctionName} = (<
-                T extends object
-            >() =>
-               (makeSLFN as SLFN<
-                    T,
+            export const ${selectionFunctionName} = (makeSLFN as SLFN<
+                    {},
                     ReturnType<typeof make${selectionFunctionName}Input>,
                     "${selectionFunctionName}",
                     "${this.typeName}",
                     "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                     ${this.typeMeta.isList ?? 0}
                 >)(
-                    ${`make${selectionFunctionName}Input`} as any,
+                    ${`make${selectionFunctionName}Input`},
                     "${selectionFunctionName}",
                     "${this.typeName}",
                     "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                     ${this.typeMeta.isList ?? 0}
-            ))();
+            );
         `;
         this.collector.addSelectionFunction(this.typeMeta, selectionFunction);
 
