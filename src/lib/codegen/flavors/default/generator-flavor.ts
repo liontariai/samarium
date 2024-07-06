@@ -8,7 +8,6 @@ import {
     type TypeMeta,
     type FieldMeta,
 } from "../../builder/meta";
-import type { GraphQLSchema } from "graphql";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -687,9 +686,20 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     >,
             `;
         }
+        const makeSelectionFunctionInputReturnTypeParts = new Map<
+            string,
+            string
+        >();
+        const isRootOperationType = this.collector.OperationTypeNames.includes(
+            this.typeName,
+        );
 
         const selectionFunction = `
-            export function make${selectionFunctionName}Input(this: any) {
+            export function make${selectionFunctionName}Input(this: any)${
+                isRootOperationType
+                    ? `: ReturnTypeFrom${selectionFunctionName}`
+                    : ""
+            } {
                 return {
                     ${this.typeMeta.fields
                         .map(
@@ -704,38 +714,48 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     ),
                                 ] as const,
                         )
-                        .map(([field, fieldSlfn]) =>
-                            this.collector.OperationTypeNames.includes(
-                                this.typeName,
-                            )
-                                ? `${fieldSlfn} as ReturnType<
-                                    SLFN<
-                                        {},
-                                        ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
-                                            field.type.name,
-                                        )}SelectionInput>,
-                                        "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
-                                        "${field.type.name}",
-                                        "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-                                            field.type.name,
-                                        )}",
-                                        ${field.type.isList ?? 0},
-                                        { 
-                                            $lazy: (
-                                                ${
-                                                    field.hasArgs
-                                                        ? `args: ${this.typeName}${field.name
-                                                              .slice(0, 1)
-                                                              .toUpperCase()}${field.name.slice(1)}Args`
-                                                        : ""
-                                                }
-                                            ) => Promise<"T">
-                                        },
-                                        "$lazy"
-                                    >
-                                >,`
-                                : `${fieldSlfn},`,
-                        )
+                        .map(([field, fieldSlfn]) => {
+                            if (isRootOperationType) {
+                                makeSelectionFunctionInputReturnTypeParts.set(
+                                    field.name,
+                                    `${
+                                        field.hasArgs
+                                            ? `(
+                                        args: ${this.typeName}${field.name
+                                            .slice(0, 1)
+                                            .toUpperCase()}${field.name.slice(1)}Args
+                                    ) =>`
+                                            : ""
+                                    } ReturnType<
+                                        SLFN<
+                                            {},
+                                            ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
+                                                field.type.name,
+                                            )}SelectionInput>,
+                                            "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
+                                            "${field.type.name}",
+                                            "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                                                field.type.name,
+                                            )}",
+                                            ${field.type.isList ?? 0},
+                                            { 
+                                                $lazy: (
+                                                    ${
+                                                        field.hasArgs
+                                                            ? `args: ${this.typeName}${field.name
+                                                                  .slice(0, 1)
+                                                                  .toUpperCase()}${field.name.slice(1)}Args`
+                                                            : ""
+                                                    }
+                                                ) => Promise<"T">
+                                            },
+                                            "$lazy"
+                                        >
+                                    >,`,
+                                );
+                            }
+                            return `${fieldSlfn},`;
+                        })
                         .join("\n")}
 
                     ${helperFunctions}
@@ -756,7 +776,28 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ${this.typeMeta.isList ?? 0}
             );
         `;
-        this.collector.addSelectionFunction(this.typeMeta, selectionFunction);
+        this.collector.addSelectionFunction(
+            this.typeMeta,
+            `${
+                isRootOperationType
+                    ? `
+            type ReturnTypeFrom${selectionFunctionName} = {
+                ${Array.from(makeSelectionFunctionInputReturnTypeParts)
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join("\n")}
+            } & {
+                $fragment: <F extends (this: any, ...args: any[]) => any>(
+                    f: F,
+                ) => (
+                    ...args: ArgumentsTypeFromFragment<F>
+                ) => ReturnTypeFromFragment<F>;
+                $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
+            };`
+                    : ""
+            }
+            ${selectionFunction}
+        `,
+        );
 
         return selectionFunctionName;
     }
@@ -793,11 +834,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? `mutation: ReturnType<
                             SLFN<
                                 T, 
-                                ${MutationTypeName}SelectionFields & 
-                                    SelectionHelpers<
-                                        ReturnType<typeof make${MutationTypeName}SelectionInput>,
-                                        ${MutationTypeName}SelectionFields
-                                    >,
+                                ReturnType<typeof make${MutationTypeName}SelectionInput>,
                                 "${MutationTypeName}Selection",
                                 "${MutationTypeName}",
                                 "${MutationTypeName}",
@@ -812,11 +849,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? `subscription: ReturnType<
                             SLFN<
                                 T, 
-                                ${SubscriptionTypeName}SelectionFields & 
-                                    SelectionHelpers<
-                                        ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
-                                        ${SubscriptionTypeName}SelectionFields
-                                    >,
+                                ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
                                 "${SubscriptionTypeName}Selection",
                                 "${SubscriptionTypeName}",
                                 "${SubscriptionTypeName}",
