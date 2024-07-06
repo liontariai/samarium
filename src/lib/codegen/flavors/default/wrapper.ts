@@ -1,7 +1,18 @@
 const Proxy = global.Proxy;
 Proxy.prototype = {};
 
+const OPTIONS = Symbol("OPTIONS");
 export class RootOperation {
+    public static [OPTIONS] = {
+        headers: {},
+        scalars: {
+            DateTime: (value: string) => new Date(value),
+            Date: (value: string) => new Date(value),
+            Time: (value: string) => new Date(value),
+            JSON: (value: string) => JSON.parse(value),
+        },
+    };
+
     private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
         path.reduce(
             (o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}),
@@ -20,30 +31,55 @@ export class RootOperation {
         type selection = ReturnType<
             typeof OperationSelectionCollector.prototype.renderSelections
         >;
-        const operations: { [key: string]: selection } = {};
+        const operations: {
+            [key: string]: {
+                selection: selection;
+                rootSlw: SelectionWrapperImpl<
+                    string,
+                    string,
+                    string,
+                    number,
+                    any
+                >;
+            };
+        } = {};
         for (const [
             opName,
             opSelection,
         ] of this.rootCollector?.selections.entries()) {
-            operations[opName] = opSelection[SLW_COLLECTOR]!.renderSelections([
-                opName,
-            ]);
+            if (opSelection[SLW_LAZY_FLAG]) continue;
+
+            let rootSlw = opSelection;
+            while (!rootSlw[SLW_IS_ROOT_TYPE]) {
+                if (!rootSlw[SLW_PARENT_SLW]) break;
+                rootSlw = rootSlw[SLW_PARENT_SLW]!;
+            }
+
+            const selection = rootSlw[SLW_COLLECTOR]!.renderSelections(
+                [opName],
+                {},
+                new Map(),
+                opSelection === rootSlw ? [] : [opSelection],
+            );
+
+            operations[opName] = {
+                selection,
+                rootSlw,
+            };
         }
 
         const ops = Object.entries(operations).reduce(
-            (acc, [opName, op]) => ({
+            (acc, [opName, { selection, rootSlw }]) => ({
                 ...acc,
                 [opName]: {
-                    query: `${this.rootCollector!.selections.get(opName)?.[
-                        SLW_IS_ROOT_TYPE
-                    ]?.toLowerCase()} ${opName} ${
-                        op.variableDefinitions.length
-                            ? `(${op.variableDefinitions.join(", ")})`
+                    query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${
+                        selection.variableDefinitions.length
+                            ? `(${selection.variableDefinitions.join(", ")})`
                             : ""
-                    } ${op.selection}
+                    } ${selection.selection}
                     `,
-                    variables: op.variables,
-                    fragments: op.usedFragments,
+                    variables: selection.variables,
+                    fragments: selection.usedFragments,
                 },
             }),
             {} as Record<
@@ -108,18 +144,7 @@ export class RootOperation {
     }
 }
 
-const OPTIONS = Symbol("OPTIONS");
 export class OperationSelectionCollector {
-    public static [OPTIONS] = {
-        headers: {},
-        scalars: {
-            DateTime: (value: string) => new Date(value),
-            Date: (value: string) => new Date(value),
-            Time: (value: string) => new Date(value),
-            JSON: (value: string) => JSON.parse(value),
-        },
-    };
-
     constructor(
         public readonly name?: string,
         public readonly parent?: OperationSelectionCollector,
@@ -131,8 +156,7 @@ export class OperationSelectionCollector {
     private executed = false;
     private operationResult: any | undefined = undefined;
     public async execute(
-        headers: Record<string, string> = OperationSelectionCollector[OPTIONS]
-            .headers,
+        headers: Record<string, string> = RootOperation[OPTIONS].headers,
     ) {
         if (!this.op) {
             throw new Error(
@@ -148,11 +172,18 @@ export class OperationSelectionCollector {
 
     public readonly selections = new Map<
         string,
-        SelectionWrapperImpl<string, string, any>
+        SelectionWrapperImpl<string, string, string, number, any>
     >();
     public registerSelection(
         id: string,
-        selection: SelectionWrapperImpl<string, string, any>,
+        selection: SelectionWrapperImpl<
+            string,
+            string,
+            string,
+            number,
+            any,
+            any
+        >,
     ) {
         this.selections.set(id, selection);
     }
@@ -161,12 +192,25 @@ export class OperationSelectionCollector {
         path: string[] = [],
         opVars: Record<string, any> = {},
         usedFragments: Map<string, string> = new Map(),
+        renderOnlyTheseSelections: SelectionWrapperImpl<
+            string,
+            string,
+            string,
+            number,
+            any
+        >[] = [],
     ) {
-        const result: Record<string, any> = {};
+        const result: Record<string, string | undefined> = {};
         const varDefs: string[] = [];
         const variables: Record<string, any> = {};
 
-        for (const [key, value] of this.selections.entries()) {
+        for (const [key, value] of [...this.selections.entries()].filter(
+            ([k, v]) =>
+                renderOnlyTheseSelections.length === 0 ||
+                renderOnlyTheseSelections.find(
+                    (r) => r[SLW_UID] === v[SLW_UID],
+                ),
+        )) {
             const subPath = [...path, key];
             const {
                 selection: fieldSelection,
@@ -218,13 +262,17 @@ export class OperationSelectionCollector {
             }
         }
         let rendered = "{ ";
-        for (const [key, value] of Object.entries(result)) {
-            const isSubSelection = value.toString().startsWith("{");
-            const isOnType = value.toString().startsWith("... on");
-            const isFragment = value.toString().startsWith("...");
+        for (const [key, value] of Object.entries(result).filter(
+            ([k, v]) => v !== undefined,
+        ) as [string, string][]) {
+            const keyIsFieldName =
+                value.startsWith(`${key} {`) || value.startsWith(`${key} (`);
+            const isSubSelection = value.startsWith("{");
+            const isOnType = value.startsWith("... on");
+            const isFragment = value.startsWith("...");
             if (key === value) {
                 rendered += `${key} `;
-            } else if (isOnType || isFragment) {
+            } else if (isOnType || isFragment || keyIsFieldName) {
                 rendered += `${value} `;
             } else {
                 rendered += `${key}${!isSubSelection ? ":" : ""} ${value} `;
@@ -241,10 +289,7 @@ export class OperationSelectionCollector {
 
     private utilGet = (obj: Record<string, any>, path: string[]) =>
         path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(
-        path: string[] = [],
-        typeName?: string,
-    ): T {
+    public getOperationResultPath<T>(path: string[] = [], type?: string): T {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
@@ -257,43 +302,35 @@ export class OperationSelectionCollector {
 
         result = this.utilGet(result, path) as T;
 
-        if (typeName && result) {
-            const type = typeName
-                .replaceAll("!", "")
-                .replaceAll("[", "")
-                .replaceAll("]", "");
+        if (type && result && type in RootOperation[OPTIONS].scalars) {
+            let depth = 0;
+            let finalResult = result instanceof Array ? [...result] : result;
 
-            if (type in OperationSelectionCollector[OPTIONS].scalars) {
-                let depth = 0;
-                let finalResult =
-                    result instanceof Array ? [...result] : result;
-
-                while (result instanceof Array) {
-                    result = result[0];
-                    depth++;
-                }
-
-                const deepParse = (
-                    res: any | any[],
-                    depth: number,
-                    parse: (v: string) => any,
-                ) => {
-                    if (depth === 0) {
-                        return parse(res);
-                    }
-                    return res.map((rarr: any) =>
-                        deepParse(rarr, depth - 1, parse),
-                    );
-                };
-
-                return deepParse(
-                    finalResult,
-                    depth,
-                    OperationSelectionCollector[OPTIONS].scalars[
-                        type as keyof (typeof OperationSelectionCollector)[typeof OPTIONS]["scalars"]
-                    ],
-                ) as T;
+            while (result instanceof Array) {
+                result = result[0];
+                depth++;
             }
+
+            const deepParse = (
+                res: any | any[],
+                depth: number,
+                parse: (v: string) => any,
+            ) => {
+                if (depth === 0) {
+                    return parse(res);
+                }
+                return res.map((rarr: any) =>
+                    deepParse(rarr, depth - 1, parse),
+                );
+            };
+
+            return deepParse(
+                finalResult,
+                depth,
+                RootOperation[OPTIONS].scalars[
+                    type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]
+                ],
+            ) as T;
         }
 
         return result as T;
@@ -303,12 +340,17 @@ export class OperationSelectionCollector {
 export const SLW_UID = Symbol("SLW_UID");
 export const SLW_FIELD_NAME = Symbol("SLW_FIELD_NAME");
 export const SLW_FIELD_TYPE = Symbol("SLW_FIELD_TYPE");
+export const SLW_FIELD_TYPENAME = Symbol("SLW_FIELD_TYPENAME");
+export const SLW_FIELD_ARR_DEPTH = Symbol("SLW_FIELD_ARR_DEPTH");
 export const SLW_IS_ROOT_TYPE = Symbol("SLW_IS_ROOT_TYPE");
 export const SLW_IS_ON_TYPE_FRAGMENT = Symbol("SLW_IS_ON_TYPE_FRAGMENT");
 export const SLW_IS_FRAGMENT = Symbol("SLW_IS_FRAGMENT");
 export const SLW_VALUE = Symbol("SLW_VALUE");
 export const SLW_ARGS = Symbol("SLW_ARGS");
 export const SLW_ARGS_META = Symbol("SLW_ARGS_META");
+export const SLW_PARENT_SLW = Symbol("SLW_PARENT_SLW");
+export const SLW_LAZY_FLAG = Symbol("SLW_LAZY_FLAG");
+
 export const OP = Symbol("OP");
 export const ROOT_OP_COLLECTOR = Symbol("ROOT_OP_COLLECTOR");
 export const SLW_PARENT_COLLECTOR = Symbol("SLW_PARENT_COLLECTOR");
@@ -320,6 +362,8 @@ export const SLW_RENDER_WITH_ARGS = Symbol("SLW_RENDER_WITH_ARGS");
 export class SelectionWrapperImpl<
     fieldName extends string,
     typeName extends string,
+    typeNamePure extends string,
+    typeArrDepth extends number,
     valueT extends any = any,
     argsT extends Record<string, any> | undefined = undefined,
 > {
@@ -337,6 +381,8 @@ export class SelectionWrapperImpl<
 
     [SLW_FIELD_NAME]?: fieldName;
     [SLW_FIELD_TYPE]?: typeName;
+    [SLW_FIELD_TYPENAME]?: typeNamePure;
+    [SLW_FIELD_ARR_DEPTH]?: typeArrDepth;
     [SLW_VALUE]?: valueT;
 
     [SLW_IS_ROOT_TYPE]?: "Query" | "Mutation" | "Subscription";
@@ -346,9 +392,21 @@ export class SelectionWrapperImpl<
     [SLW_ARGS]?: argsT;
     [SLW_ARGS_META]?: Record<string, string>;
 
+    [SLW_PARENT_SLW]?: SelectionWrapperImpl<
+        string,
+        string,
+        string,
+        number,
+        any,
+        any
+    >;
+    [SLW_LAZY_FLAG]?: boolean;
+
     constructor(
         fieldName?: fieldName,
         typeName?: typeName,
+        typeNamePure?: typeNamePure,
+        typeArrDepth?: typeArrDepth,
         value?: valueT,
         collector?: OperationSelectionCollector,
         parent?: OperationSelectionCollector | RootOperation,
@@ -357,6 +415,8 @@ export class SelectionWrapperImpl<
     ) {
         this[SLW_FIELD_NAME] = fieldName;
         this[SLW_FIELD_TYPE] = typeName;
+        this[SLW_FIELD_TYPENAME] = typeNamePure;
+        this[SLW_FIELD_ARR_DEPTH] = typeArrDepth;
         this[SLW_VALUE] = value;
 
         this[SLW_ARGS] = args;
@@ -422,12 +482,25 @@ export class SelectionWrapperImpl<
 export class SelectionWrapper<
     fieldName extends string,
     typeName extends string,
+    typeNamePure extends string,
+    typeArrDepth extends number,
     valueT extends any = any,
     argsT extends Record<string, any> | undefined = undefined,
-> extends Proxy<SelectionWrapperImpl<fieldName, typeName, valueT, argsT>> {
+> extends Proxy<
+    SelectionWrapperImpl<
+        fieldName,
+        typeName,
+        typeNamePure,
+        typeArrDepth,
+        valueT,
+        argsT
+    >
+> {
     constructor(
         fieldName?: fieldName,
         typeName?: typeName,
+        typeNamePure?: typeNamePure,
+        typeArrDepth?: typeArrDepth,
         value?: valueT,
         collector?: OperationSelectionCollector,
         parent?: OperationSelectionCollector,
@@ -435,9 +508,18 @@ export class SelectionWrapper<
         argsMeta?: Record<string, string>,
     ) {
         super(
-            new SelectionWrapperImpl<fieldName, typeName, valueT, argsT>(
+            new SelectionWrapperImpl<
                 fieldName,
                 typeName,
+                typeNamePure,
+                typeArrDepth,
+                valueT,
+                argsT
+            >(
+                fieldName,
+                typeName,
+                typeNamePure,
+                typeArrDepth,
                 value,
                 collector,
                 parent,
@@ -458,16 +540,53 @@ export class SelectionWrapper<
                     return Reflect.has(value ?? {}, prop);
                 },
                 get: (target, prop) => {
+                    if (prop === "$lazy") {
+                        const that = this;
+                        function lazy(
+                            this: {
+                                parentSlw: SelectionWrapperImpl<
+                                    fieldName,
+                                    typeName,
+                                    typeNamePure,
+                                    typeArrDepth,
+                                    valueT,
+                                    argsT
+                                >;
+                                key: string;
+                            },
+                            args?: argsT,
+                        ) {
+                            const { parentSlw, key } = this;
+                            that[SLW_PARENT_SLW] = parentSlw;
+                            parentSlw[SLW_COLLECTOR]?.registerSelection(
+                                key,
+                                that,
+                            );
+
+                            that[SLW_ARGS] = {
+                                ...(that[SLW_ARGS] ?? {}),
+                                ...args,
+                            } as argsT;
+                            return that;
+                        }
+                        target[SLW_LAZY_FLAG] = true;
+                        lazy[SLW_LAZY_FLAG] = true;
+                        return lazy;
+                    }
                     if (
                         prop === SLW_UID ||
                         prop === SLW_FIELD_NAME ||
                         prop === SLW_FIELD_TYPE ||
+                        prop === SLW_FIELD_TYPENAME ||
+                        prop === SLW_FIELD_ARR_DEPTH ||
                         prop === SLW_IS_ROOT_TYPE ||
                         prop === SLW_IS_ON_TYPE_FRAGMENT ||
                         prop === SLW_IS_FRAGMENT ||
                         prop === SLW_VALUE ||
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
+                        prop === SLW_PARENT_SLW ||
+                        prop === SLW_LAZY_FLAG ||
                         prop === ROOT_OP_COLLECTOR ||
                         prop === SLW_PARENT_COLLECTOR ||
                         prop === SLW_COLLECTOR ||
@@ -479,6 +598,8 @@ export class SelectionWrapper<
                             prop as keyof SelectionWrapperImpl<
                                 fieldName,
                                 typeName,
+                                typeNamePure,
+                                typeArrDepth,
                                 valueT
                             >
                         ];
@@ -487,6 +608,24 @@ export class SelectionWrapper<
                         return value;
                     }
                     if (prop === "then") {
+                        if (target[SLW_LAZY_FLAG]) {
+                            target[SLW_LAZY_FLAG] = false;
+                            target[ROOT_OP_COLLECTOR]!.registerSelection(
+                                target[SLW_FIELD_NAME]!,
+                                target,
+                            );
+                            return (resolve: (v: any) => any, reject: any) =>
+                                target[ROOT_OP_COLLECTOR]!.execute()
+                                    .catch(reject)
+                                    .then(() => {
+                                        resolve(
+                                            new Promise(() => {
+                                                resolve(this);
+                                            }),
+                                        );
+                                        target[SLW_LAZY_FLAG] = true;
+                                    });
+                        }
                         return this;
                     }
 
@@ -499,6 +638,8 @@ export class SelectionWrapper<
                             t: SelectionWrapperImpl<
                                 fieldName,
                                 typeName,
+                                typeNamePure,
+                                typeArrDepth,
                                 valueT,
                                 argsT
                             >,
@@ -507,7 +648,7 @@ export class SelectionWrapper<
                                 ROOT_OP_COLLECTOR
                             ]!.getOperationResultPath<valueT>(
                                 t[SLW_OP_PATH]?.split(".") ?? [],
-                                t[SLW_FIELD_TYPE],
+                                t[SLW_FIELD_TYPENAME],
                             );
                             return data;
                         };
@@ -534,6 +675,8 @@ export class SelectionWrapper<
                             return slw;
                         } else if (slw instanceof SelectionWrapperImpl) {
                             return getResultDataForTarget(slw);
+                        } else if (slw[SLW_LAZY_FLAG]) {
+                            return slw;
                         }
 
                         return getResultDataForTarget(target);
@@ -549,6 +692,20 @@ export class SelectionWrapper<
                                 String(prop),
                                 slw_value[String(prop)],
                             );
+                        }
+                        if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
+                            slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                        }
+                    }
+                    if (slw_value?.[String(prop)]?.[SLW_LAZY_FLAG]) {
+                        if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
+                            const lazyFn = slw_value[String(prop)];
+                            slw_value[String(prop)] = lazyFn.bind({
+                                parentSlw: target,
+                                key: String(prop),
+                            });
+                            slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                            slw_value[String(prop)][SLW_LAZY_FLAG] = true;
                         }
                     }
 
