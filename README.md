@@ -82,16 +82,16 @@ Not yet implemented GraphQL features:
 
 ### Planned utility features and their status:
 
-| Feature                                 | Supported | Description                                                                                                                                                                       |
-| --------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication                          | ✅        | Provide a way to authenticate the requests.                                                                                                                                       |
-| Custom scalar types                     | ✅        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code. (see https://github.com/liontariai/samarium/pull/3 for more info) |
-| Lazy Queries                            | ❌        | Currently queries are sent directly, when the operation function is awaited.                                                                                                      |
-| Lazy Mutations                          | ❌        | Currently mutations are sent directly, when the operation function is awaited.                                                                                                    |
-| Shortcuts for selections                | ✅        | Provide helper functions to select all or specific fields of a type without writing them all out in the selection.                                                                |
-| Combine separatly defined operations    | ❌        | Combine separatly defined operations into one request.                                                                                                                            |
-| Combine multiple apis into one request  | ❌        | Combine multiple apis into one request.                                                                                                                                           |
-| Resolve dependencies within one request | ❌        | Resolve dependencies within one request. So that the result of one operation can be used in another.                                                                              |
+| Feature                                 | Supported | Description                                                                                                                                                                                                                        |
+| --------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication                          | ✅        | Provide a way to authenticate the requests.                                                                                                                                                                                        |
+| Custom scalar types                     | ✅        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code. (see https://github.com/liontariai/samarium/pull/3 for more info)                                                  |
+| Lazy Queries                            | ✅        | Queries can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10   |
+| Lazy Mutations                          | ✅        | Mutations can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10 |
+| Shortcuts for selections                | ✅        | Provide helper functions to select all or specific fields of a type without writing them all out in the selection.                                                                                                                 |
+| Combine separatly defined operations    | ❌        | Combine separatly defined operations into one request.                                                                                                                                                                             |
+| Combine multiple apis into one request  | ❌        | Combine multiple apis into one request.                                                                                                                                                                                            |
+| Resolve dependencies within one request | ❌        | Resolve dependencies within one request. So that the result of one operation can be used in another.                                                                                                                               |
 
 ## Support the project
 
