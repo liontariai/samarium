@@ -699,16 +699,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     }
 
     public static makeRootOperationFunction(
-        schema: GraphQLSchema,
         collector: Collector,
         authConfig?: {
             headerName: string;
         },
     ): string {
         // get the root operation types
-        const QueryTypeName = schema.getQueryType()?.name;
-        const MutationTypeName = schema.getMutationType()?.name;
-        const SubscriptionTypeName = schema.getSubscriptionType()?.name;
+        const QueryTypeName = collector.QueryTypeName;
+        const MutationTypeName = collector.MutationTypeName;
+        const SubscriptionTypeName = collector.SubscriptionTypeName;
 
         const rootOperationFunction = `
             export type _RootOperationSelectionFields<T extends object> = {

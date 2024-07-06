@@ -30,7 +30,15 @@ export class Generator {
             headerName: string;
         };
     }): Promise<string> {
-        const collector = new Collector();
+        const QueryTypeName = schema.getQueryType()?.name;
+        const MutationTypeName = schema.getMutationType()?.name;
+        const SubscriptionTypeName = schema.getSubscriptionType()?.name;
+
+        const collector = new Collector(
+            QueryTypeName,
+            MutationTypeName,
+            SubscriptionTypeName,
+        );
         gatherMeta(schema, options, collector);
 
         // Generate selection types
@@ -78,11 +86,7 @@ export class Generator {
                     ([type]) => !type.isScalar && !type.isEnum && !type.isInput,
                 )
                 .map(([_, code]) => code),
-            this.Codegen.makeRootOperationFunction(
-                schema,
-                collector,
-                authConfig,
-            ),
+            this.Codegen.makeRootOperationFunction(collector, authConfig),
         ].join("\n");
 
         const prettyCode = await prettier.format(code, {
