@@ -8,7 +8,6 @@ import {
     type TypeMeta,
     type FieldMeta,
 } from "../../builder/meta";
-import type { GraphQLSchema } from "graphql";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -793,11 +792,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? `mutation: ReturnType<
                             SLFN<
                                 T, 
-                                ${MutationTypeName}SelectionFields & 
-                                    SelectionHelpers<
-                                        ReturnType<typeof make${MutationTypeName}SelectionInput>,
-                                        ${MutationTypeName}SelectionFields
-                                    >,
+                                ReturnType<typeof make${MutationTypeName}SelectionInput>,
                                 "${MutationTypeName}Selection",
                                 "${MutationTypeName}",
                                 "${MutationTypeName}",
@@ -812,11 +807,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? `subscription: ReturnType<
                             SLFN<
                                 T, 
-                                ${SubscriptionTypeName}SelectionFields & 
-                                    SelectionHelpers<
-                                        ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
-                                        ${SubscriptionTypeName}SelectionFields
-                                    >,
+                                ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
                                 "${SubscriptionTypeName}Selection",
                                 "${SubscriptionTypeName}",
                                 "${SubscriptionTypeName}",
