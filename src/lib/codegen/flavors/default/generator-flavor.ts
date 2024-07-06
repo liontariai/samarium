@@ -228,7 +228,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     >
                 >
                 : ToTArrayWithDepth<
-                {
+                    {
                         [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                             infer FN,
                             infer TN,
@@ -696,12 +696,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             (field) =>
                                 [
                                     field,
-                            this.makeSelectionFunctionInputObjectValueForField(
-                                field,
+                                    this.makeSelectionFunctionInputObjectValueForField(
+                                        field,
                                         this.typeMeta.isInput
                                             ? []
                                             : [this.typeName],
-                            ),
+                                    ),
                                 ] as const,
                         )
                         .map(([field, fieldSlfn]) =>
@@ -878,7 +878,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const _result = new SelectionWrapper(undefined, undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                 const result = _result as {
-                    [k in keyof T]: Omit<T[k], "$lazy">;
+                    [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<
+                        ReturnType<T[k]>, "$lazy"
+                    > : Omit<
+                        T[k], "$lazy"
+                    >
                 };
                 type TR = typeof result;
                 
