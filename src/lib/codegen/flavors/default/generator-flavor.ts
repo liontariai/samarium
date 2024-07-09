@@ -761,19 +761,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ${helperFunctions}
                 } as const;
             };
-            export const ${selectionFunctionName} = (makeSLFN as SLFN<
-                    {},
-                    ReturnType<typeof make${selectionFunctionName}Input>,
-                    "${selectionFunctionName}",
-                    "${this.typeName}",
-                    "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
-                    ${this.typeMeta.isList ?? 0}
-                >)(
-                    ${`make${selectionFunctionName}Input`},
-                    "${selectionFunctionName}",
-                    "${this.typeName}",
-                    "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
-                    ${this.typeMeta.isList ?? 0}
+            export const ${selectionFunctionName} = makeSLFN(
+                ${`make${selectionFunctionName}Input`},
+                "${selectionFunctionName}",
+                "${this.typeName}",
+                "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                ${this.typeMeta.isList ?? 0}
             );
         `;
         this.collector.addSelectionFunction(
@@ -814,51 +807,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const SubscriptionTypeName = collector.SubscriptionTypeName;
 
         const rootOperationFunction = `
-            export type _RootOperationSelectionFields<T extends object> = {
-                ${
-                    QueryTypeName && collector.types.has(QueryTypeName)
-                        ? `query: ReturnType<
-                            SLFN<
-                                T, 
-                                ReturnType<typeof make${QueryTypeName}SelectionInput>,
-                                "${QueryTypeName}Selection",
-                                "${QueryTypeName}",
-                                "${QueryTypeName}",
-                                0,
-                            >
-                        >;`
-                        : ""
-                }
-                ${
-                    MutationTypeName && collector.types.has(MutationTypeName)
-                        ? `mutation: ReturnType<
-                            SLFN<
-                                T, 
-                                ReturnType<typeof make${MutationTypeName}SelectionInput>,
-                                "${MutationTypeName}Selection",
-                                "${MutationTypeName}",
-                                "${MutationTypeName}",
-                                0,
-                            >
-                        >;`
-                        : ""
-                }
-                ${
-                    SubscriptionTypeName &&
-                    collector.types.has(SubscriptionTypeName)
-                        ? `subscription: ReturnType<
-                            SLFN<
-                                T, 
-                                ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
-                                "${SubscriptionTypeName}Selection",
-                                "${SubscriptionTypeName}",
-                                "${SubscriptionTypeName}",
-                                0,
-                            >
-                        >;`
-                        : ""
-                }
-            };
             export function _makeRootOperationInput(this: any) {
                 return {
                     ${
@@ -901,7 +849,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             function __client__ <
                 T extends object,
-                F extends _RootOperationSelectionFields<T>>(
+                F extends ReturnType<typeof _makeRootOperationInput>>(
                 this: any, 
                 s: (selection: F) => T
             ) {
