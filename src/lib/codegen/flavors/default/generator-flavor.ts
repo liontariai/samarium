@@ -653,6 +653,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             );
         }
 
+        const typeHasScalars = this.typeMeta.fields.some(
+            (f) => f.type.isScalar || f.type.isEnum,
+        );
+
         let helperFunctions = "";
         if (this.typeMeta.isUnion) {
             helperFunctions = `
@@ -678,13 +682,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     fieldName: "",
                     isFragment: f.name,
                 }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
+            ${
+                typeHasScalars
+                    ? `
             $scalars: () =>
                 selectScalars(
                         make${selectionFunctionName}Input.bind(this)(),
                     ) as SLWsFromSelection<
                         ReturnType<typeof make${selectionFunctionName}Input>
                     >,
-            `;
+            `
+                    : ""
+            }`;
         }
         const makeSelectionFunctionInputReturnTypeParts = new Map<
             string,
@@ -784,7 +793,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ) => (
                     ...args: ArgumentsTypeFromFragment<F>
                 ) => ReturnTypeFromFragment<F>;
+                ${
+                    typeHasScalars
+                        ? `
                 $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
+                `
+                        : ""
+                }
             };`
                     : ""
             }
