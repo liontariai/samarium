@@ -78,7 +78,7 @@ export class Generator {
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             ...[...collector.selectionTypes.entries()]
-                .filter(([type]) => !type.isScalar && !type.isEnum)
+                .filter(([type]) => type.isInput)
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             ...[...collector.selectionFunctions.entries()]
