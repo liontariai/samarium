@@ -1,3 +1,5 @@
+import type { DirectiveLocation } from "graphql";
+
 export type Maybe<T> = null | undefined | T;
 export enum Operation {
     Query = "query",
@@ -27,6 +29,8 @@ export interface RootFieldMeta {
 }
 export interface SchemaMeta {
     types: TypeMeta[];
+    directives: DirectiveMeta[];
+
     query: RootFieldMeta[];
     mutation: RootFieldMeta[];
     subscription: RootFieldMeta[];
@@ -70,4 +74,13 @@ export interface TypeMeta {
     enumValues: EnumValueMeta[];
     inputFields: ArgumentMeta[];
     ofType?: TypeMeta;
+
+    isDirective?: DirectiveMeta;
+}
+
+export interface DirectiveMeta {
+    name: string;
+    description: Maybe<string>;
+    locations: DirectiveLocation[];
+    args: ArgumentMeta[];
 }

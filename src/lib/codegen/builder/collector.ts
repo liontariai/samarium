@@ -1,3 +1,4 @@
+import type { DirectiveMeta } from "../types/meta";
 import { type TypeMeta } from "./meta";
 
 /**
@@ -93,6 +94,24 @@ export class Collector<
     }
     public getArgumentMeta(typeName: string): string {
         return this._argumentMeta.get(typeName)!;
+    }
+
+    /**
+     * Collect generated code for a given type.
+     * In this case, the generated Directive types.
+     */
+    private _directivesFunctions: Map<DirectiveMeta, string> = new Map();
+    get directivesFunctions(): Map<DirectiveMeta, string> {
+        return this._directivesFunctions;
+    }
+    public addDirectiveFunction(meta: DirectiveMeta, code: string): void {
+        this._directivesFunctions.set(meta, code);
+    }
+    public hasDirectiveFunction(meta: DirectiveMeta): boolean {
+        return this._directivesFunctions.has(meta);
+    }
+    public getDirectiveFunction(meta: DirectiveMeta): string {
+        return this._directivesFunctions.get(meta)!;
     }
 
     /**

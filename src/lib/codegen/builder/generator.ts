@@ -1,5 +1,5 @@
 import prettier from "prettier";
-import { GraphQLSchema } from "graphql";
+import { DirectiveLocation, GraphQLSchema } from "graphql";
 import { type CodegenOptions, gatherMeta } from "./meta";
 import { Collector } from "./collector";
 
@@ -52,9 +52,29 @@ export class Generator {
             if (!typeMeta.isInput) continue;
             new this.Codegen(typeName, collector, options).makeSelectionType();
         }
+        // Generate directives
+        for (const [typeName, typeMeta] of collector.types.entries()) {
+            if (
+                !typeMeta.isDirective?.locations.some((l) =>
+                    [
+                        DirectiveLocation.FIELD,
+                        DirectiveLocation.FRAGMENT_SPREAD,
+                        DirectiveLocation.INLINE_FRAGMENT,
+                    ].includes(l),
+                )
+            )
+                continue;
+            new this.Codegen(typeName, collector, options).makeDirective();
+        }
+
         // Generate selection types for all types
         for (const [typeName, typeMeta] of collector.types.entries()) {
-            if (typeMeta.isScalar || typeMeta.isInput || typeMeta.isEnum)
+            if (
+                typeMeta.isScalar ||
+                typeMeta.isInput ||
+                typeMeta.isEnum ||
+                typeMeta.isDirective
+            )
                 continue;
             new this.Codegen(typeName, collector, options).makeSelectionType();
             new this.Codegen(
@@ -86,6 +106,9 @@ export class Generator {
                     ([type]) => !type.isScalar && !type.isEnum && !type.isInput,
                 )
                 .map(([_, code]) => code),
+            ...[...collector.directivesFunctions.entries()].map(
+                ([_, code]) => code,
+            ),
             this.Codegen.makeRootOperationFunction(collector, authConfig),
         ].join("\n");
 
