@@ -216,15 +216,34 @@ export class OperationSelectionCollector {
                 selection: fieldSelection,
                 variableDefinitions: fieldVarDefs,
                 variables: fieldVars,
+
+                directive: directiveRendered,
             } = value[SLW_RENDER_WITH_ARGS](opVars);
 
             Object.assign(variables, fieldVars);
             Object.assign(opVars, fieldVars);
             varDefs.push(...fieldVarDefs);
+
+            if (directiveRendered) {
+                const {
+                    variableDefinitions: directiveVarDefs,
+                    variables: directiveVars,
+                } = directiveRendered;
+
+                varDefs.push(...directiveVarDefs);
+                Object.assign(variables, directiveVars);
+                Object.assign(opVars, directiveVars);
+            }
+
             value[SLW_REGISTER_PATH](subPath);
 
             if (value[SLW_PARENT_COLLECTOR] === undefined) {
-                result[key] = fieldSelection;
+                if (directiveRendered) {
+                    result[key] =
+                        `${fieldSelection} ${directiveRendered.rendered}`;
+                } else {
+                    result[key] = fieldSelection;
+                }
             } else if (
                 value[SLW_COLLECTOR] instanceof OperationSelectionCollector
             ) {
@@ -239,11 +258,23 @@ export class OperationSelectionCollector {
                 );
 
                 if (value[SLW_IS_ON_TYPE_FRAGMENT]) {
-                    result[key] =
-                        `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
+                    if (directiveRendered) {
+                        result[key] =
+                            `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${directiveRendered.rendered} ${subSelection}`;
+                    } else {
+                        result[key] =
+                            `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
+                    }
                 } else if (value[SLW_IS_FRAGMENT]) {
                     const fragmentName = `${key}_${subVarDefs.map((v) => v.split(":")[0].slice(1)).join("_")}`;
-                    result[key] = `...${fragmentName}`;
+
+                    if (directiveRendered) {
+                        result[key] =
+                            `...${fragmentName} ${directiveRendered.rendered}`;
+                    } else {
+                        result[key] = `...${fragmentName}`;
+                    }
+
                     const fragment = `fragment ${fragmentName} on ${value[SLW_FIELD_TYPE]} ${subSelection}`;
                     if (!usedFragments.has(fragmentName)) {
                         usedFragments.set(fragmentName, fragment);
@@ -253,7 +284,12 @@ export class OperationSelectionCollector {
                         );
                     }
                 } else {
-                    result[key] = `${fieldSelection} ${subSelection}`;
+                    if (directiveRendered) {
+                        result[key] =
+                            `${fieldSelection} ${directiveRendered.rendered} ${subSelection}`;
+                    } else {
+                        result[key] = `${fieldSelection} ${subSelection}`;
+                    }
                 }
 
                 Object.assign(variables, subVars);
@@ -348,6 +384,9 @@ export const SLW_IS_FRAGMENT = Symbol("SLW_IS_FRAGMENT");
 export const SLW_VALUE = Symbol("SLW_VALUE");
 export const SLW_ARGS = Symbol("SLW_ARGS");
 export const SLW_ARGS_META = Symbol("SLW_ARGS_META");
+export const SLW_DIRECTIVE = Symbol("SLW_DIRECTIVE");
+export const SLW_DIRECTIVE_ARGS = Symbol("SLW_DIRECTIVE_ARGS");
+export const SLW_DIRECTIVE_ARGS_META = Symbol("SLW_DIRECTIVE_ARGS_META");
 export const SLW_PARENT_SLW = Symbol("SLW_PARENT_SLW");
 export const SLW_LAZY_FLAG = Symbol("SLW_LAZY_FLAG");
 
@@ -391,6 +430,9 @@ export class SelectionWrapperImpl<
 
     [SLW_ARGS]?: argsT;
     [SLW_ARGS_META]?: Record<string, string>;
+    [SLW_DIRECTIVE]?: string;
+    [SLW_DIRECTIVE_ARGS]?: Record<string, any>;
+    [SLW_DIRECTIVE_ARGS_META]?: Record<string, string>;
 
     [SLW_PARENT_SLW]?: SelectionWrapperImpl<
         string,
@@ -441,10 +483,10 @@ export class SelectionWrapperImpl<
         if (!this[SLW_OP_PATH]) this[SLW_OP_PATH] = path.join(".");
     }
     [SLW_RENDER_WITH_ARGS](opVars: Record<string, any> = {}) {
-        if (this[SLW_ARGS]) {
-            const args = this[SLW_ARGS];
-            const argsMeta = this[SLW_ARGS_META]!;
-
+        const renderArgsString = (
+            args: Record<string, any>,
+            argsMeta: Record<string, string>,
+        ) => {
             const argToVarMap: Record<string, string> = {};
             let argsString = "(";
             for (const key of Object.keys(args)) {
@@ -463,6 +505,47 @@ export class SelectionWrapperImpl<
                 argsString += `${key}: $${varName} `;
             }
             argsString += ")";
+            return { argsString, argToVarMap };
+        };
+
+        const directiveRender = {
+            rendered: undefined as string | undefined,
+            variables: {} as Record<string, any>,
+            variableDefinitions: [] as string[],
+        };
+        if (this[SLW_DIRECTIVE]) {
+            const directive = this[SLW_DIRECTIVE];
+
+            if (this[SLW_DIRECTIVE_ARGS]) {
+                const args = this[SLW_DIRECTIVE_ARGS];
+                const argsMeta = this[SLW_DIRECTIVE_ARGS_META]!;
+
+                const { argsString, argToVarMap } = renderArgsString(
+                    args,
+                    argsMeta,
+                );
+
+                directiveRender.rendered = `@${directive}${Object.keys(args).length ? argsString : ""}`;
+                directiveRender.variables = args;
+                directiveRender.variableDefinitions = Object.keys(args).map(
+                    (key) => {
+                        const varName = argToVarMap[key] ?? key;
+                        return `$${varName}: ${argsMeta[key]}`;
+                    },
+                );
+            } else {
+                directiveRender.rendered = `@${directive}`;
+            }
+        }
+
+        if (this[SLW_ARGS]) {
+            const args = this[SLW_ARGS];
+            const argsMeta = this[SLW_ARGS_META]!;
+
+            const { argsString, argToVarMap } = renderArgsString(
+                args,
+                argsMeta,
+            );
             return {
                 selection: `${this[SLW_FIELD_NAME]}${Object.keys(args).length ? argsString : ""}`,
                 variables: args,
@@ -470,12 +553,18 @@ export class SelectionWrapperImpl<
                     const varName = argToVarMap[key] ?? key;
                     return `$${varName}: ${argsMeta[key]}`;
                 }),
+
+                directive: directiveRender.rendered
+                    ? directiveRender
+                    : undefined,
             };
         }
         return {
             selection: this[SLW_FIELD_NAME],
             variables: {},
             variableDefinitions: [] as string[],
+
+            directive: directiveRender.rendered ? directiveRender : undefined,
         };
     }
 }
@@ -585,6 +674,9 @@ export class SelectionWrapper<
                         prop === SLW_VALUE ||
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
+                        prop === SLW_DIRECTIVE ||
+                        prop === SLW_DIRECTIVE_ARGS ||
+                        prop === SLW_DIRECTIVE_ARGS_META ||
                         prop === SLW_PARENT_SLW ||
                         prop === SLW_LAZY_FLAG ||
                         prop === ROOT_OP_COLLECTOR ||
