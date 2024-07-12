@@ -72,26 +72,23 @@ Implemented GraphQL features:
 | Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in the order they are defined.                                                                      |
 | ... on Type         | ✅        | Inline fragments on Union types. (see https://github.com/liontariai/samarium/pull/5 for an example)                                                                                                                                         |
 | Fragments           | ✅        | Fragments are supported. As implicit and explicit fragments, also parameterized fragments (see https://github.com/graphql/graphql-spec/issues/204) are supported. ( see https://github.com/liontariai/samarium/pull/6 for more information) |
+| Directives          | ✅        | (Client) Directives are supported. Use the `$directives` helper functions and wrap your selected field.                                                                                                                                     |
 
 Not yet implemented GraphQL features:
 
 | Feature       | Supported | Description                      |
 | ------------- | --------- | -------------------------------- |
-| Directives    | ❌        | Directives are not supported.    |
 | Subscriptions | ❌        | Subscriptions are not supported. |
 
-### Planned utility features and their status:
+### Utility features:
 
-| Feature                                 | Supported | Description                                                                                                                                                                                                                        |
-| --------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication                          | ✅        | Provide a way to authenticate the requests.                                                                                                                                                                                        |
-| Custom scalar types                     | ✅        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code. (see https://github.com/liontariai/samarium/pull/3 for more info)                                                  |
-| Lazy Queries                            | ✅        | Queries can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10   |
-| Lazy Mutations                          | ✅        | Mutations can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10 |
-| Shortcuts for selections                | ✅        | Provide helper functions to select all or specific fields of a type without writing them all out in the selection.                                                                                                                 |
-| Combine separatly defined operations    | ❌        | Combine separatly defined operations into one request.                                                                                                                                                                             |
-| Combine multiple apis into one request  | ❌        | Combine multiple apis into one request.                                                                                                                                                                                            |
-| Resolve dependencies within one request | ❌        | Resolve dependencies within one request. So that the result of one operation can be used in another.                                                                                                                               |
+| Feature                  | Supported | Description                                                                                                                                                                                                                        |
+| ------------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication           | ✅        | Provide a way to authenticate the requests.                                                                                                                                                                                        |
+| Custom scalar types      | ✅        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code. (see https://github.com/liontariai/samarium/pull/3 for more info)                                                  |
+| Lazy Queries             | ✅        | Queries can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10   |
+| Lazy Mutations           | ✅        | Mutations can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10 |
+| Shortcuts for selections | ✅        | Provide helper functions to select all or specific fields of a type without writing them all out in the selection.                                                                                                                 |
 
 ## Support the project
 
