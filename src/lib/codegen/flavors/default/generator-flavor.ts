@@ -8,6 +8,7 @@ import {
     type TypeMeta,
     type FieldMeta,
 } from "../../builder/meta";
+import { DirectiveLocation } from "graphql";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -422,7 +423,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             );
                         }
 
-                        return `${description}${argKey}: ${argType};`;
+                        return `${arg.description ? `/** ${arg.description ?? `${argKey}`} */` : ""}
+                        ${argKey}: ${argType};`;
                     })
                     .join(" ");
                 const argsType = `{ ${argsTypeBody} }`;
@@ -439,7 +441,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         };
 
         const description = field.description
-            ? `/** ${field.description} */\n`
+            ? `/* ${field.description} */\n`
             : "";
         if (field.type.isScalar || field.type.isEnum) {
             let selectionType =
@@ -496,6 +498,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     }
 
     public makeSelectionType(): string {
+        if (this.typeMeta.isDirective) {
+            return "";
+        }
+
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
             return this.makeSelectionTypeInputValueForFieldWrapperType(
                 this.typeName,
@@ -631,6 +637,82 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         }
     }
 
+    public makeDirective() {
+        if (!this.typeMeta.isDirective) {
+            return "";
+        }
+
+        const directiveFunctionName = `_directive_${this.typeMeta.isDirective.name}`;
+
+        if (this.collector.hasDirectiveFunction(this.typeMeta.isDirective)) {
+            return directiveFunctionName;
+        }
+
+        const argsTypeName = `${this.typeName}Args`;
+        if (!this.collector.hasArgumentType(argsTypeName)) {
+            const argsTypeBody = this.typeMeta.isDirective.args
+                .map((arg) => {
+                    const isScalar = arg.type.isScalar;
+                    const isEnum = arg.type.isEnum;
+                    const isInput = arg.type.isInput;
+                    const argKey = `${arg.name}${arg.type.isNonNull ? "" : "?"}`;
+
+                    let argType = "any";
+                    if (isScalar) {
+                        argType =
+                            this.ScalarTypeMap.get(
+                                arg.type.name.replaceAll("!", ""),
+                            ) ?? "any";
+                    } else if (isInput || isEnum) {
+                        argType = this.originalTypeNameToTypescriptTypeName(
+                            arg.type.name,
+                        );
+                    }
+
+                    return `
+                /** ${arg.description ?? `${argKey}`} */
+                ${argKey}: ${argType};`;
+                })
+                .join(" ");
+
+            this.collector.addArgumentType(
+                argsTypeName,
+                `export type ${argsTypeName} = { ${argsTypeBody} };`,
+            );
+        }
+        if (!this.collector.hasArgumentMeta(argsTypeName)) {
+            const argsMetaBody = this.typeMeta.isDirective.args
+                .map((arg) => {
+                    return `${arg.name}: "${arg.type.name}",`;
+                })
+                .join(" ");
+            const argsMeta = `{ ${argsMetaBody} }`;
+            this.collector.addArgumentMeta(
+                argsTypeName,
+                `export const ${argsTypeName}Meta = ${argsMeta} as const;`,
+            );
+        }
+
+        const directiveFunction = `
+            export const ${directiveFunctionName} = (
+                args: ${argsTypeName}
+            ) => <F>(
+                f: F
+            ) => {
+                (f as any)[SLW_DIRECTIVE] = "${this.typeMeta.isDirective.name}";
+                (f as any)[SLW_DIRECTIVE_ARGS] = args;
+                (f as any)[SLW_DIRECTIVE_ARGS_META] = ${argsTypeName}Meta;
+                return f;
+            }
+        `;
+        this.collector.addDirectiveFunction(
+            this.typeMeta.isDirective,
+            directiveFunction,
+        );
+
+        return directiveFunctionName;
+    }
+
     public makeSelectionFunction(): string {
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
             return `new SelectionWrapper(
@@ -652,6 +734,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 selectionFunctionName,
             );
         }
+
+        const typeHasScalars = this.typeMeta.fields.some(
+            (f) => f.type.isScalar || f.type.isEnum,
+        );
 
         let helperFunctions = "";
         if (this.typeMeta.isUnion) {
@@ -678,13 +764,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     fieldName: "",
                     isFragment: f.name,
                 }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
+            ${
+                typeHasScalars
+                    ? `
             $scalars: () =>
                 selectScalars(
                         make${selectionFunctionName}Input.bind(this)(),
                     ) as SLWsFromSelection<
                         ReturnType<typeof make${selectionFunctionName}Input>
                     >,
-            `;
+            `
+                    : ""
+            }`;
         }
         const makeSelectionFunctionInputReturnTypeParts = new Map<
             string,
@@ -761,19 +852,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ${helperFunctions}
                 } as const;
             };
-            export const ${selectionFunctionName} = (makeSLFN as SLFN<
-                    {},
-                    ReturnType<typeof make${selectionFunctionName}Input>,
-                    "${selectionFunctionName}",
-                    "${this.typeName}",
-                    "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
-                    ${this.typeMeta.isList ?? 0}
-                >)(
-                    ${`make${selectionFunctionName}Input`},
-                    "${selectionFunctionName}",
-                    "${this.typeName}",
-                    "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
-                    ${this.typeMeta.isList ?? 0}
+            export const ${selectionFunctionName} = makeSLFN(
+                ${`make${selectionFunctionName}Input`},
+                "${selectionFunctionName}",
+                "${this.typeName}",
+                "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                ${this.typeMeta.isList ?? 0}
             );
         `;
         this.collector.addSelectionFunction(
@@ -791,7 +875,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ) => (
                     ...args: ArgumentsTypeFromFragment<F>
                 ) => ReturnTypeFromFragment<F>;
+                ${
+                    typeHasScalars
+                        ? `
                 $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
+                `
+                        : ""
+                }
             };`
                     : ""
             }
@@ -813,52 +903,32 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const MutationTypeName = collector.MutationTypeName;
         const SubscriptionTypeName = collector.SubscriptionTypeName;
 
+        const directives = [...collector.types.values()]
+            .filter((t) =>
+                t.isDirective?.locations.some((l) =>
+                    [
+                        DirectiveLocation.FIELD,
+                        DirectiveLocation.FRAGMENT_SPREAD,
+                        DirectiveLocation.INLINE_FRAGMENT,
+                    ].includes(l),
+                ),
+            )
+            .map((t) => {
+                return `"${t.isDirective!.name}": ${new GeneratorSelectionTypeFlavorDefault(
+                    t.name,
+                    collector,
+                    {},
+                ).makeDirective()}`;
+            });
+
         const rootOperationFunction = `
-            export type _RootOperationSelectionFields<T extends object> = {
-                ${
-                    QueryTypeName && collector.types.has(QueryTypeName)
-                        ? `query: ReturnType<
-                            SLFN<
-                                T, 
-                                ReturnType<typeof make${QueryTypeName}SelectionInput>,
-                                "${QueryTypeName}Selection",
-                                "${QueryTypeName}",
-                                "${QueryTypeName}",
-                                0,
-                            >
-                        >;`
-                        : ""
-                }
-                ${
-                    MutationTypeName && collector.types.has(MutationTypeName)
-                        ? `mutation: ReturnType<
-                            SLFN<
-                                T, 
-                                ReturnType<typeof make${MutationTypeName}SelectionInput>,
-                                "${MutationTypeName}Selection",
-                                "${MutationTypeName}",
-                                "${MutationTypeName}",
-                                0,
-                            >
-                        >;`
-                        : ""
-                }
-                ${
-                    SubscriptionTypeName &&
-                    collector.types.has(SubscriptionTypeName)
-                        ? `subscription: ReturnType<
-                            SLFN<
-                                T, 
-                                ReturnType<typeof make${SubscriptionTypeName}SelectionInput>,
-                                "${SubscriptionTypeName}Selection",
-                                "${SubscriptionTypeName}",
-                                "${SubscriptionTypeName}",
-                                0,
-                            >
-                        >;`
-                        : ""
-                }
-            };
+            ${
+                directives?.length
+                    ? `export const $directives = {
+                        ${directives.join(",\n")}
+                    } as const;`
+                    : ""
+            }
             export function _makeRootOperationInput(this: any) {
                 return {
                     ${
@@ -887,6 +957,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     }),`
                             : ""
                     }
+
+                    ${
+                        directives?.length
+                            ? `
+                        $directives,`
+                            : ""
+                    }
                 } as const;
             };
 
@@ -901,7 +978,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             function __client__ <
                 T extends object,
-                F extends _RootOperationSelectionFields<T>>(
+                F extends ReturnType<typeof _makeRootOperationInput>>(
                 this: any, 
                 s: (selection: F) => T
             ) {
