@@ -17,6 +17,8 @@ import {
     getNamedType,
     isObjectType,
     isInterfaceType,
+    GraphQLDirective,
+    DirectiveLocation,
 } from "graphql";
 import { Collector } from "./collector";
 
@@ -28,6 +30,7 @@ import {
     type SchemaMeta,
     type TypeMeta,
     type CodegenOptions,
+    type DirectiveMeta,
 } from "../types/meta";
 export {
     type ArgumentMeta,
@@ -52,6 +55,8 @@ export const gatherMeta = (
 ): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
+        directives: [],
+
         query: [],
         mutation: [],
         subscription: [],
@@ -128,6 +133,13 @@ export const gatherMeta = (
                 gatherMetaForType(schema, type, options, collector),
             );
         }
+    }
+
+    // Gather meta for each directive
+    for (const directive of schema.getDirectives()) {
+        meta.directives.push(
+            gatherMetaForDirective(schema, directive, options, collector),
+        );
     }
 
     return meta;
@@ -338,6 +350,59 @@ export const gatherMetaForField = (
     for (const argName in field.args) {
         const arg = field.args[argName];
         meta.args.push(gatherMetaForArgument(schema, arg, options, collector));
+    }
+
+    return meta;
+};
+
+/**
+ * Gather metadata about a GraphQL directive.
+ * @param schema GraphQL schema
+ * @param directive GraphQL directive
+ * @param options Codegen options
+ * @returns
+ */
+export const gatherMetaForDirective = (
+    schema: GraphQLSchema,
+    directive: GraphQLDirective,
+    options: CodegenOptions,
+    collector?: Collector,
+): DirectiveMeta => {
+    const meta: DirectiveMeta = {
+        name: directive.name,
+        description: directive.description,
+        locations: directive.locations as DirectiveLocation[],
+        args: [],
+    };
+
+    // Gather meta for each argument
+    for (const argName in directive.args) {
+        const arg = directive.args[argName];
+        meta.args.push(gatherMetaForArgument(schema, arg, options, collector));
+    }
+
+    if (collector) {
+        collector.addType({
+            name: `Directive_${directive.name}`,
+            description: directive.description,
+            isList: 0,
+            isNonNull: false,
+            isScalar: false,
+            isEnum: false,
+            isInput: false,
+            isInterface: false,
+            isObject: false,
+            isUnion: false,
+            isQuery: false,
+            isMutation: false,
+            isSubscription: false,
+            fields: [],
+            possibleTypes: [],
+            enumValues: [],
+            inputFields: [],
+
+            isDirective: meta,
+        });
     }
 
     return meta;
