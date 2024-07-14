@@ -14,7 +14,12 @@ export const generate = async (
         schema,
         options: {},
         authConfig: remote.headers
-            ? { headerName: "Authorization" }
+            ? {
+                  headerName:
+                      remote.headers.length === 1
+                          ? remote.headers[0].split("=")[0]
+                          : "Authorization",
+              }
             : undefined,
     });
 
