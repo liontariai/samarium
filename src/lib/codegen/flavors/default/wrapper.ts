@@ -130,7 +130,7 @@ export class RootOperation {
                 variables: query.variables,
             }),
         });
-        const result = await res.json();
+        const result = (await res.json()) as { data: any; errors: any[] };
 
         const { data, errors } = result ?? {};
         if (errors?.length > 0) {
