@@ -56,7 +56,7 @@ export const ui = async () => {
     try {
         schema = await introspectGraphQLSchema(url);
     } catch (e: any) {
-        if (e.response?.status === 401) {
+        if (e.response?.status === 401 || e.response?.status === 403) {
             let headerKey = await select({
                 message:
                     "The endpoint seems to need authorization, choose the header name, or enter a custom name:",
