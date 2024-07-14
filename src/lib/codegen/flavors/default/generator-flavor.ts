@@ -781,16 +781,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             string,
             string
         >();
-        const isRootOperationType = this.collector.OperationTypeNames.includes(
-            this.typeName,
-        );
 
         const selectionFunction = `
-            export function make${selectionFunctionName}Input(this: any)${
-                isRootOperationType
-                    ? `: ReturnTypeFrom${selectionFunctionName}`
-                    : ""
-            } {
+            export function make${selectionFunctionName}Input(this: any) ${this.typeMeta.isUnion ? "" : `: ReturnTypeFrom${selectionFunctionName}`} {
                 return {
                     ${this.typeMeta.fields
                         .map(
@@ -806,45 +799,56 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 ] as const,
                         )
                         .map(([field, fieldSlfn]) => {
-                            if (isRootOperationType) {
-                                makeSelectionFunctionInputReturnTypeParts.set(
-                                    field.name,
-                                    `${
-                                        field.hasArgs
-                                            ? `(
+                            makeSelectionFunctionInputReturnTypeParts.set(
+                                field.name,
+                                `${
+                                    field.hasArgs
+                                        ? `(
                                         args: ${this.typeName}${field.name
                                             .slice(0, 1)
                                             .toUpperCase()}${field.name.slice(1)}Args
                                     ) =>`
-                                            : ""
-                                    } ReturnType<
-                                        SLFN<
-                                            {},
-                                            ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
-                                                field.type.name,
-                                            )}SelectionInput>,
-                                            "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
-                                            "${field.type.name}",
-                                            "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-                                                field.type.name,
-                                            )}",
-                                            ${field.type.isList ?? 0},
-                                            { 
-                                                $lazy: (
-                                                    ${
-                                                        field.hasArgs
-                                                            ? `args: ${this.typeName}${field.name
-                                                                  .slice(0, 1)
-                                                                  .toUpperCase()}${field.name.slice(1)}Args`
-                                                            : ""
-                                                    }
-                                                ) => Promise<"T">
-                                            },
-                                            "$lazy"
-                                        >
-                                    >,`,
-                                );
-                            }
+                                        : ""
+                                } ${
+                                    field.type.isScalar || field.type.isEnum
+                                        ? `SelectionWrapper<"${field.name}", "${field.type.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
+                                              field.hasArgs
+                                                  ? `${this.typeName}${field.name
+                                                        .slice(0, 1)
+                                                        .toUpperCase()}${field.name.slice(1)}Args`
+                                                  : "undefined"
+                                          }>`
+                                        : `ReturnType<
+                                            SLFN<
+                                                {},
+                                                ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
+                                                    field.type.name,
+                                                )}SelectionInput>,
+                                                "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
+                                                "${field.type.name}",
+                                                "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                                                    field.type.name,
+                                                )}",
+                                                ${field.type.isList ?? 0},
+                                                { 
+                                                    $lazy: (
+                                                        ${
+                                                            field.hasArgs
+                                                                ? `args: ${this.typeName}${field.name
+                                                                      .slice(
+                                                                          0,
+                                                                          1,
+                                                                      )
+                                                                      .toUpperCase()}${field.name.slice(1)}Args`
+                                                                : ""
+                                                        }
+                                                    ) => Promise<"T">
+                                                },
+                                                "$lazy"
+                                            >
+                                        >`
+                                }`,
+                            );
                             return `${fieldSlfn},`;
                         })
                         .join("\n")}
@@ -860,31 +864,30 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ${this.typeMeta.isList ?? 0}
             );
         `;
-        this.collector.addSelectionFunction(
-            this.typeMeta,
-            `${
-                isRootOperationType
+        const selectionFunctionReturnType = this.typeMeta.isUnion
+            ? ""
+            : `
+        type ReturnTypeFrom${selectionFunctionName} = {
+            ${Array.from(makeSelectionFunctionInputReturnTypeParts)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join("\n")}
+        } & {
+            $fragment: <F extends (this: any, ...args: any[]) => any>(
+                f: F,
+            ) => (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>;
+            ${
+                typeHasScalars
                     ? `
-            type ReturnTypeFrom${selectionFunctionName} = {
-                ${Array.from(makeSelectionFunctionInputReturnTypeParts)
-                    .map(([k, v]) => `${k}: ${v}`)
-                    .join("\n")}
-            } & {
-                $fragment: <F extends (this: any, ...args: any[]) => any>(
-                    f: F,
-                ) => (
-                    ...args: ArgumentsTypeFromFragment<F>
-                ) => ReturnTypeFromFragment<F>;
-                ${
-                    typeHasScalars
-                        ? `
-                $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
-                `
-                        : ""
-                }
-            };`
+            $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
+            `
                     : ""
             }
+        };`;
+        this.collector.addSelectionFunction(
+            this.typeMeta,
+            `${selectionFunctionReturnType}
             ${selectionFunction}
         `,
         );
