@@ -1,4 +1,3 @@
-import prettier from "prettier";
 import { DirectiveLocation, GraphQLSchema } from "graphql";
 import { type CodegenOptions, gatherMeta } from "./meta";
 import { Collector } from "./collector";
@@ -112,11 +111,6 @@ export class Generator {
             this.Codegen.makeRootOperationFunction(collector, authConfig),
         ].join("\n");
 
-        const prettyCode = await prettier.format(code, {
-            tabWidth: 4,
-            parser: "typescript",
-        });
-
-        return prettyCode;
+        return code;
     }
 }
