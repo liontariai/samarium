@@ -7,8 +7,11 @@ export const generate = async (
     remote: { url: string; headers?: string[] },
     flavor: keyof typeof Flavors,
     output: string,
+    options: {
+        endpoint?: string;
+        authHeaderName?: string;
+    } = {},
 ) => {
-    const schema = await introspectGraphQLSchema(remote.url, remote.headers);
     const generator = new Generator(Flavors[flavor]);
     const code = await generator.generate({
         schema,
@@ -23,5 +26,8 @@ export const generate = async (
             : undefined,
     });
 
-    fs.writeFileSync(output, code.replace("[ENDPOINT]", remote.url));
+    fs.writeFileSync(
+        output,
+        code.replace("[ENDPOINT]", options.endpoint ?? remote.url),
+    );
 };

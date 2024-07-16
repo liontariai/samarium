@@ -52,14 +52,33 @@ program
         collect,
         [],
     )
+    .option(
+        "--endpoint [endpoint]",
+        "Endpoint to use in the generated code, defaults to the schema introspection URL",
+    )
+    .option(
+        "--auth-header-name [authHeaderName]",
+        "Name of the header to use for authorization. Defaults to first header name, if headers are provided.",
+    )
     .description("Generate code from a GraphQL schema")
     .action(
         async (
             url: string,
             output: string,
-            { header: headers }: { header?: string[] } = {},
+            {
+                header: headers,
+                endpoint,
+                authHeaderName,
+            }: {
+                header?: string[];
+                endpoint?: string;
+                authHeaderName?: string;
+            } = {},
         ) => {
-            await generate({ url, headers }, "default", output);
+            await generate({ url, headers }, "default", output, {
+                endpoint,
+                authHeaderName,
+            });
         },
     );
 
