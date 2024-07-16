@@ -333,10 +333,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             return enumTypeName;
         }
 
+        if (this.typeMeta.enumValues.length === 0) {
+            console.warn(
+                `Schema contains empty enum: ${this.typeMeta.name}. \n This is not allowed in GraphQL, but it happens. Please check your schema. Code is still generated and will work, but the type is being set to undefined.`,
+            );
+        }
         const enumType = `
-            export type ${enumTypeName} = ${this.typeMeta.enumValues
-                .map((e) => `"${e.name}"`)
-                .join(" | ")};
+            export type ${enumTypeName} = ${
+                this.typeMeta.enumValues.length === 0
+                    ? "undefined" // handle empty enums (even though they shouldn't exist, they sometimes do)
+                    : this.typeMeta.enumValues
+                          .map((e) => `"${e.name}"`)
+                          .join(" | ")
+            };
             export enum ${enumTypeName}Enum {
                 ${this.typeMeta.enumValues
                     .map(
