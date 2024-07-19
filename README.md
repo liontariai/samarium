@@ -35,11 +35,14 @@ const { aliasedQuery } = await spacex(({ query }) => ({
 }));
 ```
 
+https://github.com/user-attachments/assets/6c5d1e33-6f63-4f07-b521-826e786ca942
+
 ## Demo & Playground
 
 Try some examples in the playground at [samarium.liontari.ai](https://samarium.liontari.ai).
 
 ![Demo](https://github.com/liontariai/samarium/blob/main/docs/images/screenshot1.png?raw=true)
+
 
 ## Usage
 
