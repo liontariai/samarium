@@ -1,4 +1,4 @@
-import { GraphQLSchema, printSchema } from "graphql";
+import { GraphQLSchema } from "graphql";
 import { introspectGraphQLSchema } from "./util/introspect";
 import { Flavors, Generator } from "@/lib/codegen";
 
@@ -7,8 +7,8 @@ import path from "path";
 import { confirm, input, select } from "@inquirer/prompts";
 import detectIndent from "detect-indent";
 
-import packageJson from "../../package.json";
 import chalk from "chalk";
+import { printLogo } from "@/lib/cli/logo";
 
 const chalkSyntaxHighlights = {
     import: chalk.rgb(185, 126, 180),
@@ -18,24 +18,7 @@ const chalkSyntaxHighlights = {
 };
 
 export const ui = async () => {
-    process.stdout.write("\x1Bc");
-    process.stdout.write(`
- _____                                 _                   
-/  ___|                               (_)                  
-\\ \`--.   __ _  _ __ ___    __ _  _ __  _  _   _  _ __ ___  
- \\\`--. \\ / _\` || '_ \` _ \\  / _\` || '__|| || | | || '_ \` _ \\ 
-/\\__/ /| (_| || | | | | || (_| || |   | || |_| || | | | | |
-\\____/  \\__,_||_| |_| |_| \\__,_||_|   |_| \\__,_||_| |_| |_|
-`);
-    console.log(" ");
-    console.log(`v${packageJson.version}`);
-    console.log(" ");
-    console.log("Welcome to the Samarium CLI Assistant");
-    console.log(" ");
-    console.log(
-        "This assistant will help you generate a Samarium client from a GraphQL endpoint and use it in your project.",
-    );
-    console.log(" ");
+    printLogo();
 
     let url = "";
 
