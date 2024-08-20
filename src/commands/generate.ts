@@ -4,7 +4,7 @@ import { introspectGraphQLSchema } from "./util/introspect";
 
 import fs from "fs";
 import { printLogo } from "@/lib/cli/logo";
-import { input } from "@inquirer/prompts";
+import { confirm, input } from "@inquirer/prompts";
 
 export const generate = async (
     remote: { url: string; headers?: string[] },
@@ -39,9 +39,9 @@ export const generate = async (
             );
 
             if (
-                await confirm(
-                    `${descriptor} contains placeholders: ${strColoredGreenPlaceholders} . Do you want to replace them with actual values?`,
-                )
+                await confirm({
+                    message: `${descriptor} contains placeholders: ${strColoredGreenPlaceholders} . Do you want to replace them with actual values?`,
+                })
             ) {
                 const values: string[] = [];
                 for (const placeholder of placeholders) {
