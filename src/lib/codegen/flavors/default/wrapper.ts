@@ -457,7 +457,7 @@ export class SelectionWrapperImpl<
         typeArrDepth?: typeArrDepth,
         value?: valueT,
         collector?: OperationSelectionCollector,
-        parent?: OperationSelectionCollector | RootOperation,
+        parent?: OperationSelectionCollector,
         args?: argsT,
         argsMeta?: Record<string, string>,
     ) {
