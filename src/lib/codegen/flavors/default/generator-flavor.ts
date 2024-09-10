@@ -138,7 +138,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         R = {
             [K in keyof S]: S[K] extends SelectionWrapperImpl<
                 infer FN,
-                infer TN,
                 infer TNP,
                 infer TAD
             >
@@ -186,7 +185,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     > = (
         makeSLFNInput: () => F,
         SLFN_name: N,
-        SLFN_typeName: TN,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
     ) => <TT = T, FF = F, EE = E>(
@@ -196,7 +194,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         {
             [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                 infer FN,
-                infer TN,
                 infer TTNP,
                 infer TTAD,
                 infer VT,
@@ -215,7 +212,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         {
                             [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                                 infer FN,
-                                infer TN,
                                 infer TTNP,
                                 infer TTAD,
                                 infer VT,
@@ -231,7 +227,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     {
                         [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                             infer FN,
-                            infer TN,
                             infer TTNP,
                             infer TTAD,
                             infer VT,
@@ -263,7 +258,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     >(
         makeSLFNInput: () => F,
         SLFN_name: N,
-        SLFN_typeName: TN,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
     ) => {
@@ -279,7 +273,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const r = s(selection);
                 const _result = new SelectionWrapper(
                     parent?.fieldName,
-                    SLFN_typeName,
                     SLFN_typeNamePure,
                     SLFN_typeArrDepth,
                     r,
@@ -312,7 +305,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 new OperationSelectionCollector(SLFN_name, parent?.collector),
             )();
         }
-        return _SLFN as ReturnType<SLFN<T, F, N, TN, TNP, TAD>>;
+        return _SLFN as ReturnType<SLFN<T, F, N, TNP, TAD>>;
     };
     `;
 
@@ -575,7 +568,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             field.hasArgs ? `(args: ${argsTypeName}) => ` : ""
         }new SelectionWrapper(
             "${field.name}",
-            "${field.type.name}",
             "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
             ${field.type.isList ?? 0},
             {},
@@ -726,7 +718,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
             return `new SelectionWrapper(
                 "${this.typeName}",
-                "${this.typeMeta.name}",
                 "${this.typeMeta.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                 ${this.typeMeta.isList ?? 0},
                 {},
@@ -820,7 +811,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         : ""
                                 } ${
                                     field.type.isScalar || field.type.isEnum
-                                        ? `SelectionWrapper<"${field.name}", "${field.type.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
+                                        ? `SelectionWrapper<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
                                               field.hasArgs
                                                   ? `${this.typeName}${field.name
                                                         .slice(0, 1)
@@ -997,7 +988,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
                 const selection: F = _makeRootOperationInput.bind(root)() as any;
                 const r = s(selection);
-                const _result = new SelectionWrapper(undefined, undefined, undefined, undefined, r, root, undefined) as unknown as T;
+                const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                 const result = _result as {
                     [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<

@@ -34,13 +34,7 @@ export class RootOperation {
         const operations: {
             [key: string]: {
                 selection: selection;
-                rootSlw: SelectionWrapperImpl<
-                    string,
-                    string,
-                    string,
-                    number,
-                    any
-                >;
+                rootSlw: SelectionWrapperImpl<string, string, number, any>;
             };
         } = {};
         for (const [
@@ -178,18 +172,11 @@ export class OperationSelectionCollector {
 
     public readonly selections = new Map<
         string,
-        SelectionWrapperImpl<string, string, string, number, any>
+        SelectionWrapperImpl<string, string, number, any>
     >();
     public registerSelection(
         id: string,
-        selection: SelectionWrapperImpl<
-            string,
-            string,
-            string,
-            number,
-            any,
-            any
-        >,
+        selection: SelectionWrapperImpl<string, string, number, any, any>,
     ) {
         this.selections.set(id, selection);
     }
@@ -199,7 +186,6 @@ export class OperationSelectionCollector {
         opVars: Record<string, any> = {},
         usedFragments: Map<string, string> = new Map(),
         renderOnlyTheseSelections: SelectionWrapperImpl<
-            string,
             string,
             string,
             number,
@@ -281,7 +267,7 @@ export class OperationSelectionCollector {
                         result[key] = `...${fragmentName}`;
                     }
 
-                    const fragment = `fragment ${fragmentName} on ${value[SLW_FIELD_TYPE]} ${subSelection}`;
+                    const fragment = `fragment ${fragmentName} on ${value[SLW_FIELD_TYPENAME]} ${subSelection}`;
                     if (!usedFragments.has(fragmentName)) {
                         usedFragments.set(fragmentName, fragment);
                     } else if (usedFragments.get(fragmentName) !== fragment) {
@@ -381,7 +367,6 @@ export class OperationSelectionCollector {
 
 export const SLW_UID = Symbol("SLW_UID");
 export const SLW_FIELD_NAME = Symbol("SLW_FIELD_NAME");
-export const SLW_FIELD_TYPE = Symbol("SLW_FIELD_TYPE");
 export const SLW_FIELD_TYPENAME = Symbol("SLW_FIELD_TYPENAME");
 export const SLW_FIELD_ARR_DEPTH = Symbol("SLW_FIELD_ARR_DEPTH");
 export const SLW_IS_ROOT_TYPE = Symbol("SLW_IS_ROOT_TYPE");
@@ -406,7 +391,6 @@ export const SLW_RENDER_WITH_ARGS = Symbol("SLW_RENDER_WITH_ARGS");
 
 export class SelectionWrapperImpl<
     fieldName extends string,
-    typeName extends string,
     typeNamePure extends string,
     typeArrDepth extends number,
     valueT extends any = any,
@@ -425,7 +409,6 @@ export class SelectionWrapperImpl<
     readonly [SLW_COLLECTOR]?: OperationSelectionCollector;
 
     [SLW_FIELD_NAME]?: fieldName;
-    [SLW_FIELD_TYPE]?: typeName;
     [SLW_FIELD_TYPENAME]?: typeNamePure;
     [SLW_FIELD_ARR_DEPTH]?: typeArrDepth;
     [SLW_VALUE]?: valueT;
@@ -440,19 +423,11 @@ export class SelectionWrapperImpl<
     [SLW_DIRECTIVE_ARGS]?: Record<string, any>;
     [SLW_DIRECTIVE_ARGS_META]?: Record<string, string>;
 
-    [SLW_PARENT_SLW]?: SelectionWrapperImpl<
-        string,
-        string,
-        string,
-        number,
-        any,
-        any
-    >;
+    [SLW_PARENT_SLW]?: SelectionWrapperImpl<string, string, number, any, any>;
     [SLW_LAZY_FLAG]?: boolean;
 
     constructor(
         fieldName?: fieldName,
-        typeName?: typeName,
         typeNamePure?: typeNamePure,
         typeArrDepth?: typeArrDepth,
         value?: valueT,
@@ -462,7 +437,6 @@ export class SelectionWrapperImpl<
         argsMeta?: Record<string, string>,
     ) {
         this[SLW_FIELD_NAME] = fieldName;
-        this[SLW_FIELD_TYPE] = typeName;
         this[SLW_FIELD_TYPENAME] = typeNamePure;
         this[SLW_FIELD_ARR_DEPTH] = typeArrDepth;
         this[SLW_VALUE] = value;
@@ -576,24 +550,15 @@ export class SelectionWrapperImpl<
 }
 export class SelectionWrapper<
     fieldName extends string,
-    typeName extends string,
     typeNamePure extends string,
     typeArrDepth extends number,
     valueT extends any = any,
     argsT extends Record<string, any> | undefined = undefined,
 > extends Proxy<
-    SelectionWrapperImpl<
-        fieldName,
-        typeName,
-        typeNamePure,
-        typeArrDepth,
-        valueT,
-        argsT
-    >
+    SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>
 > {
     constructor(
         fieldName?: fieldName,
-        typeName?: typeName,
         typeNamePure?: typeNamePure,
         typeArrDepth?: typeArrDepth,
         value?: valueT,
@@ -605,14 +570,12 @@ export class SelectionWrapper<
         super(
             new SelectionWrapperImpl<
                 fieldName,
-                typeName,
                 typeNamePure,
                 typeArrDepth,
                 valueT,
                 argsT
             >(
                 fieldName,
-                typeName,
                 typeNamePure,
                 typeArrDepth,
                 value,
@@ -641,7 +604,6 @@ export class SelectionWrapper<
                             this: {
                                 parentSlw: SelectionWrapperImpl<
                                     fieldName,
-                                    typeName,
                                     typeNamePure,
                                     typeArrDepth,
                                     valueT,
@@ -671,7 +633,6 @@ export class SelectionWrapper<
                     if (
                         prop === SLW_UID ||
                         prop === SLW_FIELD_NAME ||
-                        prop === SLW_FIELD_TYPE ||
                         prop === SLW_FIELD_TYPENAME ||
                         prop === SLW_FIELD_ARR_DEPTH ||
                         prop === SLW_IS_ROOT_TYPE ||
@@ -695,7 +656,6 @@ export class SelectionWrapper<
                         return target[
                             prop as keyof SelectionWrapperImpl<
                                 fieldName,
-                                typeName,
                                 typeNamePure,
                                 typeArrDepth,
                                 valueT
@@ -735,7 +695,6 @@ export class SelectionWrapper<
                         const getResultDataForTarget = (
                             t: SelectionWrapperImpl<
                                 fieldName,
-                                typeName,
                                 typeNamePure,
                                 typeArrDepth,
                                 valueT,
