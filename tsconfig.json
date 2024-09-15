@@ -18,11 +18,12 @@
         "allowJs": true,
         "types": ["bun-types"],
         "rootDir": ".",
-        "baseUrl": "./src",
+        "baseUrl": ".",
         "paths": {
-            "@/*": ["*"]
+            "@/*": ["./src/*"],
+            "@tests/*": ["./tests/*"]
         },
         "verbatimModuleSyntax": true
     },
-    "include": ["src/**/*", "package.json", "examples/**/*"]
+    "include": ["src/**/*", "tests/**/*", "package.json", "examples/**/*"]
 }

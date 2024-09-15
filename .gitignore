@@ -184,3 +184,4 @@ bin
 
 
 examples/
+!src/lib/codegen/flavors/default/__tests__/examples/
