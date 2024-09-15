@@ -1002,11 +1002,49 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 let headers: Record<string, string> | undefined = undefined;
                 const finalPromise = {
                     then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
+                        ${
+                            authConfig
+                                ? `
+                            const doExecute = () => {
                         root.execute(headers)
                             .then(() => {
                                 resolve(result);
                             })
                             .catch(reject);
+                            }
+                            if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
+                                const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
+                                if (tokenOrPromise instanceof Promise) {
+                                    tokenOrPromise.then((t) => {
+                                        if (typeof t === "string")
+                                            headers = { "${authConfig.headerName}": t };
+                                        else headers = t;
+    
+                                        doExecute();
+                                    });
+                                }
+                                else if (typeof tokenOrPromise === "string") {
+                                    headers = { "${authConfig.headerName}": tokenOrPromise };
+
+                                    doExecute();
+                                } else {
+                                    headers = tokenOrPromise;
+
+                                    doExecute();
+                                }
+                            }
+                            else {
+                                doExecute();
+                            }
+                        `
+                                : `
+                            root.execute(headers)
+                            .then(() => {
+                                resolve(result);
+                            })
+                            .catch(reject);
+                        `
+                        }
                     },
                 };
                 ${
@@ -1058,7 +1096,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             };
 
             const __init__ = (options: {
-                ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
+                ${authConfig ? `auth?: __AuthenticationArg__;` : ""}
                 headers?: { [key: string]: string };
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
@@ -1077,7 +1115,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     RootOperation[OPTIONS].headers = {
                         "${authConfig.headerName}": options.auth,
                     };
-                } else if (options.auth) {
+                } else if (typeof options.auth === "function" ) {
+                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                }
+                else if (options.auth) {
                     RootOperation[OPTIONS].headers = options.auth;
                 }
                 `

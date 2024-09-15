@@ -5,6 +5,10 @@ export const OPTIONS = Symbol("OPTIONS");
 export class RootOperation {
     public static [OPTIONS] = {
         headers: {},
+        _auth_fn: undefined as
+            | (() => string | { [key: string]: string })
+            | (() => Promise<string | { [key: string]: string }>)
+            | undefined,
         scalars: {
             DateTime: (value: string) => new Date(value),
             Date: (value: string) => new Date(value),
