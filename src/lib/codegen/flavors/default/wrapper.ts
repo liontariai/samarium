@@ -68,10 +68,9 @@ export class RootOperation {
                 [opName]: {
                     query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${
                         selection.variableDefinitions.length
-                            ? `(${selection.variableDefinitions.join(", ")})`
+                            ? `(${selection.variableDefinitions.join(", ")}) `
                             : ""
-                    } ${selection.selection}
-                    `,
+                    }${selection.selection}`,
                     variables: selection.variables,
                     fragments: selection.usedFragments,
                 },
@@ -117,10 +116,7 @@ export class RootOperation {
                 ...headers,
             },
             body: JSON.stringify({
-                query: `
-                ${[...query.fragments.values()].join("\n")}
-                ${query.query}
-                `,
+                query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
                 variables: query.variables,
             }),
         });
@@ -306,7 +302,7 @@ export class OperationSelectionCollector {
                 rendered += `${key}${!isSubSelection ? ":" : ""} ${value} `;
             }
         }
-        rendered += " }";
+        rendered += "}";
         return {
             selection: rendered,
             variableDefinitions: varDefs,
@@ -469,6 +465,7 @@ export class SelectionWrapperImpl<
         ) => {
             const argToVarMap: Record<string, string> = {};
             let argsString = "(";
+            const argsStringParts = [];
             for (const key of Object.keys(args)) {
                 let varName = key;
                 if (opVars[key] !== undefined) {
@@ -480,11 +477,10 @@ export class SelectionWrapperImpl<
                     args[varName] = args[key];
                     argsMeta[varName] = argsMeta[key];
                     delete args[key];
-                    delete argsMeta[key];
                 }
-                argsString += `${key}: $${varName} `;
+                argsStringParts.push(`${key}: $${varName}`);
             }
-            argsString += ")";
+            argsString += argsStringParts.join(", ").trim() + ")";
             return { argsString, argToVarMap };
         };
 
