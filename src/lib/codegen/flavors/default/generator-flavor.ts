@@ -177,7 +177,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         T extends object,
         F,
         N extends string,
-        TN extends string,
         TNP extends string,
         TAD extends number,
         E extends { [key: string | number | symbol]: any } = {},
@@ -252,7 +251,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         T extends object,
         F,
         N extends string,
-        TN extends string,
         TNP extends string,
         TAD extends number,
     >(
@@ -825,7 +823,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     field.type.name,
                                                 )}SelectionInput>,
                                                 "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
-                                                "${field.type.name}",
                                                 "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
                                                     field.type.name,
                                                 )}",
@@ -859,7 +856,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             export const ${selectionFunctionName} = makeSLFN(
                 ${`make${selectionFunctionName}Input`},
                 "${selectionFunctionName}",
-                "${this.typeName}",
                 "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                 ${this.typeMeta.isList ?? 0}
             );
@@ -1006,11 +1002,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             authConfig
                                 ? `
                             const doExecute = () => {
-                        root.execute(headers)
-                            .then(() => {
-                                resolve(result);
-                            })
-                            .catch(reject);
+                                root.execute(headers)
+                                    .then(() => {
+                                        resolve(result);
+                                    })
+                                    .catch(reject);
                             }
                             if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
                                 const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
