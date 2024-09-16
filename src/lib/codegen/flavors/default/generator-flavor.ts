@@ -278,6 +278,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     parent?.collector,
                     parent?.args,
                     parent?.argsMeta,
+                    function (this: OperationSelectionCollector) {
+                        return s(makeSLFNInput.bind(this)() as FF);
+                    },
                 );
                 _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
                 _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
