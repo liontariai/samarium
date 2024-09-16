@@ -740,6 +740,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             (f) => f.type.isScalar || f.type.isEnum,
         );
 
+        const isRootType =
+            this.typeMeta.name === this.collector.QueryTypeName ||
+            this.typeMeta.name === this.collector.MutationTypeName ||
+            this.typeMeta.name === this.collector.SubscriptionTypeName;
+
         let helperFunctions = "";
         if (this.typeMeta.isUnion) {
             helperFunctions = `
@@ -830,6 +835,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     field.type.name,
                                                 )}",
                                                 ${field.type.isList ?? 0},
+                                                ${
+                                                    isRootType
+                                                        ? `
                                                 { 
                                                     $lazy: (
                                                         ${
@@ -845,6 +853,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     ) => Promise<"T">
                                                 },
                                                 "$lazy"
+                                                `
+                                                        : ""
+                                                }
                                             >
                                         >`
                                 }`,
