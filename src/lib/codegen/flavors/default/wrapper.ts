@@ -144,10 +144,15 @@ export class RootOperation {
     }
 }
 
+type OperationSelectionCollectorRef = {
+    ref: OperationSelectionCollector;
+};
 export class OperationSelectionCollector {
     constructor(
         public readonly name?: string,
-        public readonly parent?: OperationSelectionCollector,
+        public readonly parent?:
+            | OperationSelectionCollector
+            | OperationSelectionCollectorRef,
         public readonly op?: RootOperation,
     ) {
         if (op) op.registerRootCollector(this);
@@ -404,7 +409,7 @@ export class SelectionWrapperImpl<
     }
 
     readonly [SLW_UID] = this.generateUniqueId();
-    readonly [ROOT_OP_COLLECTOR]?: OperationSelectionCollector;
+    [ROOT_OP_COLLECTOR]?: OperationSelectionCollectorRef;
     readonly [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
     readonly [SLW_COLLECTOR]?: OperationSelectionCollector;
 
@@ -432,7 +437,7 @@ export class SelectionWrapperImpl<
         typeArrDepth?: typeArrDepth,
         value?: valueT,
         collector?: OperationSelectionCollector,
-        parent?: OperationSelectionCollector,
+        parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
         argsMeta?: Record<string, string>,
     ) {
@@ -446,15 +451,22 @@ export class SelectionWrapperImpl<
 
         if (parent instanceof OperationSelectionCollector) {
             this[SLW_PARENT_COLLECTOR] = parent;
+        } else if (parent && "ref" in parent) {
+            this[SLW_PARENT_COLLECTOR] = parent.ref;
         }
+
         if (collector instanceof OperationSelectionCollector) {
             this[SLW_COLLECTOR] = collector;
 
             let rootCollector = collector;
-            while (rootCollector?.parent) {
+            while (
+                rootCollector?.parent instanceof OperationSelectionCollector
+            ) {
                 rootCollector = rootCollector.parent;
             }
-            this[ROOT_OP_COLLECTOR] = rootCollector;
+            if (rootCollector.parent && "ref" in rootCollector.parent) {
+                this[ROOT_OP_COLLECTOR] = rootCollector.parent;
+            }
         }
     }
 
@@ -563,7 +575,7 @@ export class SelectionWrapper<
         typeArrDepth?: typeArrDepth,
         value?: valueT,
         collector?: OperationSelectionCollector,
-        parent?: OperationSelectionCollector,
+        parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
         argsMeta?: Record<string, string>,
     ) {
@@ -668,12 +680,12 @@ export class SelectionWrapper<
                     if (prop === "then") {
                         if (target[SLW_LAZY_FLAG]) {
                             target[SLW_LAZY_FLAG] = false;
-                            target[ROOT_OP_COLLECTOR]!.registerSelection(
+                            target[ROOT_OP_COLLECTOR]!.ref.registerSelection(
                                 target[SLW_FIELD_NAME]!,
                                 target,
                             );
                             return (resolve: (v: any) => any, reject: any) =>
-                                target[ROOT_OP_COLLECTOR]!.execute()
+                                target[ROOT_OP_COLLECTOR]!.ref.execute()
                                     .catch(reject)
                                     .then(() => {
                                         resolve(
@@ -691,7 +703,7 @@ export class SelectionWrapper<
                         | Record<string, any>
                         | undefined;
 
-                    if (target[ROOT_OP_COLLECTOR]?.isExecuted) {
+                    if (target[ROOT_OP_COLLECTOR]?.ref.isExecuted) {
                         const getResultDataForTarget = (
                             t: SelectionWrapperImpl<
                                 fieldName,
@@ -703,7 +715,7 @@ export class SelectionWrapper<
                         ): valueT | undefined => {
                             const data = t[
                                 ROOT_OP_COLLECTOR
-                            ]!.getOperationResultPath<valueT>(
+                            ]!.ref.getOperationResultPath<valueT>(
                                 t[SLW_OP_PATH]?.split(".") ?? [],
                                 t[SLW_FIELD_TYPENAME],
                             );
