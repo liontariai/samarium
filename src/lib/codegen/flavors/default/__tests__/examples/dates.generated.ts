@@ -6,9 +6,8 @@ import {
     SLW_DIRECTIVE_ARGS,
     SLW_DIRECTIVE_ARGS_META,
 } from "@/lib/codegen/flavors/default/wrapper";
-import { makeSLFN } from "../utils";
+import { makeSLFN, selectScalars } from "../utils";
 import {
-    selectScalars,
     type ArgumentsTypeFromFragment,
     type ReturnTypeFromFragment,
     type ScalarTypeMapDefault,

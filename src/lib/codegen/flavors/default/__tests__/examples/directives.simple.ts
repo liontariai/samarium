@@ -4,9 +4,8 @@ import {
     SLW_DIRECTIVE_ARGS,
     SLW_DIRECTIVE_ARGS_META,
 } from "@/lib/codegen/flavors/default/wrapper";
-import { makeSLFN } from "../utils";
+import { makeSLFN, selectScalars } from "../utils";
 import {
-    selectScalars,
     type ArgumentsTypeFromFragment,
     type ReturnTypeFromFragment,
     type SLFN,
@@ -89,7 +88,6 @@ export function makeBookArraySelectionInput(this: any) {
 export const BookArraySelection = makeSLFN(
     makeBookArraySelectionInput,
     "BookArraySelection",
-    "BookArray",
     "Book",
     1,
 );
@@ -167,7 +165,6 @@ export function makeSearchResultArraySelectionInput(this: any) {
 export const SearchResultArraySelection = makeSLFN(
     makeSearchResultArraySelectionInput,
     "SearchResultArraySelection",
-    "SearchResultArray",
     "SearchResult",
     1,
 );
@@ -256,7 +253,6 @@ export function makeArticleSelectionInput(this: any) {
 export const ArticleSelection = makeSLFN(
     makeArticleSelectionInput,
     "ArticleSelection",
-    "Article",
     "Article",
     0,
 );

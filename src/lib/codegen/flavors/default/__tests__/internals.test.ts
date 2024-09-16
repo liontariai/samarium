@@ -39,19 +39,19 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         // the assigned collector is the the collector which links the RootOperation and at the
         // same time is the root operation collector for all slws down the chain
         expect(slw1[ROOT_OP_COLLECTOR]).toBeDefined();
-        expect(slw1[SLW_COLLECTOR]).toEqual(slw1[ROOT_OP_COLLECTOR]!);
+        expect(slw1[SLW_COLLECTOR]).toEqual(slw1[ROOT_OP_COLLECTOR]!.ref);
 
         // the 'selections' in the root collector are the operations 'operation1' and 'operation2'
         // this is the 'normal' case which reassembles the graphql language the closest
         // you can see the similarity of the object from line 18 to 29 compared to a graphql
         // file where you put two operations like this:
         // 'query operation1 { ... } \n query operation2 { ... }'
-        expect(slw1[ROOT_OP_COLLECTOR]?.selections.size).toBe(2);
+        expect(slw1[ROOT_OP_COLLECTOR]!.ref.selections.size).toBe(2);
         expect(
-            slw1[ROOT_OP_COLLECTOR]?.selections.has("operation1"),
+            slw1[ROOT_OP_COLLECTOR]!.ref.selections.has("operation1"),
         ).toBeTrue();
         expect(
-            slw1[ROOT_OP_COLLECTOR]?.selections.has("operation2"),
+            slw1[ROOT_OP_COLLECTOR]!.ref.selections.has("operation2"),
         ).toBeTrue();
 
         // each entry in 'collector.selections' is a slw itself which in turn has a collector
@@ -67,7 +67,7 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         expect(slw1Op1slwQuery?.[SLW_COLLECTOR]).toBeDefined();
 
         // again, here also the root collector is linked
-        expect(slw1Op1slwQuery?.[ROOT_OP_COLLECTOR]).toEqual(
+        expect(slw1Op1slwQuery?.[ROOT_OP_COLLECTOR]?.ref).toEqual(
             slw1[SLW_COLLECTOR]!,
         );
 
@@ -112,7 +112,7 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         const slw1Op2slwQuery =
             slw1[SLW_COLLECTOR]?.selections.get("operation2");
         expect(slw1Op2slwQuery?.[SLW_COLLECTOR]).toBeDefined();
-        expect(slw1Op2slwQuery?.[ROOT_OP_COLLECTOR]).toEqual(
+        expect(slw1Op2slwQuery?.[ROOT_OP_COLLECTOR]?.ref).toEqual(
             slw1[SLW_COLLECTOR]!,
         );
         expect(slw1Op2slwQuery?.[SLW_COLLECTOR]?.selections.size).toBe(1);
@@ -174,7 +174,7 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         // which means, the key in the 'collector.selections' map is the operation name
         // but collector is the root collector in this case
 
-        const op1 = slw1[ROOT_OP_COLLECTOR]!.selections.get("operation1")!;
+        const op1 = slw1[ROOT_OP_COLLECTOR]!.ref.selections.get("operation1")!;
         expect(op1).toBeDefined();
         expect(op1[SLW_COLLECTOR]).toBeDefined();
 
@@ -190,7 +190,7 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         );
 
         // same goes for operation2
-        const op2 = slw1[ROOT_OP_COLLECTOR]!.selections.get("operation2")!;
+        const op2 = slw1[ROOT_OP_COLLECTOR]!.ref.selections.get("operation2")!;
         expect(op2).toBeDefined();
         expect(op2[SLW_COLLECTOR]).toBeDefined();
 
@@ -204,7 +204,8 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         );
 
         // the mutation is also rendered correctly
-        const mutation1 = slw1[ROOT_OP_COLLECTOR]!.selections.get("mutation1")!;
+        const mutation1 =
+            slw1[ROOT_OP_COLLECTOR]!.ref.selections.get("mutation1")!;
         expect(mutation1).toBeDefined();
         expect(mutation1[SLW_COLLECTOR]).toBeDefined();
 
@@ -251,15 +252,16 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
             }),
         );
 
-        const op1 = slw1[ROOT_OP_COLLECTOR]!.selections.get("operation1")!;
+        const op1 = slw1[ROOT_OP_COLLECTOR]!.ref.selections.get("operation1")!;
         expect(op1).toBeDefined();
         expect(op1[SLW_IS_ROOT_TYPE]).toBe("Query");
 
-        const op2 = slw1[ROOT_OP_COLLECTOR]!.selections.get("operation2")!;
+        const op2 = slw1[ROOT_OP_COLLECTOR]!.ref.selections.get("operation2")!;
         expect(op2).toBeDefined();
         expect(op2[SLW_IS_ROOT_TYPE]).toBe("Query");
 
-        const mutation1 = slw1[ROOT_OP_COLLECTOR]!.selections.get("mutation1")!;
+        const mutation1 =
+            slw1[ROOT_OP_COLLECTOR]!.ref.selections.get("mutation1")!;
         expect(mutation1).toBeDefined();
         expect(mutation1[SLW_IS_ROOT_TYPE]).toBe("Mutation");
     });

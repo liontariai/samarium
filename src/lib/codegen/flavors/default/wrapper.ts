@@ -144,7 +144,7 @@ export class RootOperation {
     }
 }
 
-type OperationSelectionCollectorRef = {
+export type OperationSelectionCollectorRef = {
     ref: OperationSelectionCollector;
 };
 export class OperationSelectionCollector {

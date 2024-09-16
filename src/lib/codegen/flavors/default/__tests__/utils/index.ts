@@ -5,6 +5,8 @@ import {
     SLW_IS_ON_TYPE_FRAGMENT,
     SLW_IS_FRAGMENT,
     RootOperation,
+    SelectionWrapperImpl,
+    ROOT_OP_COLLECTOR,
 } from "@/lib/codegen/flavors/default/wrapper";
 import type { SelectionFnParent, SLFN } from "./types";
 
@@ -39,6 +41,9 @@ export const makeSLFN = <
                 parent?.collector,
                 parent?.args,
                 parent?.argsMeta,
+                function (this: OperationSelectionCollector) {
+                    return s(makeSLFNInput.bind(this)() as FF);
+                },
             );
             _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
             _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
@@ -67,6 +72,13 @@ export const makeSLFN = <
     return _SLFN as ReturnType<SLFN<T, F, N, TNP, TAD>>;
 };
 
+export const selectScalars = <S>(selection: Record<string, any>) =>
+    Object.fromEntries(
+        Object.entries(selection).filter(
+            ([k, v]) => v instanceof SelectionWrapperImpl,
+        ),
+    ) as S;
+
 export const rootSLWFactory = <
     T extends object,
     ROPN extends (...args: any) => any,
@@ -79,7 +91,9 @@ export const rootSLWFactory = <
         undefined,
         new RootOperation(),
     );
-    const selection = ropfn.bind(root)();
+    const rootRef = { ref: root };
+
+    const selection = ropfn.bind(rootRef)();
 
     const r = s(selection);
 
@@ -92,6 +106,8 @@ export const rootSLWFactory = <
         root,
         undefined,
     );
+    // for now add this manually to keep the tests valid, need to reevaluate if this is as it should be
+    _result[ROOT_OP_COLLECTOR] = rootRef;
 
     // access the keys of the proxy object, to register operations
     Object.keys(r).forEach((key) => (_result as unknown as T)[key as keyof T]);
