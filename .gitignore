@@ -183,4 +183,4 @@ bin
 .rollup.cache
 
 
-examples/
+dev-examples/

@@ -4,12 +4,7 @@ import {
     GraphQLSchema,
     GraphQLObjectType,
     GraphQLInterfaceType,
-    GraphQLUnionType,
-    GraphQLEnumType,
-    GraphQLInputObjectType,
-    GraphQLList,
     GraphQLNonNull,
-    GraphQLScalarType,
     GraphQLString,
 } from "graphql";
 
