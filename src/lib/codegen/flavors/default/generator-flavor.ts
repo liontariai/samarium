@@ -116,7 +116,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     };
 
     type SelectionFnParent = {
-        collector: OperationSelectionCollector;
+        collector: OperationSelectionCollector | OperationSelectionCollectorRef;
         fieldName?: string;
         args?: Record<string, any>;
         argsMeta?: Record<string, string>;
@@ -982,7 +982,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 s: (selection: F) => T
             ) {
                 const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
-                const selection: F = _makeRootOperationInput.bind(root)() as any;
+                const rootRef = { ref: root };
+                const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
                 const r = s(selection);
                 const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
