@@ -4,6 +4,7 @@ import {
     ROOT_OP_COLLECTOR,
     RootOperation,
     SelectionWrapper,
+    SLW_COLLECTOR,
 } from "@/lib/codegen/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
 import * as examplesBooksSimple from "@/lib/codegen/flavors/default/__tests__/examples/books.simple";
@@ -46,9 +47,9 @@ describe("Testing and validating features", () => {
         global.fetch = mockFetch;
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
-        expect(slw[ROOT_OP_COLLECTOR]!.op).toBeDefined();
+        expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         // right now each operation results in a fetch call
@@ -135,7 +136,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -178,7 +179,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -227,7 +228,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -279,9 +280,9 @@ describe("Testing and validating features", () => {
         global.fetch = mockFetch;
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
-        expect(slw[ROOT_OP_COLLECTOR]!.op).toBeDefined();
+        expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
@@ -331,7 +332,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
@@ -392,7 +393,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
@@ -442,7 +443,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -490,7 +491,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -543,7 +544,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -581,7 +582,7 @@ describe("Testing and validating features", () => {
         // and awaiting its result. This will subsequently trigger the transformation of the dates to the transformed data,
         // because the root operation collector will be set in the state 'executed'.
         const result2 = await (new Promise((resolve) => {
-            slw[ROOT_OP_COLLECTOR]!.execute().then(() => {
+            slw[ROOT_OP_COLLECTOR]!.ref.execute().then(() => {
                 resolve(slw);
             });
         }) as unknown as Promise<typeof slw>);
@@ -653,7 +654,7 @@ describe("Testing and validating features", () => {
         });
         global.fetch = mockFetch;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.op!;
+        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
 
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -698,7 +699,7 @@ describe("Testing and validating features", () => {
         // and awaiting its result. This will subsequently trigger the transformation of the dates to the transformed data,
         // because the root operation collector will be set in the state 'executed'.
         const result2 = await (new Promise((resolve) => {
-            slw[ROOT_OP_COLLECTOR]!.execute().then(() => {
+            slw[ROOT_OP_COLLECTOR]!.ref.execute().then(() => {
                 resolve(slw);
             });
         }) as unknown as Promise<typeof slw>);

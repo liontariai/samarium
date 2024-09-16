@@ -1,6 +1,7 @@
 import {
     SelectionWrapperImpl,
     type OperationSelectionCollector,
+    type OperationSelectionCollectorRef,
 } from "@/lib/codegen/flavors/default/wrapper";
 
 export interface ScalarTypeMapWithCustom {}
@@ -18,7 +19,9 @@ export interface ScalarTypeMapDefault {
 
 export type SelectionFnParent =
     | {
-          collector: OperationSelectionCollector;
+          collector:
+              | OperationSelectionCollector
+              | OperationSelectionCollectorRef;
           fieldName?: string;
           args?: Record<string, any>;
           argsMeta?: Record<string, string>;
@@ -141,10 +144,3 @@ export type SLFN<
               >
         : EE[k];
 };
-
-export const selectScalars = <S>(selection: Record<string, any>) =>
-    Object.fromEntries(
-        Object.entries(selection).filter(
-            ([k, v]) => v instanceof SelectionWrapperImpl,
-        ),
-    ) as S;

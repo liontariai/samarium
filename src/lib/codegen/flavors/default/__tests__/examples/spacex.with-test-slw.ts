@@ -8,7 +8,7 @@ import {
     SLW_DIRECTIVE_ARGS,
     SLW_DIRECTIVE_ARGS_META,
 } from "@/lib/codegen/flavors/default/wrapper";
-import { makeSLFN } from "../utils";
+import { makeSLFN, selectScalars } from "../utils";
 import type {
     SelectionFnParent,
     SLWsFromSelection,
@@ -24,7 +24,6 @@ import type {
     ScalarTypeMapDefault,
     ScalarTypeMapWithCustom,
 } from "../utils/types";
-import { selectScalars } from "../utils/types";
 
 export type users_select_column =
     | "column"
@@ -9988,7 +9987,9 @@ function __client__<
         undefined,
         new RootOperation(),
     );
-    const selection: F = _makeRootOperationInput.bind(root)() as any;
+    const rootRef = { ref: root };
+    const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
+
     const r = s(selection);
     const _result = new SelectionWrapper(
         undefined,

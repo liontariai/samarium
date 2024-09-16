@@ -1,7 +1,6 @@
 import { SelectionWrapper } from "@/lib/codegen/flavors/default/wrapper";
-import { makeSLFN } from "../utils";
+import { makeSLFN, selectScalars } from "../utils";
 import {
-    selectScalars,
     type ArgumentsTypeFromFragment,
     type ReturnTypeFromFragment,
     type SLFN,
@@ -87,15 +86,12 @@ export function makeBookArraySelectionInput(this: any) {
             >,
     } as const;
 }
-export const BookArraySelection = (
-    makeSLFN as SLFN<
-        {},
-        ReturnType<typeof makeBookArraySelectionInput>,
-        "BookArraySelection",
-        "Book",
-        1
-    >
-)(makeBookArraySelectionInput, "BookArraySelection", "BookArray", "Book", 1);
+export const BookArraySelection = makeSLFN(
+    makeBookArraySelectionInput,
+    "BookArraySelection",
+    "Book",
+    1,
+);
 
 export function makeArticleArraySelectionInput(this: any) {
     return {
@@ -143,18 +139,9 @@ export function makeArticleArraySelectionInput(this: any) {
             >,
     } as const;
 }
-export const ArticleArraySelection = (
-    makeSLFN as SLFN<
-        {},
-        ReturnType<typeof makeArticleArraySelectionInput>,
-        "ArticleArraySelection",
-        "Article",
-        1
-    >
-)(
+export const ArticleArraySelection = makeSLFN(
     makeArticleArraySelectionInput,
     "ArticleArraySelection",
-    "ArticleArray",
     "Article",
     1,
 );
@@ -175,18 +162,9 @@ export function makeSearchResultArraySelectionInput(this: any) {
         },
     } as const;
 }
-export const SearchResultArraySelection = (
-    makeSLFN as SLFN<
-        {},
-        ReturnType<typeof makeSearchResultArraySelectionInput>,
-        "SearchResultArraySelection",
-        "SearchResult",
-        1
-    >
-)(
+export const SearchResultArraySelection = makeSLFN(
     makeSearchResultArraySelectionInput,
     "SearchResultArraySelection",
-    "SearchResultArray",
     "SearchResult",
     1,
 );
@@ -217,15 +195,12 @@ export function makeBookSelectionInput(this: any) {
             ) as SLWsFromSelection<ReturnType<typeof makeBookSelectionInput>>,
     } as const;
 }
-export const BookSelection = (
-    makeSLFN as SLFN<
-        {},
-        ReturnType<typeof makeBookSelectionInput>,
-        "BookSelection",
-        "Book",
-        0
-    >
-)(makeBookSelectionInput, "BookSelection", "Book", "Book", 0);
+export const BookSelection = makeSLFN(
+    makeBookSelectionInput,
+    "BookSelection",
+    "Book",
+    0,
+);
 
 export function makeArticleSelectionInput(this: any) {
     return {
@@ -273,15 +248,12 @@ export function makeArticleSelectionInput(this: any) {
             >,
     } as const;
 }
-export const ArticleSelection = (
-    makeSLFN as SLFN<
-        {},
-        ReturnType<typeof makeArticleSelectionInput>,
-        "ArticleSelection",
-        "Article",
-        0
-    >
-)(makeArticleSelectionInput, "ArticleSelection", "Article", "Article", 0);
+export const ArticleSelection = makeSLFN(
+    makeArticleSelectionInput,
+    "ArticleSelection",
+    "Article",
+    0,
+);
 
 export function makeQuerySelectionInput(this: any) {
     return {
@@ -351,15 +323,12 @@ export function makeQuerySelectionInput(this: any) {
             ) as SLWsFromSelection<ReturnType<typeof makeQuerySelectionInput>>,
     } as const;
 }
-export const QuerySelection = (
-    makeSLFN as SLFN<
-        {},
-        ReturnType<typeof makeQuerySelectionInput>,
-        "QuerySelection",
-        "Query",
-        0
-    >
-)(makeQuerySelectionInput, "QuerySelection", "Query", 0);
+export const QuerySelection = makeSLFN(
+    makeQuerySelectionInput,
+    "QuerySelection",
+    "Query",
+    0,
+);
 
 export type _RootOperationSelectionFields<T extends object> = {
     query: ReturnType<
