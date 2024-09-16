@@ -9,8 +9,8 @@ You can define a named fragment and use it in your queries:
 ```typescript
 import sdk, { LaunchSelection } from "./sdks/spacex";
 
-function launchFragment() {
-    return LaunchSelection(({ id }) => ({
+function launchFragment(this: any) {
+    return LaunchSelection.bind(this)(({ id }) => ({
         id,
     }));
 }
