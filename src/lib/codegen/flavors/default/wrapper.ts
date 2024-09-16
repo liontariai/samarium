@@ -394,6 +394,10 @@ export const SLW_OP_PATH = Symbol("SLW_OP_PATH");
 export const SLW_REGISTER_PATH = Symbol("SLW_REGISTER_PATH");
 export const SLW_RENDER_WITH_ARGS = Symbol("SLW_RENDER_WITH_ARGS");
 
+export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
+    "SLW_RECREATE_VALUE_CALLBACK",
+);
+
 export class SelectionWrapperImpl<
     fieldName extends string,
     typeNamePure extends string,
@@ -431,6 +435,7 @@ export class SelectionWrapperImpl<
     [SLW_PARENT_SLW]?: SelectionWrapperImpl<string, string, number, any, any>;
     [SLW_LAZY_FLAG]?: boolean;
 
+    [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
     constructor(
         fieldName?: fieldName,
         typeNamePure?: typeNamePure,
@@ -440,6 +445,7 @@ export class SelectionWrapperImpl<
         parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
         argsMeta?: Record<string, string>,
+        reCreateValueCallback?: () => valueT,
     ) {
         this[SLW_FIELD_NAME] = fieldName;
         this[SLW_FIELD_TYPENAME] = typeNamePure;
@@ -467,6 +473,10 @@ export class SelectionWrapperImpl<
             if (rootCollector.parent && "ref" in rootCollector.parent) {
                 this[ROOT_OP_COLLECTOR] = rootCollector.parent;
             }
+        }
+
+        if (reCreateValueCallback) {
+            this[SLW_RECREATE_VALUE_CALLBACK] = reCreateValueCallback;
         }
     }
 
@@ -578,6 +588,7 @@ export class SelectionWrapper<
         parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
         argsMeta?: Record<string, string>,
+        reCreateValueCallback?: () => valueT,
     ) {
         super(
             new SelectionWrapperImpl<
@@ -595,6 +606,7 @@ export class SelectionWrapper<
                 parent,
                 args,
                 argsMeta,
+                reCreateValueCallback,
             ),
             {
                 // implement ProxyHandler methods
@@ -626,17 +638,63 @@ export class SelectionWrapper<
                             args?: argsT,
                         ) {
                             const { parentSlw, key } = this;
-                            that[SLW_PARENT_SLW] = parentSlw;
-                            parentSlw[SLW_COLLECTOR]?.registerSelection(
-                                key,
-                                that,
+                            const newRootOpCollectorRef = {
+                                ref: new OperationSelectionCollector(
+                                    undefined,
+                                    undefined,
+                                    new RootOperation(),
+                                ),
+                            };
+
+                            const newThisCollector =
+                                new OperationSelectionCollector(
+                                    undefined,
+                                    newRootOpCollectorRef,
+                                );
+                            const r =
+                                that[SLW_RECREATE_VALUE_CALLBACK]?.bind(
+                                    newThisCollector,
+                                )();
+
+                            const newThat = new SelectionWrapper(
+                                that[SLW_FIELD_NAME],
+                                that[SLW_FIELD_TYPENAME],
+                                that[SLW_FIELD_ARR_DEPTH],
+                                r,
+                                newThisCollector,
+                                newRootOpCollectorRef,
+                                that[SLW_ARGS],
+                                that[SLW_ARGS_META],
+                            );
+                            Object.keys(r!).forEach(
+                                (key) =>
+                                    (newThat as valueT)[key as keyof valueT],
                             );
 
-                            that[SLW_ARGS] = {
+                            newThat[SLW_IS_ROOT_TYPE] = that[SLW_IS_ROOT_TYPE];
+                            newThat[SLW_IS_ON_TYPE_FRAGMENT] =
+                                that[SLW_IS_ON_TYPE_FRAGMENT];
+                            newThat[SLW_IS_FRAGMENT] = that[SLW_IS_FRAGMENT];
+
+                            newThat[SLW_PARENT_SLW] = parentSlw;
+                            parentSlw[SLW_COLLECTOR]?.registerSelection(
+                                key,
+                                newThat,
+                            );
+                            newThat[SLW_ARGS] = {
                                 ...(that[SLW_ARGS] ?? {}),
                                 ...args,
                             } as argsT;
-                            return that;
+
+                            newThat[SLW_LAZY_FLAG] = true;
+                            newThat[SLW_OP_PATH] = that[SLW_OP_PATH];
+
+                            newRootOpCollectorRef.ref.registerSelection(
+                                newThat[SLW_FIELD_NAME]!,
+                                newThat,
+                            );
+
+                            return newThat;
                         }
                         target[SLW_LAZY_FLAG] = true;
                         lazy[SLW_LAZY_FLAG] = true;
@@ -663,7 +721,8 @@ export class SelectionWrapper<
                         prop === SLW_COLLECTOR ||
                         prop === SLW_OP_PATH ||
                         prop === SLW_REGISTER_PATH ||
-                        prop === SLW_RENDER_WITH_ARGS
+                        prop === SLW_RENDER_WITH_ARGS ||
+                        prop === SLW_RECREATE_VALUE_CALLBACK
                     ) {
                         return target[
                             prop as keyof SelectionWrapperImpl<
