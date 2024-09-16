@@ -116,7 +116,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     };
 
     type SelectionFnParent = {
-        collector: OperationSelectionCollector;
+        collector: OperationSelectionCollector | OperationSelectionCollectorRef;
         fieldName?: string;
         args?: Record<string, any>;
         argsMeta?: Record<string, string>;
@@ -138,7 +138,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         R = {
             [K in keyof S]: S[K] extends SelectionWrapperImpl<
                 infer FN,
-                infer TN,
                 infer TNP,
                 infer TAD
             >
@@ -178,7 +177,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         T extends object,
         F,
         N extends string,
-        TN extends string,
         TNP extends string,
         TAD extends number,
         E extends { [key: string | number | symbol]: any } = {},
@@ -186,7 +184,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     > = (
         makeSLFNInput: () => F,
         SLFN_name: N,
-        SLFN_typeName: TN,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
     ) => <TT = T, FF = F, EE = E>(
@@ -196,7 +193,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         {
             [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                 infer FN,
-                infer TN,
                 infer TTNP,
                 infer TTAD,
                 infer VT,
@@ -215,7 +211,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         {
                             [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                                 infer FN,
-                                infer TN,
                                 infer TTNP,
                                 infer TTAD,
                                 infer VT,
@@ -231,7 +226,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     {
                         [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
                             infer FN,
-                            infer TN,
                             infer TTNP,
                             infer TTAD,
                             infer VT,
@@ -257,13 +251,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         T extends object,
         F,
         N extends string,
-        TN extends string,
         TNP extends string,
         TAD extends number,
     >(
         makeSLFNInput: () => F,
         SLFN_name: N,
-        SLFN_typeName: TN,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
     ) => {
@@ -279,7 +271,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const r = s(selection);
                 const _result = new SelectionWrapper(
                     parent?.fieldName,
-                    SLFN_typeName,
                     SLFN_typeNamePure,
                     SLFN_typeArrDepth,
                     r,
@@ -287,6 +278,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     parent?.collector,
                     parent?.args,
                     parent?.argsMeta,
+                    function (this: OperationSelectionCollector) {
+                        return s(makeSLFNInput.bind(this)() as FF);
+                    },
                 );
                 _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
                 _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
@@ -312,7 +306,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 new OperationSelectionCollector(SLFN_name, parent?.collector),
             )();
         }
-        return _SLFN as ReturnType<SLFN<T, F, N, TN, TNP, TAD>>;
+        return _SLFN as ReturnType<SLFN<T, F, N, TNP, TAD>>;
     };
     `;
 
@@ -575,7 +569,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             field.hasArgs ? `(args: ${argsTypeName}) => ` : ""
         }new SelectionWrapper(
             "${field.name}",
-            "${field.type.name}",
             "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
             ${field.type.isList ?? 0},
             {},
@@ -726,7 +719,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
             return `new SelectionWrapper(
                 "${this.typeName}",
-                "${this.typeMeta.name}",
                 "${this.typeMeta.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                 ${this.typeMeta.isList ?? 0},
                 {},
@@ -747,6 +739,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const typeHasScalars = this.typeMeta.fields.some(
             (f) => f.type.isScalar || f.type.isEnum,
         );
+
+        const isRootType =
+            this.typeMeta.name === this.collector.QueryTypeName ||
+            this.typeMeta.name === this.collector.MutationTypeName ||
+            this.typeMeta.name === this.collector.SubscriptionTypeName;
 
         let helperFunctions = "";
         if (this.typeMeta.isUnion) {
@@ -820,7 +817,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         : ""
                                 } ${
                                     field.type.isScalar || field.type.isEnum
-                                        ? `SelectionWrapper<"${field.name}", "${field.type.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
+                                        ? `SelectionWrapper<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
                                               field.hasArgs
                                                   ? `${this.typeName}${field.name
                                                         .slice(0, 1)
@@ -834,11 +831,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     field.type.name,
                                                 )}SelectionInput>,
                                                 "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
-                                                "${field.type.name}",
                                                 "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
                                                     field.type.name,
                                                 )}",
                                                 ${field.type.isList ?? 0},
+                                                ${
+                                                    isRootType
+                                                        ? `
                                                 { 
                                                     $lazy: (
                                                         ${
@@ -854,6 +853,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     ) => Promise<"T">
                                                 },
                                                 "$lazy"
+                                                `
+                                                        : ""
+                                                }
                                             >
                                         >`
                                 }`,
@@ -868,7 +870,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             export const ${selectionFunctionName} = makeSLFN(
                 ${`make${selectionFunctionName}Input`},
                 "${selectionFunctionName}",
-                "${this.typeName}",
                 "${this.originalFullTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
                 ${this.typeMeta.isList ?? 0}
             );
@@ -995,9 +996,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 s: (selection: F) => T
             ) {
                 const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
-                const selection: F = _makeRootOperationInput.bind(root)() as any;
+                const rootRef = { ref: root };
+                const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
                 const r = s(selection);
-                const _result = new SelectionWrapper(undefined, undefined, undefined, undefined, r, root, undefined) as unknown as T;
+                const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                 const result = _result as {
                     [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<
@@ -1011,11 +1013,49 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 let headers: Record<string, string> | undefined = undefined;
                 const finalPromise = {
                     then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
-                        root.execute(headers)
+                        ${
+                            authConfig
+                                ? `
+                            const doExecute = () => {
+                                root.execute(headers)
+                                    .then(() => {
+                                        resolve(result);
+                                    })
+                                    .catch(reject);
+                            }
+                            if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
+                                const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
+                                if (tokenOrPromise instanceof Promise) {
+                                    tokenOrPromise.then((t) => {
+                                        if (typeof t === "string")
+                                            headers = { "${authConfig.headerName}": t };
+                                        else headers = t;
+    
+                                        doExecute();
+                                    });
+                                }
+                                else if (typeof tokenOrPromise === "string") {
+                                    headers = { "${authConfig.headerName}": tokenOrPromise };
+
+                                    doExecute();
+                                } else {
+                                    headers = tokenOrPromise;
+
+                                    doExecute();
+                                }
+                            }
+                            else {
+                                doExecute();
+                            }
+                        `
+                                : `
+                            root.execute(headers)
                             .then(() => {
                                 resolve(result);
                             })
                             .catch(reject);
+                        `
+                        }
                     },
                 };
                 ${
@@ -1067,7 +1107,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             };
 
             const __init__ = (options: {
-                ${authConfig ? `auth?: string | { [key: string]: string };` : ""}
+                ${authConfig ? `auth?: __AuthenticationArg__;` : ""}
                 headers?: { [key: string]: string };
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
@@ -1086,7 +1126,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     RootOperation[OPTIONS].headers = {
                         "${authConfig.headerName}": options.auth,
                     };
-                } else if (options.auth) {
+                } else if (typeof options.auth === "function" ) {
+                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                }
+                else if (options.auth) {
                     RootOperation[OPTIONS].headers = options.auth;
                 }
                 `

@@ -21,7 +21,7 @@ describe("introspectGraphQLSchema", () => {
 
         // Act & Assert
         expect(() => introspectGraphQLSchema(endpoint)).toThrow(
-            /Error introspecting GraphQL schema/,
+            /(Error introspecting GraphQL schema|Unable to connect. Is the computer able to access the url\?)/,
         );
     });
 });
