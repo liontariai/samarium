@@ -7,8 +7,8 @@ Parameterized fragments are reusable query fragments that can accept parameters.
 You can define a parameterized fragment and use it with different arguments:
 
 ```typescript
-function launchQueryFragment(limit: number) {
-    return QuerySelection(({ launches }) => ({
+function launchQueryFragment(this: any, limit: number) {
+    return QuerySelection.bind(this)(({ launches }) => ({
         firstNLaunches: launches({ limit })(({ id }) => ({
             id,
         })),
@@ -17,6 +17,8 @@ function launchQueryFragment(limit: number) {
 const { operation1 } = await sdk((op) => ({
     operation1: op.query(({ $fragment }) => ({
         ...$fragment(launchQueryFragment)(10),
+    })),
+    operation2: op.query(({ $fragment }) => ({
         ...$fragment(launchQueryFragment)(20),
     })),
 }));
