@@ -834,10 +834,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
                                                     field.type.name,
                                                 )}",
-                                                ${field.type.isList ?? 0},
+                                                ${field.type.isList ?? 0}
                                                 ${
                                                     isRootType
-                                                        ? `
+                                                        ? `,
                                                 { 
                                                     $lazy: (
                                                         ${
