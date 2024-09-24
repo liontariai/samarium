@@ -1131,9 +1131,9 @@ export type LanguageFilterInput = {
 };
 
 type ReturnTypeFromCountryNotNullArrayNotNullSelection = {
-    awsRegion: SelectionWrapper<"awsRegion", "String", 0, {}, undefined>;
-    capital: SelectionWrapper<"capital", "String", 0, {}, undefined>;
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
+    awsRegion: SelectionWrapperImpl<"awsRegion", "String", 0, {}, undefined>;
+    capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
     continent: ReturnType<
         SLFN<
             {},
@@ -1143,10 +1143,10 @@ type ReturnTypeFromCountryNotNullArrayNotNullSelection = {
             0
         >
     >;
-    currencies: SelectionWrapper<"currencies", "String", 1, {}, undefined>;
-    currency: SelectionWrapper<"currency", "String", 0, {}, undefined>;
-    emoji: SelectionWrapper<"emoji", "String", 0, {}, undefined>;
-    emojiU: SelectionWrapper<"emojiU", "String", 0, {}, undefined>;
+    currencies: SelectionWrapperImpl<"currencies", "String", 1, {}, undefined>;
+    currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
+    emojiU: SelectionWrapperImpl<"emojiU", "String", 0, {}, undefined>;
     languages: ReturnType<
         SLFN<
             {},
@@ -1158,16 +1158,16 @@ type ReturnTypeFromCountryNotNullArrayNotNullSelection = {
     >;
     name: (
         args: CountryNotNullArrayNotNullNameArgs,
-    ) => SelectionWrapper<
+    ) => SelectionWrapperImpl<
         "name",
         "String",
         0,
         {},
         CountryNotNullArrayNotNullNameArgs
     >;
-    native: SelectionWrapper<"native", "String", 0, {}, undefined>;
-    phone: SelectionWrapper<"phone", "String", 0, {}, undefined>;
-    phones: SelectionWrapper<"phones", "String", 1, {}, undefined>;
+    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
+    phone: SelectionWrapperImpl<"phone", "String", 0, {}, undefined>;
+    phones: SelectionWrapperImpl<"phones", "String", 1, {}, undefined>;
     states: ReturnType<
         SLFN<
             {},
@@ -1312,7 +1312,7 @@ export const CountryNotNullArrayNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromContinentNotNullSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
     countries: ReturnType<
         SLFN<
             {},
@@ -1322,7 +1322,7 @@ type ReturnTypeFromContinentNotNullSelection = {
             1
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1369,10 +1369,10 @@ export const ContinentNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromLanguageNotNullArrayNotNullSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    native: SelectionWrapper<"native", "String", 0, {}, undefined>;
-    rtl: SelectionWrapper<"rtl", "Boolean", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
+    rtl: SelectionWrapperImpl<"rtl", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1424,7 +1424,7 @@ export const LanguageNotNullArrayNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromStateNotNullArrayNotNullSelection = {
-    code: SelectionWrapper<"code", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "String", 0, {}, undefined>;
     country: ReturnType<
         SLFN<
             {},
@@ -1434,7 +1434,7 @@ type ReturnTypeFromStateNotNullArrayNotNullSelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1481,9 +1481,9 @@ export const StateNotNullArrayNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromCountryNotNullSelection = {
-    awsRegion: SelectionWrapper<"awsRegion", "String", 0, {}, undefined>;
-    capital: SelectionWrapper<"capital", "String", 0, {}, undefined>;
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
+    awsRegion: SelectionWrapperImpl<"awsRegion", "String", 0, {}, undefined>;
+    capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
     continent: ReturnType<
         SLFN<
             {},
@@ -1493,10 +1493,10 @@ type ReturnTypeFromCountryNotNullSelection = {
             0
         >
     >;
-    currencies: SelectionWrapper<"currencies", "String", 1, {}, undefined>;
-    currency: SelectionWrapper<"currency", "String", 0, {}, undefined>;
-    emoji: SelectionWrapper<"emoji", "String", 0, {}, undefined>;
-    emojiU: SelectionWrapper<"emojiU", "String", 0, {}, undefined>;
+    currencies: SelectionWrapperImpl<"currencies", "String", 1, {}, undefined>;
+    currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
+    emojiU: SelectionWrapperImpl<"emojiU", "String", 0, {}, undefined>;
     languages: ReturnType<
         SLFN<
             {},
@@ -1508,10 +1508,10 @@ type ReturnTypeFromCountryNotNullSelection = {
     >;
     name: (
         args: CountryNotNullNameArgs,
-    ) => SelectionWrapper<"name", "String", 0, {}, CountryNotNullNameArgs>;
-    native: SelectionWrapper<"native", "String", 0, {}, undefined>;
-    phone: SelectionWrapper<"phone", "String", 0, {}, undefined>;
-    phones: SelectionWrapper<"phones", "String", 1, {}, undefined>;
+    ) => SelectionWrapperImpl<"name", "String", 0, {}, CountryNotNullNameArgs>;
+    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
+    phone: SelectionWrapperImpl<"phone", "String", 0, {}, undefined>;
+    phones: SelectionWrapperImpl<"phones", "String", 1, {}, undefined>;
     states: ReturnType<
         SLFN<
             {},
@@ -1656,9 +1656,9 @@ export const CountryNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromSubdivisionNotNullArrayNotNullSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
-    emoji: SelectionWrapper<"emoji", "String", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1704,7 +1704,7 @@ export const SubdivisionNotNullArrayNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromContinentSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
     countries: ReturnType<
         SLFN<
             {},
@@ -1714,7 +1714,7 @@ type ReturnTypeFromContinentSelection = {
             1
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1761,7 +1761,7 @@ export const ContinentSelection = makeSLFN(
 );
 
 type ReturnTypeFromContinentNotNullArrayNotNullSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
     countries: ReturnType<
         SLFN<
             {},
@@ -1771,7 +1771,7 @@ type ReturnTypeFromContinentNotNullArrayNotNullSelection = {
             1
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1820,9 +1820,9 @@ export const ContinentNotNullArrayNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromCountrySelection = {
-    awsRegion: SelectionWrapper<"awsRegion", "String", 0, {}, undefined>;
-    capital: SelectionWrapper<"capital", "String", 0, {}, undefined>;
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
+    awsRegion: SelectionWrapperImpl<"awsRegion", "String", 0, {}, undefined>;
+    capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
     continent: ReturnType<
         SLFN<
             {},
@@ -1832,10 +1832,10 @@ type ReturnTypeFromCountrySelection = {
             0
         >
     >;
-    currencies: SelectionWrapper<"currencies", "String", 1, {}, undefined>;
-    currency: SelectionWrapper<"currency", "String", 0, {}, undefined>;
-    emoji: SelectionWrapper<"emoji", "String", 0, {}, undefined>;
-    emojiU: SelectionWrapper<"emojiU", "String", 0, {}, undefined>;
+    currencies: SelectionWrapperImpl<"currencies", "String", 1, {}, undefined>;
+    currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
+    emojiU: SelectionWrapperImpl<"emojiU", "String", 0, {}, undefined>;
     languages: ReturnType<
         SLFN<
             {},
@@ -1847,10 +1847,10 @@ type ReturnTypeFromCountrySelection = {
     >;
     name: (
         args: CountryNameArgs,
-    ) => SelectionWrapper<"name", "String", 0, {}, CountryNameArgs>;
-    native: SelectionWrapper<"native", "String", 0, {}, undefined>;
-    phone: SelectionWrapper<"phone", "String", 0, {}, undefined>;
-    phones: SelectionWrapper<"phones", "String", 1, {}, undefined>;
+    ) => SelectionWrapperImpl<"name", "String", 0, {}, CountryNameArgs>;
+    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
+    phone: SelectionWrapperImpl<"phone", "String", 0, {}, undefined>;
+    phones: SelectionWrapperImpl<"phones", "String", 1, {}, undefined>;
     states: ReturnType<
         SLFN<
             {},
@@ -1995,10 +1995,10 @@ export const CountrySelection = makeSLFN(
 );
 
 type ReturnTypeFromLanguageSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    native: SelectionWrapper<"native", "String", 0, {}, undefined>;
-    rtl: SelectionWrapper<"rtl", "Boolean", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
+    rtl: SelectionWrapperImpl<"rtl", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2199,7 +2199,7 @@ export const QuerySelection = makeSLFN(
 );
 
 type ReturnTypeFromStateSelection = {
-    code: SelectionWrapper<"code", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "String", 0, {}, undefined>;
     country: ReturnType<
         SLFN<
             {},
@@ -2209,7 +2209,7 @@ type ReturnTypeFromStateSelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2254,9 +2254,9 @@ export const StateSelection = makeSLFN(
 );
 
 type ReturnTypeFromSubdivisionSelection = {
-    code: SelectionWrapper<"code", "ID", 0, {}, undefined>;
-    emoji: SelectionWrapper<"emoji", "String", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
