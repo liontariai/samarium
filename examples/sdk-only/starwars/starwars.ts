@@ -1559,16 +1559,28 @@ export const RootVehicleArgsMeta = { id: "ID", vehicleID: "ID" } as const;
 export const RootNodeArgsMeta = { id: "ID!" } as const;
 
 type ReturnTypeFromPageInfoNotNullSelection = {
-    hasNextPage: SelectionWrapper<"hasNextPage", "Boolean", 0, {}, undefined>;
-    hasPreviousPage: SelectionWrapper<
+    hasNextPage: SelectionWrapperImpl<
+        "hasNextPage",
+        "Boolean",
+        0,
+        {},
+        undefined
+    >;
+    hasPreviousPage: SelectionWrapperImpl<
         "hasPreviousPage",
         "Boolean",
         0,
         {},
         undefined
     >;
-    startCursor: SelectionWrapper<"startCursor", "String", 0, {}, undefined>;
-    endCursor: SelectionWrapper<"endCursor", "String", 0, {}, undefined>;
+    startCursor: SelectionWrapperImpl<
+        "startCursor",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    endCursor: SelectionWrapperImpl<"endCursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1650,7 +1662,7 @@ type ReturnTypeFromFilmsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1700,12 +1712,24 @@ export const FilmsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromFilmSelection = {
-    title: SelectionWrapper<"title", "String", 0, {}, undefined>;
-    episodeID: SelectionWrapper<"episodeID", "Int", 0, {}, undefined>;
-    openingCrawl: SelectionWrapper<"openingCrawl", "String", 0, {}, undefined>;
-    director: SelectionWrapper<"director", "String", 0, {}, undefined>;
-    producers: SelectionWrapper<"producers", "String", 1, {}, undefined>;
-    releaseDate: SelectionWrapper<"releaseDate", "String", 0, {}, undefined>;
+    title: SelectionWrapperImpl<"title", "String", 0, {}, undefined>;
+    episodeID: SelectionWrapperImpl<"episodeID", "Int", 0, {}, undefined>;
+    openingCrawl: SelectionWrapperImpl<
+        "openingCrawl",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    director: SelectionWrapperImpl<"director", "String", 0, {}, undefined>;
+    producers: SelectionWrapperImpl<"producers", "String", 1, {}, undefined>;
+    releaseDate: SelectionWrapperImpl<
+        "releaseDate",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     speciesConnection: (
         args: FilmSpeciesConnectionArgs,
     ) => ReturnType<
@@ -1761,9 +1785,9 @@ type ReturnTypeFromFilmSelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1911,7 +1935,7 @@ type ReturnTypeFromFilmSpeciesConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     species: ReturnType<
         SLFN<
             {},
@@ -1990,7 +2014,7 @@ type ReturnTypeFromFilmSpeciesEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2040,27 +2064,39 @@ export const FilmSpeciesEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromSpeciesSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    classification: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    classification: SelectionWrapperImpl<
         "classification",
         "String",
         0,
         {},
         undefined
     >;
-    designation: SelectionWrapper<"designation", "String", 0, {}, undefined>;
-    averageHeight: SelectionWrapper<"averageHeight", "Float", 0, {}, undefined>;
-    averageLifespan: SelectionWrapper<
+    designation: SelectionWrapperImpl<
+        "designation",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    averageHeight: SelectionWrapperImpl<
+        "averageHeight",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    averageLifespan: SelectionWrapperImpl<
         "averageLifespan",
         "Int",
         0,
         {},
         undefined
     >;
-    eyeColors: SelectionWrapper<"eyeColors", "String", 1, {}, undefined>;
-    hairColors: SelectionWrapper<"hairColors", "String", 1, {}, undefined>;
-    skinColors: SelectionWrapper<"skinColors", "String", 1, {}, undefined>;
-    language: SelectionWrapper<"language", "String", 0, {}, undefined>;
+    eyeColors: SelectionWrapperImpl<"eyeColors", "String", 1, {}, undefined>;
+    hairColors: SelectionWrapperImpl<"hairColors", "String", 1, {}, undefined>;
+    skinColors: SelectionWrapperImpl<"skinColors", "String", 1, {}, undefined>;
+    language: SelectionWrapperImpl<"language", "String", 0, {}, undefined>;
     homeworld: ReturnType<
         SLFN<
             {},
@@ -2092,9 +2128,9 @@ type ReturnTypeFromSpeciesSelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2235,15 +2271,33 @@ export const SpeciesSelection = makeSLFN(
 );
 
 type ReturnTypeFromPlanetSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    diameter: SelectionWrapper<"diameter", "Int", 0, {}, undefined>;
-    rotationPeriod: SelectionWrapper<"rotationPeriod", "Int", 0, {}, undefined>;
-    orbitalPeriod: SelectionWrapper<"orbitalPeriod", "Int", 0, {}, undefined>;
-    gravity: SelectionWrapper<"gravity", "String", 0, {}, undefined>;
-    population: SelectionWrapper<"population", "Float", 0, {}, undefined>;
-    climates: SelectionWrapper<"climates", "String", 1, {}, undefined>;
-    terrains: SelectionWrapper<"terrains", "String", 1, {}, undefined>;
-    surfaceWater: SelectionWrapper<"surfaceWater", "Float", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    diameter: SelectionWrapperImpl<"diameter", "Int", 0, {}, undefined>;
+    rotationPeriod: SelectionWrapperImpl<
+        "rotationPeriod",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    orbitalPeriod: SelectionWrapperImpl<
+        "orbitalPeriod",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    gravity: SelectionWrapperImpl<"gravity", "String", 0, {}, undefined>;
+    population: SelectionWrapperImpl<"population", "Float", 0, {}, undefined>;
+    climates: SelectionWrapperImpl<"climates", "String", 1, {}, undefined>;
+    terrains: SelectionWrapperImpl<"terrains", "String", 1, {}, undefined>;
+    surfaceWater: SelectionWrapperImpl<
+        "surfaceWater",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
     residentConnection: (
         args: PlanetResidentConnectionArgs,
     ) => ReturnType<
@@ -2266,9 +2320,9 @@ type ReturnTypeFromPlanetSelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2421,7 +2475,7 @@ type ReturnTypeFromPlanetResidentsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     residents: ReturnType<
         SLFN<
             {},
@@ -2500,7 +2554,7 @@ type ReturnTypeFromPlanetResidentsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2550,14 +2604,14 @@ export const PlanetResidentsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromPersonSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    birthYear: SelectionWrapper<"birthYear", "String", 0, {}, undefined>;
-    eyeColor: SelectionWrapper<"eyeColor", "String", 0, {}, undefined>;
-    gender: SelectionWrapper<"gender", "String", 0, {}, undefined>;
-    hairColor: SelectionWrapper<"hairColor", "String", 0, {}, undefined>;
-    height: SelectionWrapper<"height", "Int", 0, {}, undefined>;
-    mass: SelectionWrapper<"mass", "Float", 0, {}, undefined>;
-    skinColor: SelectionWrapper<"skinColor", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    birthYear: SelectionWrapperImpl<"birthYear", "String", 0, {}, undefined>;
+    eyeColor: SelectionWrapperImpl<"eyeColor", "String", 0, {}, undefined>;
+    gender: SelectionWrapperImpl<"gender", "String", 0, {}, undefined>;
+    hairColor: SelectionWrapperImpl<"hairColor", "String", 0, {}, undefined>;
+    height: SelectionWrapperImpl<"height", "Int", 0, {}, undefined>;
+    mass: SelectionWrapperImpl<"mass", "Float", 0, {}, undefined>;
+    skinColor: SelectionWrapperImpl<"skinColor", "String", 0, {}, undefined>;
     homeworld: ReturnType<
         SLFN<
             {},
@@ -2609,9 +2663,9 @@ type ReturnTypeFromPersonSelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2757,7 +2811,7 @@ type ReturnTypeFromPersonFilmsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     films: ReturnType<
         SLFN<
             {},
@@ -2833,7 +2887,7 @@ type ReturnTypeFromPersonFilmsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2883,12 +2937,24 @@ export const PersonFilmsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromFilmArraySelection = {
-    title: SelectionWrapper<"title", "String", 0, {}, undefined>;
-    episodeID: SelectionWrapper<"episodeID", "Int", 0, {}, undefined>;
-    openingCrawl: SelectionWrapper<"openingCrawl", "String", 0, {}, undefined>;
-    director: SelectionWrapper<"director", "String", 0, {}, undefined>;
-    producers: SelectionWrapper<"producers", "String", 1, {}, undefined>;
-    releaseDate: SelectionWrapper<"releaseDate", "String", 0, {}, undefined>;
+    title: SelectionWrapperImpl<"title", "String", 0, {}, undefined>;
+    episodeID: SelectionWrapperImpl<"episodeID", "Int", 0, {}, undefined>;
+    openingCrawl: SelectionWrapperImpl<
+        "openingCrawl",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    director: SelectionWrapperImpl<"director", "String", 0, {}, undefined>;
+    producers: SelectionWrapperImpl<"producers", "String", 1, {}, undefined>;
+    releaseDate: SelectionWrapperImpl<
+        "releaseDate",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     speciesConnection: (
         args: FilmArraySpeciesConnectionArgs,
     ) => ReturnType<
@@ -2944,9 +3010,9 @@ type ReturnTypeFromFilmArraySelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3098,7 +3164,7 @@ type ReturnTypeFromFilmStarshipsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     starships: ReturnType<
         SLFN<
             {},
@@ -3177,7 +3243,7 @@ type ReturnTypeFromFilmStarshipsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3227,43 +3293,61 @@ export const FilmStarshipsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromStarshipSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    model: SelectionWrapper<"model", "String", 0, {}, undefined>;
-    starshipClass: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    model: SelectionWrapperImpl<"model", "String", 0, {}, undefined>;
+    starshipClass: SelectionWrapperImpl<
         "starshipClass",
         "String",
         0,
         {},
         undefined
     >;
-    manufacturers: SelectionWrapper<
+    manufacturers: SelectionWrapperImpl<
         "manufacturers",
         "String",
         1,
         {},
         undefined
     >;
-    costInCredits: SelectionWrapper<"costInCredits", "Float", 0, {}, undefined>;
-    length: SelectionWrapper<"length", "Float", 0, {}, undefined>;
-    crew: SelectionWrapper<"crew", "String", 0, {}, undefined>;
-    passengers: SelectionWrapper<"passengers", "String", 0, {}, undefined>;
-    maxAtmospheringSpeed: SelectionWrapper<
+    costInCredits: SelectionWrapperImpl<
+        "costInCredits",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    length: SelectionWrapperImpl<"length", "Float", 0, {}, undefined>;
+    crew: SelectionWrapperImpl<"crew", "String", 0, {}, undefined>;
+    passengers: SelectionWrapperImpl<"passengers", "String", 0, {}, undefined>;
+    maxAtmospheringSpeed: SelectionWrapperImpl<
         "maxAtmospheringSpeed",
         "Int",
         0,
         {},
         undefined
     >;
-    hyperdriveRating: SelectionWrapper<
+    hyperdriveRating: SelectionWrapperImpl<
         "hyperdriveRating",
         "Float",
         0,
         {},
         undefined
     >;
-    MGLT: SelectionWrapper<"MGLT", "Int", 0, {}, undefined>;
-    cargoCapacity: SelectionWrapper<"cargoCapacity", "Float", 0, {}, undefined>;
-    consumables: SelectionWrapper<"consumables", "String", 0, {}, undefined>;
+    MGLT: SelectionWrapperImpl<"MGLT", "Int", 0, {}, undefined>;
+    cargoCapacity: SelectionWrapperImpl<
+        "cargoCapacity",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    consumables: SelectionWrapperImpl<
+        "consumables",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     pilotConnection: (
         args: StarshipPilotConnectionArgs,
     ) => ReturnType<
@@ -3286,9 +3370,9 @@ type ReturnTypeFromStarshipSelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3447,7 +3531,7 @@ type ReturnTypeFromStarshipPilotsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     pilots: ReturnType<
         SLFN<
             {},
@@ -3526,7 +3610,7 @@ type ReturnTypeFromStarshipPilotsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3576,14 +3660,14 @@ export const StarshipPilotsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromPersonArraySelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    birthYear: SelectionWrapper<"birthYear", "String", 0, {}, undefined>;
-    eyeColor: SelectionWrapper<"eyeColor", "String", 0, {}, undefined>;
-    gender: SelectionWrapper<"gender", "String", 0, {}, undefined>;
-    hairColor: SelectionWrapper<"hairColor", "String", 0, {}, undefined>;
-    height: SelectionWrapper<"height", "Int", 0, {}, undefined>;
-    mass: SelectionWrapper<"mass", "Float", 0, {}, undefined>;
-    skinColor: SelectionWrapper<"skinColor", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    birthYear: SelectionWrapperImpl<"birthYear", "String", 0, {}, undefined>;
+    eyeColor: SelectionWrapperImpl<"eyeColor", "String", 0, {}, undefined>;
+    gender: SelectionWrapperImpl<"gender", "String", 0, {}, undefined>;
+    hairColor: SelectionWrapperImpl<"hairColor", "String", 0, {}, undefined>;
+    height: SelectionWrapperImpl<"height", "Int", 0, {}, undefined>;
+    mass: SelectionWrapperImpl<"mass", "Float", 0, {}, undefined>;
+    skinColor: SelectionWrapperImpl<"skinColor", "String", 0, {}, undefined>;
     homeworld: ReturnType<
         SLFN<
             {},
@@ -3635,9 +3719,9 @@ type ReturnTypeFromPersonArraySelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3785,7 +3869,7 @@ type ReturnTypeFromPersonStarshipsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     starships: ReturnType<
         SLFN<
             {},
@@ -3864,7 +3948,7 @@ type ReturnTypeFromPersonStarshipsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3914,43 +3998,61 @@ export const PersonStarshipsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromStarshipArraySelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    model: SelectionWrapper<"model", "String", 0, {}, undefined>;
-    starshipClass: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    model: SelectionWrapperImpl<"model", "String", 0, {}, undefined>;
+    starshipClass: SelectionWrapperImpl<
         "starshipClass",
         "String",
         0,
         {},
         undefined
     >;
-    manufacturers: SelectionWrapper<
+    manufacturers: SelectionWrapperImpl<
         "manufacturers",
         "String",
         1,
         {},
         undefined
     >;
-    costInCredits: SelectionWrapper<"costInCredits", "Float", 0, {}, undefined>;
-    length: SelectionWrapper<"length", "Float", 0, {}, undefined>;
-    crew: SelectionWrapper<"crew", "String", 0, {}, undefined>;
-    passengers: SelectionWrapper<"passengers", "String", 0, {}, undefined>;
-    maxAtmospheringSpeed: SelectionWrapper<
+    costInCredits: SelectionWrapperImpl<
+        "costInCredits",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    length: SelectionWrapperImpl<"length", "Float", 0, {}, undefined>;
+    crew: SelectionWrapperImpl<"crew", "String", 0, {}, undefined>;
+    passengers: SelectionWrapperImpl<"passengers", "String", 0, {}, undefined>;
+    maxAtmospheringSpeed: SelectionWrapperImpl<
         "maxAtmospheringSpeed",
         "Int",
         0,
         {},
         undefined
     >;
-    hyperdriveRating: SelectionWrapper<
+    hyperdriveRating: SelectionWrapperImpl<
         "hyperdriveRating",
         "Float",
         0,
         {},
         undefined
     >;
-    MGLT: SelectionWrapper<"MGLT", "Int", 0, {}, undefined>;
-    cargoCapacity: SelectionWrapper<"cargoCapacity", "Float", 0, {}, undefined>;
-    consumables: SelectionWrapper<"consumables", "String", 0, {}, undefined>;
+    MGLT: SelectionWrapperImpl<"MGLT", "Int", 0, {}, undefined>;
+    cargoCapacity: SelectionWrapperImpl<
+        "cargoCapacity",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    consumables: SelectionWrapperImpl<
+        "consumables",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     pilotConnection: (
         args: StarshipArrayPilotConnectionArgs,
     ) => ReturnType<
@@ -3973,9 +4075,9 @@ type ReturnTypeFromStarshipArraySelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4134,7 +4236,7 @@ type ReturnTypeFromStarshipFilmsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     films: ReturnType<
         SLFN<
             {},
@@ -4210,7 +4312,7 @@ type ReturnTypeFromStarshipFilmsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4278,7 +4380,7 @@ type ReturnTypeFromPersonVehiclesConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     vehicles: ReturnType<
         SLFN<
             {},
@@ -4357,7 +4459,7 @@ type ReturnTypeFromPersonVehiclesEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4407,29 +4509,53 @@ export const PersonVehiclesEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromVehicleSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    model: SelectionWrapper<"model", "String", 0, {}, undefined>;
-    vehicleClass: SelectionWrapper<"vehicleClass", "String", 0, {}, undefined>;
-    manufacturers: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    model: SelectionWrapperImpl<"model", "String", 0, {}, undefined>;
+    vehicleClass: SelectionWrapperImpl<
+        "vehicleClass",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    manufacturers: SelectionWrapperImpl<
         "manufacturers",
         "String",
         1,
         {},
         undefined
     >;
-    costInCredits: SelectionWrapper<"costInCredits", "Float", 0, {}, undefined>;
-    length: SelectionWrapper<"length", "Float", 0, {}, undefined>;
-    crew: SelectionWrapper<"crew", "String", 0, {}, undefined>;
-    passengers: SelectionWrapper<"passengers", "String", 0, {}, undefined>;
-    maxAtmospheringSpeed: SelectionWrapper<
+    costInCredits: SelectionWrapperImpl<
+        "costInCredits",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    length: SelectionWrapperImpl<"length", "Float", 0, {}, undefined>;
+    crew: SelectionWrapperImpl<"crew", "String", 0, {}, undefined>;
+    passengers: SelectionWrapperImpl<"passengers", "String", 0, {}, undefined>;
+    maxAtmospheringSpeed: SelectionWrapperImpl<
         "maxAtmospheringSpeed",
         "Int",
         0,
         {},
         undefined
     >;
-    cargoCapacity: SelectionWrapper<"cargoCapacity", "Float", 0, {}, undefined>;
-    consumables: SelectionWrapper<"consumables", "String", 0, {}, undefined>;
+    cargoCapacity: SelectionWrapperImpl<
+        "cargoCapacity",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    consumables: SelectionWrapperImpl<
+        "consumables",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     pilotConnection: (
         args: VehiclePilotConnectionArgs,
     ) => ReturnType<
@@ -4452,9 +4578,9 @@ type ReturnTypeFromVehicleSelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4604,7 +4730,7 @@ type ReturnTypeFromVehiclePilotsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     pilots: ReturnType<
         SLFN<
             {},
@@ -4683,7 +4809,7 @@ type ReturnTypeFromVehiclePilotsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4751,7 +4877,7 @@ type ReturnTypeFromVehicleFilmsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     films: ReturnType<
         SLFN<
             {},
@@ -4827,7 +4953,7 @@ type ReturnTypeFromVehicleFilmsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4877,29 +5003,53 @@ export const VehicleFilmsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromVehicleArraySelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    model: SelectionWrapper<"model", "String", 0, {}, undefined>;
-    vehicleClass: SelectionWrapper<"vehicleClass", "String", 0, {}, undefined>;
-    manufacturers: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    model: SelectionWrapperImpl<"model", "String", 0, {}, undefined>;
+    vehicleClass: SelectionWrapperImpl<
+        "vehicleClass",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    manufacturers: SelectionWrapperImpl<
         "manufacturers",
         "String",
         1,
         {},
         undefined
     >;
-    costInCredits: SelectionWrapper<"costInCredits", "Float", 0, {}, undefined>;
-    length: SelectionWrapper<"length", "Float", 0, {}, undefined>;
-    crew: SelectionWrapper<"crew", "String", 0, {}, undefined>;
-    passengers: SelectionWrapper<"passengers", "String", 0, {}, undefined>;
-    maxAtmospheringSpeed: SelectionWrapper<
+    costInCredits: SelectionWrapperImpl<
+        "costInCredits",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    length: SelectionWrapperImpl<"length", "Float", 0, {}, undefined>;
+    crew: SelectionWrapperImpl<"crew", "String", 0, {}, undefined>;
+    passengers: SelectionWrapperImpl<"passengers", "String", 0, {}, undefined>;
+    maxAtmospheringSpeed: SelectionWrapperImpl<
         "maxAtmospheringSpeed",
         "Int",
         0,
         {},
         undefined
     >;
-    cargoCapacity: SelectionWrapper<"cargoCapacity", "Float", 0, {}, undefined>;
-    consumables: SelectionWrapper<"consumables", "String", 0, {}, undefined>;
+    cargoCapacity: SelectionWrapperImpl<
+        "cargoCapacity",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    consumables: SelectionWrapperImpl<
+        "consumables",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     pilotConnection: (
         args: VehicleArrayPilotConnectionArgs,
     ) => ReturnType<
@@ -4922,9 +5072,9 @@ type ReturnTypeFromVehicleArraySelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5074,7 +5224,7 @@ type ReturnTypeFromFilmVehiclesConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     vehicles: ReturnType<
         SLFN<
             {},
@@ -5153,7 +5303,7 @@ type ReturnTypeFromFilmVehiclesEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5221,7 +5371,7 @@ type ReturnTypeFromFilmCharactersConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     characters: ReturnType<
         SLFN<
             {},
@@ -5300,7 +5450,7 @@ type ReturnTypeFromFilmCharactersEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5368,7 +5518,7 @@ type ReturnTypeFromFilmPlanetsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     planets: ReturnType<
         SLFN<
             {},
@@ -5447,7 +5597,7 @@ type ReturnTypeFromFilmPlanetsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5497,15 +5647,33 @@ export const FilmPlanetsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromPlanetArraySelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    diameter: SelectionWrapper<"diameter", "Int", 0, {}, undefined>;
-    rotationPeriod: SelectionWrapper<"rotationPeriod", "Int", 0, {}, undefined>;
-    orbitalPeriod: SelectionWrapper<"orbitalPeriod", "Int", 0, {}, undefined>;
-    gravity: SelectionWrapper<"gravity", "String", 0, {}, undefined>;
-    population: SelectionWrapper<"population", "Float", 0, {}, undefined>;
-    climates: SelectionWrapper<"climates", "String", 1, {}, undefined>;
-    terrains: SelectionWrapper<"terrains", "String", 1, {}, undefined>;
-    surfaceWater: SelectionWrapper<"surfaceWater", "Float", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    diameter: SelectionWrapperImpl<"diameter", "Int", 0, {}, undefined>;
+    rotationPeriod: SelectionWrapperImpl<
+        "rotationPeriod",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    orbitalPeriod: SelectionWrapperImpl<
+        "orbitalPeriod",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    gravity: SelectionWrapperImpl<"gravity", "String", 0, {}, undefined>;
+    population: SelectionWrapperImpl<"population", "Float", 0, {}, undefined>;
+    climates: SelectionWrapperImpl<"climates", "String", 1, {}, undefined>;
+    terrains: SelectionWrapperImpl<"terrains", "String", 1, {}, undefined>;
+    surfaceWater: SelectionWrapperImpl<
+        "surfaceWater",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
     residentConnection: (
         args: PlanetArrayResidentConnectionArgs,
     ) => ReturnType<
@@ -5528,9 +5696,9 @@ type ReturnTypeFromPlanetArraySelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5685,7 +5853,7 @@ type ReturnTypeFromPlanetFilmsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     films: ReturnType<
         SLFN<
             {},
@@ -5761,7 +5929,7 @@ type ReturnTypeFromPlanetFilmsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5829,7 +5997,7 @@ type ReturnTypeFromSpeciesPeopleConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     people: ReturnType<
         SLFN<
             {},
@@ -5908,7 +6076,7 @@ type ReturnTypeFromSpeciesPeopleEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5976,7 +6144,7 @@ type ReturnTypeFromSpeciesFilmsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     films: ReturnType<
         SLFN<
             {},
@@ -6052,7 +6220,7 @@ type ReturnTypeFromSpeciesFilmsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6102,27 +6270,39 @@ export const SpeciesFilmsEdgeArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromSpeciesArraySelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    classification: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    classification: SelectionWrapperImpl<
         "classification",
         "String",
         0,
         {},
         undefined
     >;
-    designation: SelectionWrapper<"designation", "String", 0, {}, undefined>;
-    averageHeight: SelectionWrapper<"averageHeight", "Float", 0, {}, undefined>;
-    averageLifespan: SelectionWrapper<
+    designation: SelectionWrapperImpl<
+        "designation",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    averageHeight: SelectionWrapperImpl<
+        "averageHeight",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    averageLifespan: SelectionWrapperImpl<
         "averageLifespan",
         "Int",
         0,
         {},
         undefined
     >;
-    eyeColors: SelectionWrapper<"eyeColors", "String", 1, {}, undefined>;
-    hairColors: SelectionWrapper<"hairColors", "String", 1, {}, undefined>;
-    skinColors: SelectionWrapper<"skinColors", "String", 1, {}, undefined>;
-    language: SelectionWrapper<"language", "String", 0, {}, undefined>;
+    eyeColors: SelectionWrapperImpl<"eyeColors", "String", 1, {}, undefined>;
+    hairColors: SelectionWrapperImpl<"hairColors", "String", 1, {}, undefined>;
+    skinColors: SelectionWrapperImpl<"skinColors", "String", 1, {}, undefined>;
+    language: SelectionWrapperImpl<"language", "String", 0, {}, undefined>;
     homeworld: ReturnType<
         SLFN<
             {},
@@ -6154,9 +6334,9 @@ type ReturnTypeFromSpeciesArraySelection = {
             0
         >
     >;
-    created: SelectionWrapper<"created", "String", 0, {}, undefined>;
-    edited: SelectionWrapper<"edited", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    created: SelectionWrapperImpl<"created", "String", 0, {}, undefined>;
+    edited: SelectionWrapperImpl<"edited", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6315,7 +6495,7 @@ type ReturnTypeFromFilmsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     films: ReturnType<
         SLFN<
             {},
@@ -6391,7 +6571,7 @@ type ReturnTypeFromPeopleEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6459,7 +6639,7 @@ type ReturnTypeFromPeopleConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     people: ReturnType<
         SLFN<
             {},
@@ -6538,7 +6718,7 @@ type ReturnTypeFromPlanetsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6606,7 +6786,7 @@ type ReturnTypeFromPlanetsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     planets: ReturnType<
         SLFN<
             {},
@@ -6685,7 +6865,7 @@ type ReturnTypeFromSpeciesEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6753,7 +6933,7 @@ type ReturnTypeFromSpeciesConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     species: ReturnType<
         SLFN<
             {},
@@ -6832,7 +7012,7 @@ type ReturnTypeFromStarshipsEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6900,7 +7080,7 @@ type ReturnTypeFromStarshipsConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     starships: ReturnType<
         SLFN<
             {},
@@ -6979,7 +7159,7 @@ type ReturnTypeFromVehiclesEdgeArraySelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7047,7 +7227,7 @@ type ReturnTypeFromVehiclesConnectionSelection = {
             1
         >
     >;
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
     vehicles: ReturnType<
         SLFN<
             {},
@@ -7117,7 +7297,7 @@ export const VehiclesConnectionSelection = makeSLFN(
 );
 
 type ReturnTypeFromNodeSelection = {
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7442,16 +7622,28 @@ export const RootSelection = makeSLFN(
 );
 
 type ReturnTypeFromPageInfoSelection = {
-    hasNextPage: SelectionWrapper<"hasNextPage", "Boolean", 0, {}, undefined>;
-    hasPreviousPage: SelectionWrapper<
+    hasNextPage: SelectionWrapperImpl<
+        "hasNextPage",
+        "Boolean",
+        0,
+        {},
+        undefined
+    >;
+    hasPreviousPage: SelectionWrapperImpl<
         "hasPreviousPage",
         "Boolean",
         0,
         {},
         undefined
     >;
-    startCursor: SelectionWrapper<"startCursor", "String", 0, {}, undefined>;
-    endCursor: SelectionWrapper<"endCursor", "String", 0, {}, undefined>;
+    startCursor: SelectionWrapperImpl<
+        "startCursor",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    endCursor: SelectionWrapperImpl<"endCursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7533,7 +7725,7 @@ type ReturnTypeFromFilmsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7592,7 +7784,7 @@ type ReturnTypeFromFilmSpeciesEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7651,7 +7843,7 @@ type ReturnTypeFromPlanetResidentsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7710,7 +7902,7 @@ type ReturnTypeFromPersonFilmsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7769,7 +7961,7 @@ type ReturnTypeFromPersonStarshipsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7828,7 +8020,7 @@ type ReturnTypeFromStarshipPilotsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7887,7 +8079,7 @@ type ReturnTypeFromStarshipFilmsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7946,7 +8138,7 @@ type ReturnTypeFromPersonVehiclesEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8005,7 +8197,7 @@ type ReturnTypeFromVehiclePilotsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8064,7 +8256,7 @@ type ReturnTypeFromVehicleFilmsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8123,7 +8315,7 @@ type ReturnTypeFromPlanetFilmsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8182,7 +8374,7 @@ type ReturnTypeFromSpeciesPeopleEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8241,7 +8433,7 @@ type ReturnTypeFromSpeciesFilmsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8300,7 +8492,7 @@ type ReturnTypeFromFilmStarshipsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8359,7 +8551,7 @@ type ReturnTypeFromFilmVehiclesEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8418,7 +8610,7 @@ type ReturnTypeFromFilmCharactersEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8477,7 +8669,7 @@ type ReturnTypeFromFilmPlanetsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8536,7 +8728,7 @@ type ReturnTypeFromPeopleEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8595,7 +8787,7 @@ type ReturnTypeFromPlanetsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8654,7 +8846,7 @@ type ReturnTypeFromSpeciesEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8713,7 +8905,7 @@ type ReturnTypeFromStarshipsEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8772,7 +8964,7 @@ type ReturnTypeFromVehiclesEdgeSelection = {
             0
         >
     >;
-    cursor: SelectionWrapper<"cursor", "String", 0, {}, undefined>;
+    cursor: SelectionWrapperImpl<"cursor", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,

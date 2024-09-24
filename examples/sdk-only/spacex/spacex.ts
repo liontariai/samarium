@@ -144,7 +144,7 @@ export class RootOperation {
     }
 }
 
-type OperationSelectionCollectorRef = {
+export type OperationSelectionCollectorRef = {
     ref: OperationSelectionCollector;
 };
 export class OperationSelectionCollector {
@@ -1786,9 +1786,21 @@ export type users_set_input = {
 };
 
 type ReturnTypeFromDragonSelection = {
-    active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    crew_capacity: SelectionWrapper<"crew_capacity", "Int", 0, {}, undefined>;
-    description: SelectionWrapper<"description", "String", 0, {}, undefined>;
+    active: SelectionWrapperImpl<"active", "Boolean", 0, {}, undefined>;
+    crew_capacity: SelectionWrapperImpl<
+        "crew_capacity",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    description: SelectionWrapperImpl<
+        "description",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     diameter: ReturnType<
         SLFN<
             {},
@@ -1798,9 +1810,15 @@ type ReturnTypeFromDragonSelection = {
             0
         >
     >;
-    dry_mass_kg: SelectionWrapper<"dry_mass_kg", "Int", 0, {}, undefined>;
-    dry_mass_lb: SelectionWrapper<"dry_mass_lb", "Int", 0, {}, undefined>;
-    first_flight: SelectionWrapper<"first_flight", "String", 0, {}, undefined>;
+    dry_mass_kg: SelectionWrapperImpl<"dry_mass_kg", "Int", 0, {}, undefined>;
+    dry_mass_lb: SelectionWrapperImpl<"dry_mass_lb", "Int", 0, {}, undefined>;
+    first_flight: SelectionWrapperImpl<
+        "first_flight",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     heat_shield: ReturnType<
         SLFN<
             {},
@@ -1819,7 +1837,7 @@ type ReturnTypeFromDragonSelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     launch_payload_mass: ReturnType<
         SLFN<
             {},
@@ -1838,8 +1856,8 @@ type ReturnTypeFromDragonSelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    orbit_duration_yr: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    orbit_duration_yr: SelectionWrapperImpl<
         "orbit_duration_yr",
         "Int",
         0,
@@ -1873,7 +1891,7 @@ type ReturnTypeFromDragonSelection = {
             0
         >
     >;
-    sidewall_angle_deg: SelectionWrapper<
+    sidewall_angle_deg: SelectionWrapperImpl<
         "sidewall_angle_deg",
         "Float",
         0,
@@ -1898,8 +1916,8 @@ type ReturnTypeFromDragonSelection = {
             0
         >
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2053,8 +2071,8 @@ export const DragonSelection = makeSLFN(
 );
 
 type ReturnTypeFromDistanceSelection = {
-    feet: SelectionWrapper<"feet", "Float", 0, {}, undefined>;
-    meters: SelectionWrapper<"meters", "Float", 0, {}, undefined>;
+    feet: SelectionWrapperImpl<"feet", "Float", 0, {}, undefined>;
+    meters: SelectionWrapperImpl<"meters", "Float", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2097,10 +2115,16 @@ export const DistanceSelection = makeSLFN(
 );
 
 type ReturnTypeFromDragonHeatShieldSelection = {
-    dev_partner: SelectionWrapper<"dev_partner", "String", 0, {}, undefined>;
-    material: SelectionWrapper<"material", "String", 0, {}, undefined>;
-    size_meters: SelectionWrapper<"size_meters", "Float", 0, {}, undefined>;
-    temp_degrees: SelectionWrapper<"temp_degrees", "Int", 0, {}, undefined>;
+    dev_partner: SelectionWrapperImpl<
+        "dev_partner",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    material: SelectionWrapperImpl<"material", "String", 0, {}, undefined>;
+    size_meters: SelectionWrapperImpl<"size_meters", "Float", 0, {}, undefined>;
+    temp_degrees: SelectionWrapperImpl<"temp_degrees", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2173,8 +2197,8 @@ export const DragonHeatShieldSelection = makeSLFN(
 );
 
 type ReturnTypeFromMassSelection = {
-    kg: SelectionWrapper<"kg", "Int", 0, {}, undefined>;
-    lb: SelectionWrapper<"lb", "Int", 0, {}, undefined>;
+    kg: SelectionWrapperImpl<"kg", "Int", 0, {}, undefined>;
+    lb: SelectionWrapperImpl<"lb", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2213,8 +2237,8 @@ export const MassSelection = makeSLFN(
 );
 
 type ReturnTypeFromVolumeSelection = {
-    cubic_feet: SelectionWrapper<"cubic_feet", "Int", 0, {}, undefined>;
-    cubic_meters: SelectionWrapper<"cubic_meters", "Int", 0, {}, undefined>;
+    cubic_feet: SelectionWrapperImpl<"cubic_feet", "Int", 0, {}, undefined>;
+    cubic_meters: SelectionWrapperImpl<"cubic_meters", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2311,10 +2335,10 @@ export const DragonPressurizedCapsuleSelection = makeSLFN(
 );
 
 type ReturnTypeFromDragonThrustArraySelection = {
-    amount: SelectionWrapper<"amount", "Int", 0, {}, undefined>;
-    fuel_1: SelectionWrapper<"fuel_1", "String", 0, {}, undefined>;
-    fuel_2: SelectionWrapper<"fuel_2", "String", 0, {}, undefined>;
-    pods: SelectionWrapper<"pods", "Int", 0, {}, undefined>;
+    amount: SelectionWrapperImpl<"amount", "Int", 0, {}, undefined>;
+    fuel_1: SelectionWrapperImpl<"fuel_1", "String", 0, {}, undefined>;
+    fuel_2: SelectionWrapperImpl<"fuel_2", "String", 0, {}, undefined>;
+    pods: SelectionWrapperImpl<"pods", "Int", 0, {}, undefined>;
     thrust: ReturnType<
         SLFN<
             {},
@@ -2324,7 +2348,7 @@ type ReturnTypeFromDragonThrustArraySelection = {
             0
         >
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2385,8 +2409,8 @@ export const DragonThrustArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromForceSelection = {
-    kN: SelectionWrapper<"kN", "Float", 0, {}, undefined>;
-    lbf: SelectionWrapper<"lbf", "Float", 0, {}, undefined>;
+    kN: SelectionWrapperImpl<"kN", "Float", 0, {}, undefined>;
+    lbf: SelectionWrapperImpl<"lbf", "Float", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2482,8 +2506,8 @@ export const DragonTrunkSelection = makeSLFN(
 );
 
 type ReturnTypeFromDragonTrunkCargoSelection = {
-    solar_array: SelectionWrapper<"solar_array", "Int", 0, {}, undefined>;
-    unpressurized_cargo: SelectionWrapper<
+    solar_array: SelectionWrapperImpl<"solar_array", "Int", 0, {}, undefined>;
+    unpressurized_cargo: SelectionWrapperImpl<
         "unpressurized_cargo",
         "Boolean",
         0,
@@ -2546,8 +2570,8 @@ export const DragonTrunkCargoSelection = makeSLFN(
 );
 
 type ReturnTypeFromCapsuleMissionArraySelection = {
-    flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    flight: SelectionWrapperImpl<"flight", "Int", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2599,8 +2623,8 @@ type ReturnTypeFromCapsuleSelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    landings: SelectionWrapper<"landings", "Int", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    landings: SelectionWrapperImpl<"landings", "Int", 0, {}, undefined>;
     missions: ReturnType<
         SLFN<
             {},
@@ -2610,16 +2634,16 @@ type ReturnTypeFromCapsuleSelection = {
             1
         >
     >;
-    original_launch: SelectionWrapper<
+    original_launch: SelectionWrapperImpl<
         "original_launch",
         "Date",
         0,
         {},
         undefined
     >;
-    reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
+    reuse_count: SelectionWrapperImpl<"reuse_count", "Int", 0, {}, undefined>;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2708,8 +2732,8 @@ type ReturnTypeFromCapsuleArraySelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    landings: SelectionWrapper<"landings", "Int", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    landings: SelectionWrapperImpl<"landings", "Int", 0, {}, undefined>;
     missions: ReturnType<
         SLFN<
             {},
@@ -2719,16 +2743,16 @@ type ReturnTypeFromCapsuleArraySelection = {
             1
         >
     >;
-    original_launch: SelectionWrapper<
+    original_launch: SelectionWrapperImpl<
         "original_launch",
         "Date",
         0,
         {},
         undefined
     >;
-    reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
+    reuse_count: SelectionWrapperImpl<"reuse_count", "Int", 0, {}, undefined>;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2808,9 +2832,9 @@ export const CapsuleArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromAddressSelection = {
-    address: SelectionWrapper<"address", "String", 0, {}, undefined>;
-    city: SelectionWrapper<"city", "String", 0, {}, undefined>;
-    state: SelectionWrapper<"state", "String", 0, {}, undefined>;
+    address: SelectionWrapperImpl<"address", "String", 0, {}, undefined>;
+    city: SelectionWrapperImpl<"city", "String", 0, {}, undefined>;
+    state: SelectionWrapperImpl<"state", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2861,10 +2885,16 @@ export const AddressSelection = makeSLFN(
 );
 
 type ReturnTypeFromInfoLinksSelection = {
-    elon_twitter: SelectionWrapper<"elon_twitter", "String", 0, {}, undefined>;
-    flickr: SelectionWrapper<"flickr", "String", 0, {}, undefined>;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
-    website: SelectionWrapper<"website", "String", 0, {}, undefined>;
+    elon_twitter: SelectionWrapperImpl<
+        "elon_twitter",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    flickr: SelectionWrapperImpl<"flickr", "String", 0, {}, undefined>;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
+    website: SelectionWrapperImpl<"website", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2937,19 +2967,19 @@ export const InfoLinksSelection = makeSLFN(
 );
 
 type ReturnTypeFromInfoSelection = {
-    ceo: SelectionWrapper<"ceo", "String", 0, {}, undefined>;
-    coo: SelectionWrapper<"coo", "String", 0, {}, undefined>;
-    cto: SelectionWrapper<"cto", "String", 0, {}, undefined>;
-    cto_propulsion: SelectionWrapper<
+    ceo: SelectionWrapperImpl<"ceo", "String", 0, {}, undefined>;
+    coo: SelectionWrapperImpl<"coo", "String", 0, {}, undefined>;
+    cto: SelectionWrapperImpl<"cto", "String", 0, {}, undefined>;
+    cto_propulsion: SelectionWrapperImpl<
         "cto_propulsion",
         "String",
         0,
         {},
         undefined
     >;
-    employees: SelectionWrapper<"employees", "Int", 0, {}, undefined>;
-    founded: SelectionWrapper<"founded", "Int", 0, {}, undefined>;
-    founder: SelectionWrapper<"founder", "String", 0, {}, undefined>;
+    employees: SelectionWrapperImpl<"employees", "Int", 0, {}, undefined>;
+    founded: SelectionWrapperImpl<"founded", "Int", 0, {}, undefined>;
+    founder: SelectionWrapperImpl<"founder", "String", 0, {}, undefined>;
     headquarters: ReturnType<
         SLFN<
             {},
@@ -2959,7 +2989,7 @@ type ReturnTypeFromInfoSelection = {
             0
         >
     >;
-    launch_sites: SelectionWrapper<"launch_sites", "Int", 0, {}, undefined>;
+    launch_sites: SelectionWrapperImpl<"launch_sites", "Int", 0, {}, undefined>;
     links: ReturnType<
         SLFN<
             {},
@@ -2969,11 +2999,11 @@ type ReturnTypeFromInfoSelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    summary: SelectionWrapper<"summary", "String", 0, {}, undefined>;
-    test_sites: SelectionWrapper<"test_sites", "Int", 0, {}, undefined>;
-    valuation: SelectionWrapper<"valuation", "Float", 0, {}, undefined>;
-    vehicles: SelectionWrapper<"vehicles", "Int", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    summary: SelectionWrapperImpl<"summary", "String", 0, {}, undefined>;
+    test_sites: SelectionWrapperImpl<"test_sites", "Int", 0, {}, undefined>;
+    valuation: SelectionWrapperImpl<"valuation", "Float", 0, {}, undefined>;
+    vehicles: SelectionWrapperImpl<"vehicles", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3084,10 +3114,22 @@ export const InfoSelection = makeSLFN(
 );
 
 type ReturnTypeFromCoreSelection = {
-    asds_attempts: SelectionWrapper<"asds_attempts", "Int", 0, {}, undefined>;
-    asds_landings: SelectionWrapper<"asds_landings", "Int", 0, {}, undefined>;
-    block: SelectionWrapper<"block", "Int", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    asds_attempts: SelectionWrapperImpl<
+        "asds_attempts",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    asds_landings: SelectionWrapperImpl<
+        "asds_landings",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    block: SelectionWrapperImpl<"block", "Int", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     missions: ReturnType<
         SLFN<
             {},
@@ -3097,18 +3139,30 @@ type ReturnTypeFromCoreSelection = {
             1
         >
     >;
-    original_launch: SelectionWrapper<
+    original_launch: SelectionWrapperImpl<
         "original_launch",
         "Date",
         0,
         {},
         undefined
     >;
-    reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
-    rtls_attempts: SelectionWrapper<"rtls_attempts", "Int", 0, {}, undefined>;
-    rtls_landings: SelectionWrapper<"rtls_landings", "Int", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    water_landing: SelectionWrapper<
+    reuse_count: SelectionWrapperImpl<"reuse_count", "Int", 0, {}, undefined>;
+    rtls_attempts: SelectionWrapperImpl<
+        "rtls_attempts",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    rtls_landings: SelectionWrapperImpl<
+        "rtls_landings",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    water_landing: SelectionWrapperImpl<
         "water_landing",
         "Boolean",
         0,
@@ -3221,10 +3275,22 @@ export const CoreSelection = makeSLFN(
 );
 
 type ReturnTypeFromCoreArraySelection = {
-    asds_attempts: SelectionWrapper<"asds_attempts", "Int", 0, {}, undefined>;
-    asds_landings: SelectionWrapper<"asds_landings", "Int", 0, {}, undefined>;
-    block: SelectionWrapper<"block", "Int", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    asds_attempts: SelectionWrapperImpl<
+        "asds_attempts",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    asds_landings: SelectionWrapperImpl<
+        "asds_landings",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    block: SelectionWrapperImpl<"block", "Int", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     missions: ReturnType<
         SLFN<
             {},
@@ -3234,18 +3300,30 @@ type ReturnTypeFromCoreArraySelection = {
             1
         >
     >;
-    original_launch: SelectionWrapper<
+    original_launch: SelectionWrapperImpl<
         "original_launch",
         "Date",
         0,
         {},
         undefined
     >;
-    reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
-    rtls_attempts: SelectionWrapper<"rtls_attempts", "Int", 0, {}, undefined>;
-    rtls_landings: SelectionWrapper<"rtls_landings", "Int", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    water_landing: SelectionWrapper<
+    reuse_count: SelectionWrapperImpl<"reuse_count", "Int", 0, {}, undefined>;
+    rtls_attempts: SelectionWrapperImpl<
+        "rtls_attempts",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    rtls_landings: SelectionWrapperImpl<
+        "rtls_landings",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    water_landing: SelectionWrapperImpl<
         "water_landing",
         "Boolean",
         0,
@@ -3362,9 +3440,21 @@ export const CoreArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromDragonArraySelection = {
-    active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    crew_capacity: SelectionWrapper<"crew_capacity", "Int", 0, {}, undefined>;
-    description: SelectionWrapper<"description", "String", 0, {}, undefined>;
+    active: SelectionWrapperImpl<"active", "Boolean", 0, {}, undefined>;
+    crew_capacity: SelectionWrapperImpl<
+        "crew_capacity",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    description: SelectionWrapperImpl<
+        "description",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     diameter: ReturnType<
         SLFN<
             {},
@@ -3374,9 +3464,15 @@ type ReturnTypeFromDragonArraySelection = {
             0
         >
     >;
-    dry_mass_kg: SelectionWrapper<"dry_mass_kg", "Int", 0, {}, undefined>;
-    dry_mass_lb: SelectionWrapper<"dry_mass_lb", "Int", 0, {}, undefined>;
-    first_flight: SelectionWrapper<"first_flight", "String", 0, {}, undefined>;
+    dry_mass_kg: SelectionWrapperImpl<"dry_mass_kg", "Int", 0, {}, undefined>;
+    dry_mass_lb: SelectionWrapperImpl<"dry_mass_lb", "Int", 0, {}, undefined>;
+    first_flight: SelectionWrapperImpl<
+        "first_flight",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     heat_shield: ReturnType<
         SLFN<
             {},
@@ -3395,7 +3491,7 @@ type ReturnTypeFromDragonArraySelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     launch_payload_mass: ReturnType<
         SLFN<
             {},
@@ -3414,8 +3510,8 @@ type ReturnTypeFromDragonArraySelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    orbit_duration_yr: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    orbit_duration_yr: SelectionWrapperImpl<
         "orbit_duration_yr",
         "Int",
         0,
@@ -3449,7 +3545,7 @@ type ReturnTypeFromDragonArraySelection = {
             0
         >
     >;
-    sidewall_angle_deg: SelectionWrapper<
+    sidewall_angle_deg: SelectionWrapperImpl<
         "sidewall_angle_deg",
         "Float",
         0,
@@ -3474,8 +3570,8 @@ type ReturnTypeFromDragonArraySelection = {
             0
         >
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3631,24 +3727,30 @@ export const DragonArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchSelection = {
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    is_tentative: SelectionWrapper<"is_tentative", "Boolean", 0, {}, undefined>;
-    launch_date_local: SelectionWrapper<
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    is_tentative: SelectionWrapperImpl<
+        "is_tentative",
+        "Boolean",
+        0,
+        {},
+        undefined
+    >;
+    launch_date_local: SelectionWrapperImpl<
         "launch_date_local",
         "Date",
         0,
         {},
         undefined
     >;
-    launch_date_unix: SelectionWrapper<
+    launch_date_unix: SelectionWrapperImpl<
         "launch_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    launch_date_utc: SelectionWrapper<
+    launch_date_utc: SelectionWrapperImpl<
         "launch_date_utc",
         "Date",
         0,
@@ -3664,14 +3766,20 @@ type ReturnTypeFromLaunchSelection = {
             0
         >
     >;
-    launch_success: SelectionWrapper<
+    launch_success: SelectionWrapperImpl<
         "launch_success",
         "Boolean",
         0,
         {},
         undefined
     >;
-    launch_year: SelectionWrapper<"launch_year", "String", 0, {}, undefined>;
+    launch_year: SelectionWrapperImpl<
+        "launch_year",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     links: ReturnType<
         SLFN<
             {},
@@ -3681,8 +3789,14 @@ type ReturnTypeFromLaunchSelection = {
             0
         >
     >;
-    mission_id: SelectionWrapper<"mission_id", "String", 1, {}, undefined>;
-    mission_name: SelectionWrapper<"mission_name", "String", 0, {}, undefined>;
+    mission_id: SelectionWrapperImpl<"mission_id", "String", 1, {}, undefined>;
+    mission_name: SelectionWrapperImpl<
+        "mission_name",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     rocket: ReturnType<
         SLFN<
             {},
@@ -3701,14 +3815,14 @@ type ReturnTypeFromLaunchSelection = {
             1
         >
     >;
-    static_fire_date_unix: SelectionWrapper<
+    static_fire_date_unix: SelectionWrapperImpl<
         "static_fire_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    static_fire_date_utc: SelectionWrapper<
+    static_fire_date_utc: SelectionWrapperImpl<
         "static_fire_date_utc",
         "Date",
         0,
@@ -3724,14 +3838,14 @@ type ReturnTypeFromLaunchSelection = {
             0
         >
     >;
-    tentative_max_precision: SelectionWrapper<
+    tentative_max_precision: SelectionWrapperImpl<
         "tentative_max_precision",
         "String",
         0,
         {},
         undefined
     >;
-    upcoming: SelectionWrapper<"upcoming", "Boolean", 0, {}, undefined>;
+    upcoming: SelectionWrapperImpl<"upcoming", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3892,9 +4006,9 @@ export const LaunchSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchSiteSelection = {
-    site_id: SelectionWrapper<"site_id", "String", 0, {}, undefined>;
-    site_name: SelectionWrapper<"site_name", "String", 0, {}, undefined>;
-    site_name_long: SelectionWrapper<
+    site_id: SelectionWrapperImpl<"site_id", "String", 0, {}, undefined>;
+    site_name: SelectionWrapperImpl<"site_name", "String", 0, {}, undefined>;
+    site_name_long: SelectionWrapperImpl<
         "site_name_long",
         "String",
         0,
@@ -3965,53 +4079,65 @@ export const LaunchSiteSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchLinksSelection = {
-    article_link: SelectionWrapper<"article_link", "String", 0, {}, undefined>;
-    flickr_images: SelectionWrapper<
+    article_link: SelectionWrapperImpl<
+        "article_link",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    flickr_images: SelectionWrapperImpl<
         "flickr_images",
         "String",
         1,
         {},
         undefined
     >;
-    mission_patch: SelectionWrapper<
+    mission_patch: SelectionWrapperImpl<
         "mission_patch",
         "String",
         0,
         {},
         undefined
     >;
-    mission_patch_small: SelectionWrapper<
+    mission_patch_small: SelectionWrapperImpl<
         "mission_patch_small",
         "String",
         0,
         {},
         undefined
     >;
-    presskit: SelectionWrapper<"presskit", "String", 0, {}, undefined>;
-    reddit_campaign: SelectionWrapper<
+    presskit: SelectionWrapperImpl<"presskit", "String", 0, {}, undefined>;
+    reddit_campaign: SelectionWrapperImpl<
         "reddit_campaign",
         "String",
         0,
         {},
         undefined
     >;
-    reddit_launch: SelectionWrapper<
+    reddit_launch: SelectionWrapperImpl<
         "reddit_launch",
         "String",
         0,
         {},
         undefined
     >;
-    reddit_media: SelectionWrapper<"reddit_media", "String", 0, {}, undefined>;
-    reddit_recovery: SelectionWrapper<
+    reddit_media: SelectionWrapperImpl<
+        "reddit_media",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    reddit_recovery: SelectionWrapperImpl<
         "reddit_recovery",
         "String",
         0,
         {},
         undefined
     >;
-    video_link: SelectionWrapper<"video_link", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    video_link: SelectionWrapperImpl<"video_link", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4167,8 +4293,20 @@ type ReturnTypeFromLaunchRocketSelection = {
             0
         >
     >;
-    rocket_name: SelectionWrapper<"rocket_name", "String", 0, {}, undefined>;
-    rocket_type: SelectionWrapper<"rocket_type", "String", 0, {}, undefined>;
+    rocket_name: SelectionWrapperImpl<
+        "rocket_name",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    rocket_type: SelectionWrapperImpl<
+        "rocket_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     second_stage: ReturnType<
         SLFN<
             {},
@@ -4247,16 +4385,16 @@ export const LaunchRocketSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchRocketFairingsSelection = {
-    recovered: SelectionWrapper<"recovered", "Boolean", 0, {}, undefined>;
-    recovery_attempt: SelectionWrapper<
+    recovered: SelectionWrapperImpl<"recovered", "Boolean", 0, {}, undefined>;
+    recovery_attempt: SelectionWrapperImpl<
         "recovery_attempt",
         "Boolean",
         0,
         {},
         undefined
     >;
-    reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
-    ship: SelectionWrapper<"ship", "String", 0, {}, undefined>;
+    reused: SelectionWrapperImpl<"reused", "Boolean", 0, {}, undefined>;
+    ship: SelectionWrapperImpl<"ship", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4366,7 +4504,7 @@ export const LaunchRocketFirstStageSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchRocketFirstStageCoreArraySelection = {
-    block: SelectionWrapper<"block", "Int", 0, {}, undefined>;
+    block: SelectionWrapperImpl<"block", "Int", 0, {}, undefined>;
     core: ReturnType<
         SLFN<
             {},
@@ -4376,26 +4514,38 @@ type ReturnTypeFromLaunchRocketFirstStageCoreArraySelection = {
             0
         >
     >;
-    flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
-    gridfins: SelectionWrapper<"gridfins", "Boolean", 0, {}, undefined>;
-    land_success: SelectionWrapper<"land_success", "Boolean", 0, {}, undefined>;
-    landing_intent: SelectionWrapper<
+    flight: SelectionWrapperImpl<"flight", "Int", 0, {}, undefined>;
+    gridfins: SelectionWrapperImpl<"gridfins", "Boolean", 0, {}, undefined>;
+    land_success: SelectionWrapperImpl<
+        "land_success",
+        "Boolean",
+        0,
+        {},
+        undefined
+    >;
+    landing_intent: SelectionWrapperImpl<
         "landing_intent",
         "Boolean",
         0,
         {},
         undefined
     >;
-    landing_type: SelectionWrapper<"landing_type", "String", 0, {}, undefined>;
-    landing_vehicle: SelectionWrapper<
+    landing_type: SelectionWrapperImpl<
+        "landing_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    landing_vehicle: SelectionWrapperImpl<
         "landing_vehicle",
         "String",
         0,
         {},
         undefined
     >;
-    legs: SelectionWrapper<"legs", "Boolean", 0, {}, undefined>;
-    reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
+    legs: SelectionWrapperImpl<"legs", "Boolean", 0, {}, undefined>;
+    reused: SelectionWrapperImpl<"reused", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4490,18 +4640,24 @@ export const LaunchRocketFirstStageCoreArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketSelection = {
-    active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    boosters: SelectionWrapper<"boosters", "Int", 0, {}, undefined>;
-    company: SelectionWrapper<"company", "String", 0, {}, undefined>;
-    cost_per_launch: SelectionWrapper<
+    active: SelectionWrapperImpl<"active", "Boolean", 0, {}, undefined>;
+    boosters: SelectionWrapperImpl<"boosters", "Int", 0, {}, undefined>;
+    company: SelectionWrapperImpl<"company", "String", 0, {}, undefined>;
+    cost_per_launch: SelectionWrapperImpl<
         "cost_per_launch",
         "Int",
         0,
         {},
         undefined
     >;
-    country: SelectionWrapper<"country", "String", 0, {}, undefined>;
-    description: SelectionWrapper<"description", "String", 0, {}, undefined>;
+    country: SelectionWrapperImpl<"country", "String", 0, {}, undefined>;
+    description: SelectionWrapperImpl<
+        "description",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     diameter: ReturnType<
         SLFN<
             {},
@@ -4520,7 +4676,13 @@ type ReturnTypeFromRocketSelection = {
             0
         >
     >;
-    first_flight: SelectionWrapper<"first_flight", "Date", 0, {}, undefined>;
+    first_flight: SelectionWrapperImpl<
+        "first_flight",
+        "Date",
+        0,
+        {},
+        undefined
+    >;
     first_stage: ReturnType<
         SLFN<
             {},
@@ -4539,7 +4701,7 @@ type ReturnTypeFromRocketSelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     landing_legs: ReturnType<
         SLFN<
             {},
@@ -4558,7 +4720,7 @@ type ReturnTypeFromRocketSelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
     payload_weights: ReturnType<
         SLFN<
             {},
@@ -4577,16 +4739,16 @@ type ReturnTypeFromRocketSelection = {
             0
         >
     >;
-    stages: SelectionWrapper<"stages", "Int", 0, {}, undefined>;
-    success_rate_pct: SelectionWrapper<
+    stages: SelectionWrapperImpl<"stages", "Int", 0, {}, undefined>;
+    success_rate_pct: SelectionWrapperImpl<
         "success_rate_pct",
         "Int",
         0,
         {},
         undefined
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4730,17 +4892,29 @@ export const RocketSelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketEnginesSelection = {
-    engine_loss_max: SelectionWrapper<
+    engine_loss_max: SelectionWrapperImpl<
         "engine_loss_max",
         "String",
         0,
         {},
         undefined
     >;
-    layout: SelectionWrapper<"layout", "String", 0, {}, undefined>;
-    number: SelectionWrapper<"number", "Int", 0, {}, undefined>;
-    propellant_1: SelectionWrapper<"propellant_1", "String", 0, {}, undefined>;
-    propellant_2: SelectionWrapper<"propellant_2", "String", 0, {}, undefined>;
+    layout: SelectionWrapperImpl<"layout", "String", 0, {}, undefined>;
+    number: SelectionWrapperImpl<"number", "Int", 0, {}, undefined>;
+    propellant_1: SelectionWrapperImpl<
+        "propellant_1",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    propellant_2: SelectionWrapperImpl<
+        "propellant_2",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     thrust_sea_level: ReturnType<
         SLFN<
             {},
@@ -4750,7 +4924,7 @@ type ReturnTypeFromRocketEnginesSelection = {
             0
         >
     >;
-    thrust_to_weight: SelectionWrapper<
+    thrust_to_weight: SelectionWrapperImpl<
         "thrust_to_weight",
         "Float",
         0,
@@ -4766,8 +4940,8 @@ type ReturnTypeFromRocketEnginesSelection = {
             0
         >
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    version: SelectionWrapper<"version", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    version: SelectionWrapperImpl<"version", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -4866,16 +5040,22 @@ export const RocketEnginesSelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketFirstStageSelection = {
-    burn_time_sec: SelectionWrapper<"burn_time_sec", "Int", 0, {}, undefined>;
-    engines: SelectionWrapper<"engines", "Int", 0, {}, undefined>;
-    fuel_amount_tons: SelectionWrapper<
+    burn_time_sec: SelectionWrapperImpl<
+        "burn_time_sec",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    engines: SelectionWrapperImpl<"engines", "Int", 0, {}, undefined>;
+    fuel_amount_tons: SelectionWrapperImpl<
         "fuel_amount_tons",
         "Float",
         0,
         {},
         undefined
     >;
-    reusable: SelectionWrapper<"reusable", "Boolean", 0, {}, undefined>;
+    reusable: SelectionWrapperImpl<"reusable", "Boolean", 0, {}, undefined>;
     thrust_sea_level: ReturnType<
         SLFN<
             {},
@@ -4967,8 +5147,8 @@ export const RocketFirstStageSelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketLandingLegsSelection = {
-    material: SelectionWrapper<"material", "String", 0, {}, undefined>;
-    number: SelectionWrapper<"number", "Int", 0, {}, undefined>;
+    material: SelectionWrapperImpl<"material", "String", 0, {}, undefined>;
+    number: SelectionWrapperImpl<"number", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5018,10 +5198,10 @@ export const RocketLandingLegsSelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketPayloadWeightArraySelection = {
-    id: SelectionWrapper<"id", "String", 0, {}, undefined>;
-    kg: SelectionWrapper<"kg", "Int", 0, {}, undefined>;
-    lb: SelectionWrapper<"lb", "Int", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    kg: SelectionWrapperImpl<"kg", "Int", 0, {}, undefined>;
+    lb: SelectionWrapperImpl<"lb", "Int", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5066,9 +5246,15 @@ export const RocketPayloadWeightArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketSecondStageSelection = {
-    burn_time_sec: SelectionWrapper<"burn_time_sec", "Int", 0, {}, undefined>;
-    engines: SelectionWrapper<"engines", "Int", 0, {}, undefined>;
-    fuel_amount_tons: SelectionWrapper<
+    burn_time_sec: SelectionWrapperImpl<
+        "burn_time_sec",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    engines: SelectionWrapperImpl<"engines", "Int", 0, {}, undefined>;
+    fuel_amount_tons: SelectionWrapperImpl<
         "fuel_amount_tons",
         "Float",
         0,
@@ -5166,7 +5352,7 @@ type ReturnTypeFromRocketSecondStagePayloadsSelection = {
             0
         >
     >;
-    option_1: SelectionWrapper<"option_1", "String", 0, {}, undefined>;
+    option_1: SelectionWrapperImpl<"option_1", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5275,7 +5461,7 @@ export const RocketSecondStagePayloadCompositeFairingSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchRocketSecondStageSelection = {
-    block: SelectionWrapper<"block", "Int", 0, {}, undefined>;
+    block: SelectionWrapperImpl<"block", "Int", 0, {}, undefined>;
     payloads: ReturnType<
         SLFN<
             {},
@@ -5330,12 +5516,24 @@ export const LaunchRocketSecondStageSelection = makeSLFN(
 );
 
 type ReturnTypeFromPayloadArraySelection = {
-    customers: SelectionWrapper<"customers", "String", 1, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    manufacturer: SelectionWrapper<"manufacturer", "String", 0, {}, undefined>;
-    nationality: SelectionWrapper<"nationality", "String", 0, {}, undefined>;
-    norad_id: SelectionWrapper<"norad_id", "Int", 1, {}, undefined>;
-    orbit: SelectionWrapper<"orbit", "String", 0, {}, undefined>;
+    customers: SelectionWrapperImpl<"customers", "String", 1, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    manufacturer: SelectionWrapperImpl<
+        "manufacturer",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    nationality: SelectionWrapperImpl<
+        "nationality",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    norad_id: SelectionWrapperImpl<"norad_id", "Int", 1, {}, undefined>;
+    orbit: SelectionWrapperImpl<"orbit", "String", 0, {}, undefined>;
     orbit_params: ReturnType<
         SLFN<
             {},
@@ -5345,22 +5543,28 @@ type ReturnTypeFromPayloadArraySelection = {
             0
         >
     >;
-    payload_mass_kg: SelectionWrapper<
+    payload_mass_kg: SelectionWrapperImpl<
         "payload_mass_kg",
         "Float",
         0,
         {},
         undefined
     >;
-    payload_mass_lbs: SelectionWrapper<
+    payload_mass_lbs: SelectionWrapperImpl<
         "payload_mass_lbs",
         "Float",
         0,
         {},
         undefined
     >;
-    payload_type: SelectionWrapper<"payload_type", "String", 0, {}, undefined>;
-    reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
+    payload_type: SelectionWrapperImpl<
+        "payload_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    reused: SelectionWrapperImpl<"reused", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5471,45 +5675,63 @@ export const PayloadArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromPayloadOrbitParamsSelection = {
-    apoapsis_km: SelectionWrapper<"apoapsis_km", "Float", 0, {}, undefined>;
-    arg_of_pericenter: SelectionWrapper<
+    apoapsis_km: SelectionWrapperImpl<"apoapsis_km", "Float", 0, {}, undefined>;
+    arg_of_pericenter: SelectionWrapperImpl<
         "arg_of_pericenter",
         "Float",
         0,
         {},
         undefined
     >;
-    eccentricity: SelectionWrapper<"eccentricity", "Float", 0, {}, undefined>;
-    epoch: SelectionWrapper<"epoch", "Date", 0, {}, undefined>;
-    inclination_deg: SelectionWrapper<
+    eccentricity: SelectionWrapperImpl<
+        "eccentricity",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    epoch: SelectionWrapperImpl<"epoch", "Date", 0, {}, undefined>;
+    inclination_deg: SelectionWrapperImpl<
         "inclination_deg",
         "Float",
         0,
         {},
         undefined
     >;
-    lifespan_years: SelectionWrapper<
+    lifespan_years: SelectionWrapperImpl<
         "lifespan_years",
         "Float",
         0,
         {},
         undefined
     >;
-    longitude: SelectionWrapper<"longitude", "Float", 0, {}, undefined>;
-    mean_anomaly: SelectionWrapper<"mean_anomaly", "Float", 0, {}, undefined>;
-    mean_motion: SelectionWrapper<"mean_motion", "Float", 0, {}, undefined>;
-    periapsis_km: SelectionWrapper<"periapsis_km", "Float", 0, {}, undefined>;
-    period_min: SelectionWrapper<"period_min", "Float", 0, {}, undefined>;
-    raan: SelectionWrapper<"raan", "Float", 0, {}, undefined>;
-    reference_system: SelectionWrapper<
+    longitude: SelectionWrapperImpl<"longitude", "Float", 0, {}, undefined>;
+    mean_anomaly: SelectionWrapperImpl<
+        "mean_anomaly",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    mean_motion: SelectionWrapperImpl<"mean_motion", "Float", 0, {}, undefined>;
+    periapsis_km: SelectionWrapperImpl<
+        "periapsis_km",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    period_min: SelectionWrapperImpl<"period_min", "Float", 0, {}, undefined>;
+    raan: SelectionWrapperImpl<"raan", "Float", 0, {}, undefined>;
+    reference_system: SelectionWrapperImpl<
         "reference_system",
         "String",
         0,
         {},
         undefined
     >;
-    regime: SelectionWrapper<"regime", "String", 0, {}, undefined>;
-    semi_major_axis_km: SelectionWrapper<
+    regime: SelectionWrapperImpl<"regime", "String", 0, {}, undefined>;
+    semi_major_axis_km: SelectionWrapperImpl<
         "semi_major_axis_km",
         "Float",
         0,
@@ -5662,21 +5884,21 @@ export const PayloadOrbitParamsSelection = makeSLFN(
 );
 
 type ReturnTypeFromShipArraySelection = {
-    abs: SelectionWrapper<"abs", "Int", 0, {}, undefined>;
-    active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    attempted_landings: SelectionWrapper<
+    abs: SelectionWrapperImpl<"abs", "Int", 0, {}, undefined>;
+    active: SelectionWrapperImpl<"active", "Boolean", 0, {}, undefined>;
+    attempted_landings: SelectionWrapperImpl<
         "attempted_landings",
         "Int",
         0,
         {},
         undefined
     >;
-    class: SelectionWrapper<"class", "Int", 0, {}, undefined>;
-    course_deg: SelectionWrapper<"course_deg", "Int", 0, {}, undefined>;
-    home_port: SelectionWrapper<"home_port", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    image: SelectionWrapper<"image", "String", 0, {}, undefined>;
-    imo: SelectionWrapper<"imo", "Int", 0, {}, undefined>;
+    class: SelectionWrapperImpl<"class", "Int", 0, {}, undefined>;
+    course_deg: SelectionWrapperImpl<"course_deg", "Int", 0, {}, undefined>;
+    home_port: SelectionWrapperImpl<"home_port", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    image: SelectionWrapperImpl<"image", "String", 0, {}, undefined>;
+    imo: SelectionWrapperImpl<"imo", "Int", 0, {}, undefined>;
     missions: ReturnType<
         SLFN<
             {},
@@ -5686,9 +5908,9 @@ type ReturnTypeFromShipArraySelection = {
             1
         >
     >;
-    mmsi: SelectionWrapper<"mmsi", "Int", 0, {}, undefined>;
-    model: SelectionWrapper<"model", "String", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    mmsi: SelectionWrapperImpl<"mmsi", "Int", 0, {}, undefined>;
+    model: SelectionWrapperImpl<"model", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
     position: ReturnType<
         SLFN<
             {},
@@ -5698,21 +5920,21 @@ type ReturnTypeFromShipArraySelection = {
             0
         >
     >;
-    roles: SelectionWrapper<"roles", "String", 1, {}, undefined>;
-    speed_kn: SelectionWrapper<"speed_kn", "Float", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
+    roles: SelectionWrapperImpl<"roles", "String", 1, {}, undefined>;
+    speed_kn: SelectionWrapperImpl<"speed_kn", "Float", 0, {}, undefined>;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    successful_landings: SelectionWrapperImpl<
         "successful_landings",
         "Int",
         0,
         {},
         undefined
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    url: SelectionWrapper<"url", "String", 0, {}, undefined>;
-    weight_kg: SelectionWrapper<"weight_kg", "Int", 0, {}, undefined>;
-    weight_lbs: SelectionWrapper<"weight_lbs", "Int", 0, {}, undefined>;
-    year_built: SelectionWrapper<"year_built", "Int", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    url: SelectionWrapperImpl<"url", "String", 0, {}, undefined>;
+    weight_kg: SelectionWrapperImpl<"weight_kg", "Int", 0, {}, undefined>;
+    weight_lbs: SelectionWrapperImpl<"weight_lbs", "Int", 0, {}, undefined>;
+    year_built: SelectionWrapperImpl<"year_built", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5852,8 +6074,8 @@ export const ShipArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromShipMissionArraySelection = {
-    flight: SelectionWrapper<"flight", "String", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    flight: SelectionWrapperImpl<"flight", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5903,8 +6125,8 @@ export const ShipMissionArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromShipLocationSelection = {
-    latitude: SelectionWrapper<"latitude", "Float", 0, {}, undefined>;
-    longitude: SelectionWrapper<"longitude", "Float", 0, {}, undefined>;
+    latitude: SelectionWrapperImpl<"latitude", "Float", 0, {}, undefined>;
+    longitude: SelectionWrapperImpl<"longitude", "Float", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -5961,7 +6183,13 @@ export const ShipLocationSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchTelemetrySelection = {
-    flight_club: SelectionWrapper<"flight_club", "String", 0, {}, undefined>;
+    flight_club: SelectionWrapperImpl<
+        "flight_club",
+        "String",
+        0,
+        {},
+        undefined
+    >;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6010,9 +6238,9 @@ export const LaunchTelemetrySelection = makeSLFN(
 );
 
 type ReturnTypeFromLinkSelection = {
-    article: SelectionWrapper<"article", "String", 0, {}, undefined>;
-    reddit: SelectionWrapper<"reddit", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    article: SelectionWrapperImpl<"article", "String", 0, {}, undefined>;
+    reddit: SelectionWrapperImpl<"reddit", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6073,15 +6301,15 @@ export const LinkSelection = makeSLFN(
 );
 
 type ReturnTypeFromHistoryArraySelection = {
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    event_date_unix: SelectionWrapper<
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    event_date_unix: SelectionWrapperImpl<
         "event_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    event_date_utc: SelectionWrapper<
+    event_date_utc: SelectionWrapperImpl<
         "event_date_utc",
         "Date",
         0,
@@ -6097,7 +6325,7 @@ type ReturnTypeFromHistoryArraySelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     links: ReturnType<
         SLFN<
             {},
@@ -6107,7 +6335,7 @@ type ReturnTypeFromHistoryArraySelection = {
             0
         >
     >;
-    title: SelectionWrapper<"title", "String", 0, {}, undefined>;
+    title: SelectionWrapperImpl<"title", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6176,7 +6404,7 @@ export const HistoryArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromResultSelection = {
-    totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
+    totalCount: SelectionWrapperImpl<"totalCount", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6275,15 +6503,15 @@ export const HistoriesResultSelection = makeSLFN(
 );
 
 type ReturnTypeFromHistorySelection = {
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    event_date_unix: SelectionWrapper<
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    event_date_unix: SelectionWrapperImpl<
         "event_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    event_date_utc: SelectionWrapper<
+    event_date_utc: SelectionWrapperImpl<
         "event_date_utc",
         "Date",
         0,
@@ -6299,7 +6527,7 @@ type ReturnTypeFromHistorySelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     links: ReturnType<
         SLFN<
             {},
@@ -6309,7 +6537,7 @@ type ReturnTypeFromHistorySelection = {
             0
         >
     >;
-    title: SelectionWrapper<"title", "String", 0, {}, undefined>;
+    title: SelectionWrapperImpl<"title", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6378,10 +6606,10 @@ export const HistorySelection = makeSLFN(
 );
 
 type ReturnTypeFromLocationSelection = {
-    latitude: SelectionWrapper<"latitude", "Float", 0, {}, undefined>;
-    longitude: SelectionWrapper<"longitude", "Float", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    region: SelectionWrapper<"region", "String", 0, {}, undefined>;
+    latitude: SelectionWrapperImpl<"latitude", "Float", 0, {}, undefined>;
+    longitude: SelectionWrapperImpl<"longitude", "Float", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    region: SelectionWrapperImpl<"region", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6447,17 +6675,23 @@ export const LocationSelection = makeSLFN(
 );
 
 type ReturnTypeFromLandpadSelection = {
-    attempted_landings: SelectionWrapper<
+    attempted_landings: SelectionWrapperImpl<
         "attempted_landings",
         "String",
         0,
         {},
         undefined
     >;
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    full_name: SelectionWrapper<"full_name", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    landing_type: SelectionWrapper<"landing_type", "String", 0, {}, undefined>;
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    full_name: SelectionWrapperImpl<"full_name", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    landing_type: SelectionWrapperImpl<
+        "landing_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     location: ReturnType<
         SLFN<
             {},
@@ -6467,15 +6701,15 @@ type ReturnTypeFromLandpadSelection = {
             0
         >
     >;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    successful_landings: SelectionWrapperImpl<
         "successful_landings",
         "String",
         0,
         {},
         undefined
     >;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6577,17 +6811,23 @@ export const LandpadSelection = makeSLFN(
 );
 
 type ReturnTypeFromLandpadArraySelection = {
-    attempted_landings: SelectionWrapper<
+    attempted_landings: SelectionWrapperImpl<
         "attempted_landings",
         "String",
         0,
         {},
         undefined
     >;
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    full_name: SelectionWrapper<"full_name", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    landing_type: SelectionWrapper<"landing_type", "String", 0, {}, undefined>;
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    full_name: SelectionWrapperImpl<"full_name", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    landing_type: SelectionWrapperImpl<
+        "landing_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     location: ReturnType<
         SLFN<
             {},
@@ -6597,15 +6837,15 @@ type ReturnTypeFromLandpadArraySelection = {
             0
         >
     >;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    successful_landings: SelectionWrapperImpl<
         "successful_landings",
         "String",
         0,
         {},
         undefined
     >;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -6707,24 +6947,30 @@ export const LandpadArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchArraySelection = {
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    is_tentative: SelectionWrapper<"is_tentative", "Boolean", 0, {}, undefined>;
-    launch_date_local: SelectionWrapper<
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    is_tentative: SelectionWrapperImpl<
+        "is_tentative",
+        "Boolean",
+        0,
+        {},
+        undefined
+    >;
+    launch_date_local: SelectionWrapperImpl<
         "launch_date_local",
         "Date",
         0,
         {},
         undefined
     >;
-    launch_date_unix: SelectionWrapper<
+    launch_date_unix: SelectionWrapperImpl<
         "launch_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    launch_date_utc: SelectionWrapper<
+    launch_date_utc: SelectionWrapperImpl<
         "launch_date_utc",
         "Date",
         0,
@@ -6740,14 +6986,20 @@ type ReturnTypeFromLaunchArraySelection = {
             0
         >
     >;
-    launch_success: SelectionWrapper<
+    launch_success: SelectionWrapperImpl<
         "launch_success",
         "Boolean",
         0,
         {},
         undefined
     >;
-    launch_year: SelectionWrapper<"launch_year", "String", 0, {}, undefined>;
+    launch_year: SelectionWrapperImpl<
+        "launch_year",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     links: ReturnType<
         SLFN<
             {},
@@ -6757,8 +7009,14 @@ type ReturnTypeFromLaunchArraySelection = {
             0
         >
     >;
-    mission_id: SelectionWrapper<"mission_id", "String", 1, {}, undefined>;
-    mission_name: SelectionWrapper<"mission_name", "String", 0, {}, undefined>;
+    mission_id: SelectionWrapperImpl<"mission_id", "String", 1, {}, undefined>;
+    mission_name: SelectionWrapperImpl<
+        "mission_name",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     rocket: ReturnType<
         SLFN<
             {},
@@ -6777,14 +7035,14 @@ type ReturnTypeFromLaunchArraySelection = {
             1
         >
     >;
-    static_fire_date_unix: SelectionWrapper<
+    static_fire_date_unix: SelectionWrapperImpl<
         "static_fire_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    static_fire_date_utc: SelectionWrapper<
+    static_fire_date_utc: SelectionWrapperImpl<
         "static_fire_date_utc",
         "Date",
         0,
@@ -6800,14 +7058,14 @@ type ReturnTypeFromLaunchArraySelection = {
             0
         >
     >;
-    tentative_max_precision: SelectionWrapper<
+    tentative_max_precision: SelectionWrapperImpl<
         "tentative_max_precision",
         "String",
         0,
         {},
         undefined
     >;
-    upcoming: SelectionWrapper<"upcoming", "Boolean", 0, {}, undefined>;
+    upcoming: SelectionWrapperImpl<"upcoming", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7019,18 +7277,24 @@ export const LaunchesPastResultSelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketArraySelection = {
-    active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    boosters: SelectionWrapper<"boosters", "Int", 0, {}, undefined>;
-    company: SelectionWrapper<"company", "String", 0, {}, undefined>;
-    cost_per_launch: SelectionWrapper<
+    active: SelectionWrapperImpl<"active", "Boolean", 0, {}, undefined>;
+    boosters: SelectionWrapperImpl<"boosters", "Int", 0, {}, undefined>;
+    company: SelectionWrapperImpl<"company", "String", 0, {}, undefined>;
+    cost_per_launch: SelectionWrapperImpl<
         "cost_per_launch",
         "Int",
         0,
         {},
         undefined
     >;
-    country: SelectionWrapper<"country", "String", 0, {}, undefined>;
-    description: SelectionWrapper<"description", "String", 0, {}, undefined>;
+    country: SelectionWrapperImpl<"country", "String", 0, {}, undefined>;
+    description: SelectionWrapperImpl<
+        "description",
+        "String",
+        0,
+        {},
+        undefined
+    >;
     diameter: ReturnType<
         SLFN<
             {},
@@ -7049,7 +7313,13 @@ type ReturnTypeFromRocketArraySelection = {
             0
         >
     >;
-    first_flight: SelectionWrapper<"first_flight", "Date", 0, {}, undefined>;
+    first_flight: SelectionWrapperImpl<
+        "first_flight",
+        "Date",
+        0,
+        {},
+        undefined
+    >;
     first_stage: ReturnType<
         SLFN<
             {},
@@ -7068,7 +7338,7 @@ type ReturnTypeFromRocketArraySelection = {
             0
         >
     >;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     landing_legs: ReturnType<
         SLFN<
             {},
@@ -7087,7 +7357,7 @@ type ReturnTypeFromRocketArraySelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
     payload_weights: ReturnType<
         SLFN<
             {},
@@ -7106,16 +7376,16 @@ type ReturnTypeFromRocketArraySelection = {
             0
         >
     >;
-    stages: SelectionWrapper<"stages", "Int", 0, {}, undefined>;
-    success_rate_pct: SelectionWrapper<
+    stages: SelectionWrapperImpl<"stages", "Int", 0, {}, undefined>;
+    success_rate_pct: SelectionWrapperImpl<
         "success_rate_pct",
         "Int",
         0,
         {},
         undefined
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7261,15 +7531,15 @@ export const RocketArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchpadSelection = {
-    attempted_launches: SelectionWrapper<
+    attempted_launches: SelectionWrapperImpl<
         "attempted_launches",
         "Int",
         0,
         {},
         undefined
     >;
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     location: ReturnType<
         SLFN<
             {},
@@ -7279,9 +7549,9 @@ type ReturnTypeFromLaunchpadSelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_launches: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    successful_launches: SelectionWrapperImpl<
         "successful_launches",
         "Int",
         0,
@@ -7297,7 +7567,7 @@ type ReturnTypeFromLaunchpadSelection = {
             1
         >
     >;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7388,15 +7658,15 @@ export const LaunchpadSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchpadArraySelection = {
-    attempted_launches: SelectionWrapper<
+    attempted_launches: SelectionWrapperImpl<
         "attempted_launches",
         "Int",
         0,
         {},
         undefined
     >;
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
     location: ReturnType<
         SLFN<
             {},
@@ -7406,9 +7676,9 @@ type ReturnTypeFromLaunchpadArraySelection = {
             0
         >
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_launches: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    successful_launches: SelectionWrapperImpl<
         "successful_launches",
         "Int",
         0,
@@ -7424,7 +7694,7 @@ type ReturnTypeFromLaunchpadArraySelection = {
             1
         >
     >;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7515,16 +7785,22 @@ export const LaunchpadArraySelection = makeSLFN(
 );
 
 type ReturnTypeFromMissionSelection = {
-    description: SelectionWrapper<"description", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    manufacturers: SelectionWrapper<
+    description: SelectionWrapperImpl<
+        "description",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    manufacturers: SelectionWrapperImpl<
         "manufacturers",
         "String",
         1,
         {},
         undefined
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
     payloads: ReturnType<
         SLFN<
             {},
@@ -7534,9 +7810,9 @@ type ReturnTypeFromMissionSelection = {
             1
         >
     >;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
-    website: SelectionWrapper<"website", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
+    website: SelectionWrapperImpl<"website", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7623,16 +7899,22 @@ export const MissionSelection = makeSLFN(
 );
 
 type ReturnTypeFromMissionArraySelection = {
-    description: SelectionWrapper<"description", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    manufacturers: SelectionWrapper<
+    description: SelectionWrapperImpl<
+        "description",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    manufacturers: SelectionWrapperImpl<
         "manufacturers",
         "String",
         1,
         {},
         undefined
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
     payloads: ReturnType<
         SLFN<
             {},
@@ -7642,9 +7924,9 @@ type ReturnTypeFromMissionArraySelection = {
             1
         >
     >;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
-    website: SelectionWrapper<"website", "String", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
+    website: SelectionWrapperImpl<"website", "String", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7783,12 +8065,24 @@ export const MissionResultSelection = makeSLFN(
 );
 
 type ReturnTypeFromPayloadSelection = {
-    customers: SelectionWrapper<"customers", "String", 1, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    manufacturer: SelectionWrapper<"manufacturer", "String", 0, {}, undefined>;
-    nationality: SelectionWrapper<"nationality", "String", 0, {}, undefined>;
-    norad_id: SelectionWrapper<"norad_id", "Int", 1, {}, undefined>;
-    orbit: SelectionWrapper<"orbit", "String", 0, {}, undefined>;
+    customers: SelectionWrapperImpl<"customers", "String", 1, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    manufacturer: SelectionWrapperImpl<
+        "manufacturer",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    nationality: SelectionWrapperImpl<
+        "nationality",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    norad_id: SelectionWrapperImpl<"norad_id", "Int", 1, {}, undefined>;
+    orbit: SelectionWrapperImpl<"orbit", "String", 0, {}, undefined>;
     orbit_params: ReturnType<
         SLFN<
             {},
@@ -7798,22 +8092,28 @@ type ReturnTypeFromPayloadSelection = {
             0
         >
     >;
-    payload_mass_kg: SelectionWrapper<
+    payload_mass_kg: SelectionWrapperImpl<
         "payload_mass_kg",
         "Float",
         0,
         {},
         undefined
     >;
-    payload_mass_lbs: SelectionWrapper<
+    payload_mass_lbs: SelectionWrapperImpl<
         "payload_mass_lbs",
         "Float",
         0,
         {},
         undefined
     >;
-    payload_type: SelectionWrapper<"payload_type", "String", 0, {}, undefined>;
-    reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
+    payload_type: SelectionWrapperImpl<
+        "payload_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    reused: SelectionWrapperImpl<"reused", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -7924,78 +8224,102 @@ export const PayloadSelection = makeSLFN(
 );
 
 type ReturnTypeFromRoadsterSelection = {
-    apoapsis_au: SelectionWrapper<"apoapsis_au", "Float", 0, {}, undefined>;
-    details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    earth_distance_km: SelectionWrapper<
+    apoapsis_au: SelectionWrapperImpl<"apoapsis_au", "Float", 0, {}, undefined>;
+    details: SelectionWrapperImpl<"details", "String", 0, {}, undefined>;
+    earth_distance_km: SelectionWrapperImpl<
         "earth_distance_km",
         "Float",
         0,
         {},
         undefined
     >;
-    earth_distance_mi: SelectionWrapper<
+    earth_distance_mi: SelectionWrapperImpl<
         "earth_distance_mi",
         "Float",
         0,
         {},
         undefined
     >;
-    eccentricity: SelectionWrapper<"eccentricity", "Float", 0, {}, undefined>;
-    epoch_jd: SelectionWrapper<"epoch_jd", "Float", 0, {}, undefined>;
-    inclination: SelectionWrapper<"inclination", "Float", 0, {}, undefined>;
-    launch_date_unix: SelectionWrapper<
+    eccentricity: SelectionWrapperImpl<
+        "eccentricity",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    epoch_jd: SelectionWrapperImpl<"epoch_jd", "Float", 0, {}, undefined>;
+    inclination: SelectionWrapperImpl<"inclination", "Float", 0, {}, undefined>;
+    launch_date_unix: SelectionWrapperImpl<
         "launch_date_unix",
         "Date",
         0,
         {},
         undefined
     >;
-    launch_date_utc: SelectionWrapper<
+    launch_date_utc: SelectionWrapperImpl<
         "launch_date_utc",
         "Date",
         0,
         {},
         undefined
     >;
-    launch_mass_kg: SelectionWrapper<"launch_mass_kg", "Int", 0, {}, undefined>;
-    launch_mass_lbs: SelectionWrapper<
+    launch_mass_kg: SelectionWrapperImpl<
+        "launch_mass_kg",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
+    launch_mass_lbs: SelectionWrapperImpl<
         "launch_mass_lbs",
         "Int",
         0,
         {},
         undefined
     >;
-    longitude: SelectionWrapper<"longitude", "Float", 0, {}, undefined>;
-    mars_distance_km: SelectionWrapper<
+    longitude: SelectionWrapperImpl<"longitude", "Float", 0, {}, undefined>;
+    mars_distance_km: SelectionWrapperImpl<
         "mars_distance_km",
         "Float",
         0,
         {},
         undefined
     >;
-    mars_distance_mi: SelectionWrapper<
+    mars_distance_mi: SelectionWrapperImpl<
         "mars_distance_mi",
         "Float",
         0,
         {},
         undefined
     >;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    norad_id: SelectionWrapper<"norad_id", "Int", 0, {}, undefined>;
-    orbit_type: SelectionWrapper<"orbit_type", "Float", 0, {}, undefined>;
-    periapsis_arg: SelectionWrapper<"periapsis_arg", "Float", 0, {}, undefined>;
-    periapsis_au: SelectionWrapper<"periapsis_au", "Float", 0, {}, undefined>;
-    period_days: SelectionWrapper<"period_days", "Float", 0, {}, undefined>;
-    semi_major_axis_au: SelectionWrapper<
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    norad_id: SelectionWrapperImpl<"norad_id", "Int", 0, {}, undefined>;
+    orbit_type: SelectionWrapperImpl<"orbit_type", "Float", 0, {}, undefined>;
+    periapsis_arg: SelectionWrapperImpl<
+        "periapsis_arg",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    periapsis_au: SelectionWrapperImpl<
+        "periapsis_au",
+        "Float",
+        0,
+        {},
+        undefined
+    >;
+    period_days: SelectionWrapperImpl<"period_days", "Float", 0, {}, undefined>;
+    semi_major_axis_au: SelectionWrapperImpl<
         "semi_major_axis_au",
         "Float",
         0,
         {},
         undefined
     >;
-    speed_kph: SelectionWrapper<"speed_kph", "Float", 0, {}, undefined>;
-    speed_mph: SelectionWrapper<"speed_mph", "Float", 0, {}, undefined>;
-    wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
+    speed_kph: SelectionWrapperImpl<"speed_kph", "Float", 0, {}, undefined>;
+    speed_mph: SelectionWrapperImpl<"speed_mph", "Float", 0, {}, undefined>;
+    wikipedia: SelectionWrapperImpl<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8270,21 +8594,21 @@ export const RocketsResultSelection = makeSLFN(
 );
 
 type ReturnTypeFromShipSelection = {
-    abs: SelectionWrapper<"abs", "Int", 0, {}, undefined>;
-    active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    attempted_landings: SelectionWrapper<
+    abs: SelectionWrapperImpl<"abs", "Int", 0, {}, undefined>;
+    active: SelectionWrapperImpl<"active", "Boolean", 0, {}, undefined>;
+    attempted_landings: SelectionWrapperImpl<
         "attempted_landings",
         "Int",
         0,
         {},
         undefined
     >;
-    class: SelectionWrapper<"class", "Int", 0, {}, undefined>;
-    course_deg: SelectionWrapper<"course_deg", "Int", 0, {}, undefined>;
-    home_port: SelectionWrapper<"home_port", "String", 0, {}, undefined>;
-    id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    image: SelectionWrapper<"image", "String", 0, {}, undefined>;
-    imo: SelectionWrapper<"imo", "Int", 0, {}, undefined>;
+    class: SelectionWrapperImpl<"class", "Int", 0, {}, undefined>;
+    course_deg: SelectionWrapperImpl<"course_deg", "Int", 0, {}, undefined>;
+    home_port: SelectionWrapperImpl<"home_port", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "ID", 0, {}, undefined>;
+    image: SelectionWrapperImpl<"image", "String", 0, {}, undefined>;
+    imo: SelectionWrapperImpl<"imo", "Int", 0, {}, undefined>;
     missions: ReturnType<
         SLFN<
             {},
@@ -8294,9 +8618,9 @@ type ReturnTypeFromShipSelection = {
             1
         >
     >;
-    mmsi: SelectionWrapper<"mmsi", "Int", 0, {}, undefined>;
-    model: SelectionWrapper<"model", "String", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    mmsi: SelectionWrapperImpl<"mmsi", "Int", 0, {}, undefined>;
+    model: SelectionWrapperImpl<"model", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
     position: ReturnType<
         SLFN<
             {},
@@ -8306,21 +8630,21 @@ type ReturnTypeFromShipSelection = {
             0
         >
     >;
-    roles: SelectionWrapper<"roles", "String", 1, {}, undefined>;
-    speed_kn: SelectionWrapper<"speed_kn", "Float", 0, {}, undefined>;
-    status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
+    roles: SelectionWrapperImpl<"roles", "String", 1, {}, undefined>;
+    speed_kn: SelectionWrapperImpl<"speed_kn", "Float", 0, {}, undefined>;
+    status: SelectionWrapperImpl<"status", "String", 0, {}, undefined>;
+    successful_landings: SelectionWrapperImpl<
         "successful_landings",
         "Int",
         0,
         {},
         undefined
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
-    url: SelectionWrapper<"url", "String", 0, {}, undefined>;
-    weight_kg: SelectionWrapper<"weight_kg", "Int", 0, {}, undefined>;
-    weight_lbs: SelectionWrapper<"weight_lbs", "Int", 0, {}, undefined>;
-    year_built: SelectionWrapper<"year_built", "Int", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
+    url: SelectionWrapperImpl<"url", "String", 0, {}, undefined>;
+    weight_kg: SelectionWrapperImpl<"weight_kg", "Int", 0, {}, undefined>;
+    weight_lbs: SelectionWrapperImpl<"weight_lbs", "Int", 0, {}, undefined>;
+    year_built: SelectionWrapperImpl<"year_built", "Int", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8505,11 +8829,17 @@ export const ShipsResultSelection = makeSLFN(
 );
 
 type ReturnTypeFromusersNotNullArrayNotNullSelection = {
-    id: SelectionWrapper<"id", "uuid", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    rocket: SelectionWrapper<"rocket", "String", 0, {}, undefined>;
-    timestamp: SelectionWrapper<"timestamp", "timestamptz", 0, {}, undefined>;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "uuid", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    rocket: SelectionWrapperImpl<"rocket", "String", 0, {}, undefined>;
+    timestamp: SelectionWrapperImpl<
+        "timestamp",
+        "timestamptz",
+        0,
+        {},
+        undefined
+    >;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8578,7 +8908,7 @@ export const usersNotNullArrayNotNullSelection = makeSLFN(
 type ReturnTypeFromusers_aggregate_fieldsSelection = {
     count: (
         args: users_aggregate_fieldsCountArgs,
-    ) => SelectionWrapper<
+    ) => SelectionWrapperImpl<
         "count",
         "Int",
         0,
@@ -8662,10 +8992,16 @@ export const users_aggregate_fieldsSelection = makeSLFN(
 );
 
 type ReturnTypeFromusers_max_fieldsSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    rocket: SelectionWrapper<"rocket", "String", 0, {}, undefined>;
-    timestamp: SelectionWrapper<"timestamp", "timestamptz", 0, {}, undefined>;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    rocket: SelectionWrapperImpl<"rocket", "String", 0, {}, undefined>;
+    timestamp: SelectionWrapperImpl<
+        "timestamp",
+        "timestamptz",
+        0,
+        {},
+        undefined
+    >;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8731,10 +9067,16 @@ export const users_max_fieldsSelection = makeSLFN(
 );
 
 type ReturnTypeFromusers_min_fieldsSelection = {
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    rocket: SelectionWrapper<"rocket", "String", 0, {}, undefined>;
-    timestamp: SelectionWrapper<"timestamp", "timestamptz", 0, {}, undefined>;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    rocket: SelectionWrapperImpl<"rocket", "String", 0, {}, undefined>;
+    timestamp: SelectionWrapperImpl<
+        "timestamp",
+        "timestamptz",
+        0,
+        {},
+        undefined
+    >;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8855,11 +9197,17 @@ export const users_aggregateNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromusersSelection = {
-    id: SelectionWrapper<"id", "uuid", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    rocket: SelectionWrapper<"rocket", "String", 0, {}, undefined>;
-    timestamp: SelectionWrapper<"timestamp", "timestamptz", 0, {}, undefined>;
-    twitter: SelectionWrapper<"twitter", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "uuid", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    rocket: SelectionWrapperImpl<"rocket", "String", 0, {}, undefined>;
+    timestamp: SelectionWrapperImpl<
+        "timestamp",
+        "timestamptz",
+        0,
+        {},
+        undefined
+    >;
+    twitter: SelectionWrapperImpl<"twitter", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8924,7 +9272,7 @@ export const usersSelection = makeSLFN(
 );
 
 type ReturnTypeFrom_ServiceNotNullSelection = {
-    sdl: SelectionWrapper<"sdl", "String", 0, {}, undefined>;
+    sdl: SelectionWrapperImpl<"sdl", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -8966,7 +9314,13 @@ export const _ServiceNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromusers_mutation_responseSelection = {
-    affected_rows: SelectionWrapper<"affected_rows", "Int", 0, {}, undefined>;
+    affected_rows: SelectionWrapperImpl<
+        "affected_rows",
+        "Int",
+        0,
+        {},
+        undefined
+    >;
     returning: ReturnType<
         SLFN<
             {},
@@ -9028,8 +9382,8 @@ export const users_mutation_responseSelection = makeSLFN(
 );
 
 type ReturnTypeFromCapsuleMissionSelection = {
-    flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    flight: SelectionWrapperImpl<"flight", "Int", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -9072,8 +9426,8 @@ export const CapsuleMissionSelection = makeSLFN(
 );
 
 type ReturnTypeFromCoreMissionSelection = {
-    flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    flight: SelectionWrapperImpl<"flight", "Int", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -9116,10 +9470,10 @@ export const CoreMissionSelection = makeSLFN(
 );
 
 type ReturnTypeFromDragonThrustSelection = {
-    amount: SelectionWrapper<"amount", "Int", 0, {}, undefined>;
-    fuel_1: SelectionWrapper<"fuel_1", "String", 0, {}, undefined>;
-    fuel_2: SelectionWrapper<"fuel_2", "String", 0, {}, undefined>;
-    pods: SelectionWrapper<"pods", "Int", 0, {}, undefined>;
+    amount: SelectionWrapperImpl<"amount", "Int", 0, {}, undefined>;
+    fuel_1: SelectionWrapperImpl<"fuel_1", "String", 0, {}, undefined>;
+    fuel_2: SelectionWrapperImpl<"fuel_2", "String", 0, {}, undefined>;
+    pods: SelectionWrapperImpl<"pods", "Int", 0, {}, undefined>;
     thrust: ReturnType<
         SLFN<
             {},
@@ -9129,7 +9483,7 @@ type ReturnTypeFromDragonThrustSelection = {
             0
         >
     >;
-    type: SelectionWrapper<"type", "String", 0, {}, undefined>;
+    type: SelectionWrapperImpl<"type", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -9190,7 +9544,7 @@ export const DragonThrustSelection = makeSLFN(
 );
 
 type ReturnTypeFromLaunchRocketFirstStageCoreSelection = {
-    block: SelectionWrapper<"block", "Int", 0, {}, undefined>;
+    block: SelectionWrapperImpl<"block", "Int", 0, {}, undefined>;
     core: ReturnType<
         SLFN<
             {},
@@ -9200,26 +9554,38 @@ type ReturnTypeFromLaunchRocketFirstStageCoreSelection = {
             0
         >
     >;
-    flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
-    gridfins: SelectionWrapper<"gridfins", "Boolean", 0, {}, undefined>;
-    land_success: SelectionWrapper<"land_success", "Boolean", 0, {}, undefined>;
-    landing_intent: SelectionWrapper<
+    flight: SelectionWrapperImpl<"flight", "Int", 0, {}, undefined>;
+    gridfins: SelectionWrapperImpl<"gridfins", "Boolean", 0, {}, undefined>;
+    land_success: SelectionWrapperImpl<
+        "land_success",
+        "Boolean",
+        0,
+        {},
+        undefined
+    >;
+    landing_intent: SelectionWrapperImpl<
         "landing_intent",
         "Boolean",
         0,
         {},
         undefined
     >;
-    landing_type: SelectionWrapper<"landing_type", "String", 0, {}, undefined>;
-    landing_vehicle: SelectionWrapper<
+    landing_type: SelectionWrapperImpl<
+        "landing_type",
+        "String",
+        0,
+        {},
+        undefined
+    >;
+    landing_vehicle: SelectionWrapperImpl<
         "landing_vehicle",
         "String",
         0,
         {},
         undefined
     >;
-    legs: SelectionWrapper<"legs", "Boolean", 0, {}, undefined>;
-    reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
+    legs: SelectionWrapperImpl<"legs", "Boolean", 0, {}, undefined>;
+    reused: SelectionWrapperImpl<"reused", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -10238,10 +10604,10 @@ export const QuerySelection = makeSLFN(
 );
 
 type ReturnTypeFromRocketPayloadWeightSelection = {
-    id: SelectionWrapper<"id", "String", 0, {}, undefined>;
-    kg: SelectionWrapper<"kg", "Int", 0, {}, undefined>;
-    lb: SelectionWrapper<"lb", "Int", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    kg: SelectionWrapperImpl<"kg", "Int", 0, {}, undefined>;
+    lb: SelectionWrapperImpl<"lb", "Int", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -10286,8 +10652,8 @@ export const RocketPayloadWeightSelection = makeSLFN(
 );
 
 type ReturnTypeFromShipMissionSelection = {
-    flight: SelectionWrapper<"flight", "String", 0, {}, undefined>;
-    name: SelectionWrapper<"name", "String", 0, {}, undefined>;
+    flight: SelectionWrapperImpl<"flight", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -10481,7 +10847,7 @@ export const users_aggregateSelection = makeSLFN(
 );
 
 type ReturnTypeFrom_ServiceSelection = {
-    sdl: SelectionWrapper<"sdl", "String", 0, {}, undefined>;
+    sdl: SelectionWrapperImpl<"sdl", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
