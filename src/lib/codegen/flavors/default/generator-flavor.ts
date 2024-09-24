@@ -817,7 +817,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         : ""
                                 } ${
                                     field.type.isScalar || field.type.isEnum
-                                        ? `SelectionWrapper<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
+                                        ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
                                               field.hasArgs
                                                   ? `${this.typeName}${field.name
                                                         .slice(0, 1)
