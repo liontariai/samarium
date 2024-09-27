@@ -61,5 +61,11 @@
         "graphql": "^16.8.1",
         "graphql-request": "^6.1.0",
         "prettier": "^3.2.5"
+    },
+    "workspaces": [
+        "examples/frontend/react/remix-todo-app"
+    ],
+    "resolutions": {
+        "graphql": "15.3.0"
     }
 }

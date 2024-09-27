@@ -1,0 +1,44 @@
+{
+    "name": "todo-app",
+    "private": true,
+    "sideEffects": false,
+    "scripts": {
+        "build": "remix build",
+        "dev": "remix dev --manual",
+        "start": "remix-serve ./build/index.js",
+        "typecheck": "tsc",
+        "postinstall": "prisma generate",
+        "db:push": "prisma db push"
+    },
+    "dependencies": {
+        "@prisma/client": "^5.0.0",
+        "@remix-run/css-bundle": "^2.12.1",
+        "@remix-run/node": "^2.0.0",
+        "@remix-run/react": "^2.0.0",
+        "@remix-run/serve": "^2.0.0",
+        "apollo-server-express": "^3.13.0",
+        "graphql": "15.3.0",
+        "isbot": "^3.6.8",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "reflect-metadata": "^0.2.2"
+    },
+    "devDependencies": {
+        "@remix-run/dev": "^2.0.0",
+        "@types/react": "^18.2.20",
+        "@types/react-dom": "^18.2.7",
+        "prisma": "^5.20.0",
+        "typegraphql-prisma": "^0.28.0",
+        "typescript": "^5.1.6",
+        "tailwindcss": "^3.3.0",
+        "postcss": "^8.4.21",
+        "autoprefixer": "^10.4.14"
+    },
+    "resolutions": {
+        "type-graphql/graphql": "15.3.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "packageManager": "bun@1.0.0"
+}
