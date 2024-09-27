@@ -170,6 +170,7 @@ export const ui = async () => {
         (await confirm({
             message: `
 File 'tsconfig.json' detected. Do you want to add an import alias for the generated file?`,
+            default: false,
         }))
     ) {
         console.log(" ");
