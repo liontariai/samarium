@@ -1,5 +1,5 @@
-<div style="display: flex; flex-direction: column; align-items: center; max-width: 700px; margin: 0 auto;">
-<img src="./docs/images/hero-image.jpg" alt="Samarium Hero Image" style="width: 800px;"/>
+<div style="display: flex; flex-direction: column; align-items: center; max-width: 830px; margin: 0 auto;">
+<img src="./docs/images/hero-image.jpg" alt="Samarium Hero Image" style="width: 830px;"/>
 <br />
 <div align="center"><strong>Samarium</strong></div>
 <div align="center"><strong>The API to Typescript Compiler</strong></div>
