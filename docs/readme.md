@@ -1,6 +1,9 @@
 # Samarium SDK Documentation
 
-After generating a SDK from your GraphQL API of choice, you will want to use it as efficiently as possible. This documentation provides a comprehensive guide on how to leverage the various features of Samarium SDKs to make the most of your GraphQL implementation. Whether you're dealing with complex queries, authentication, or custom types, you'll find detailed explanations and examples to help you navigate through your development process.
+After compiling your GraphQL API to Typescript, you can start using the SDK to query your API.
+Please refer to the following documentation to get started.
+
+You can also take a look at the examples in the [examples folder](./examples) to get started.
 
 ## Table of Contents
 
@@ -29,5 +32,3 @@ Each of these documents provides detailed information about specific features of
 -   **Union Types**: Understand how to work with union types in your queries and handle different possible return types.
 -   **Custom Scalars**: Learn how to work with custom scalar types defined in your GraphQL schema.
 -   **Lazy Execution**: Learn how to execute your queries lazily / on-demand. This is useful when you want to create a query or mutation that can be executed in multiple places with different parameters.
-
-I recommend looking at some of the examples and then start using it intuitively.

@@ -1,7 +1,6 @@
 {
     "name": "@liontari.ai/samarium",
     "version": "0.11.3",
-    "module": "src/index.ts",
     "main": "bin/index.js",
     "type": "module",
     "repository": {
@@ -9,6 +8,15 @@
         "url": "https://github.com/liontariai/samarium",
         "directory": "."
     },
+    "keywords": [
+        "graphql",
+        "typescript",
+        "compiler",
+        "api",
+        "sdk",
+        "graphql-sdk",
+        "graphql-codegen"
+    ],
     "homepage": "https://github.com/liontariai/samarium",
     "bin": {
         "samarium": "bin/samarium"
