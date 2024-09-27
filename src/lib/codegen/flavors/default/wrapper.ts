@@ -790,6 +790,11 @@ export class SelectionWrapper<
                                 if (typeof v === "function")
                                     return v.bind(data);
                                 return v;
+                            } else if (
+                                !isNaN(+String(prop)) &&
+                                Array.isArray(proto)
+                            ) {
+                                return (data as any)[prop];
                             }
                             return () => data;
                         }
