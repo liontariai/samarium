@@ -1,5 +1,5 @@
 <div style="display: flex; flex-direction: column; align-items: center; max-width: 830px; margin: 0 auto;">
-<img src="./docs/images/hero-image.jpg" alt="Samarium Hero Image" style="width: 830px;"/>
+<img src="https://github.com/liontariai/samarium/raw/main/docs/images/hero-image.jpg" alt="Samarium Hero Image" style="width: 830px;"/>
 <br />
 <div align="center"><strong>Samarium</strong></div>
 <div align="center"><strong>The API to Typescript Compiler</strong></div>
@@ -59,11 +59,11 @@ const { first10Launches } = await sdk((op) =>
 
 ## Documentation & Examples
 
-**Documentation is available [here](./docs/readme.md).**
+**Documentation is available [here](https://github.com/liontariai/samarium/blob/main/docs/readme.md).**
 <br/>
-Additonally, you can take a look at the **examples in the [examples folder](./examples)**.
+Additonally, you can take a look at the **examples in the [examples folder](https://github.com/liontariai/samarium/blob/main/examples)**.
 
-If you are interested in the technical details, you can take a look at the [tests](./src/lib/codegen/flavors/default/__tests__/features.test.ts).
+If you are interested in the technical details, you can take a look at the [tests](https://github.com/liontariai/samarium/blob/main/src/lib/codegen/flavors/default/__tests__/features.test.ts).
 <br/>
 They are commented and cover all the features.
 
@@ -82,7 +82,7 @@ The CLI will prompt you for the authentication if needed and allows for more cus
 [Online Playground is available here.](https://liontari.ai/#playground)
 
 <a href="https://liontari.ai/#playground">
-<img src="./docs/images/playground.png" alt="Samarium Online Playground" style="width: 800px;"/>
+<img src="https://github.com/liontariai/samarium/raw/main/docs/images/playground.png" alt="Samarium Online Playground" style="width: 830px;"/>
 </a>
 
 ## Features
