@@ -219,4 +219,10 @@ ${chalkSyntaxHighlights.import("import")} ${chalkSyntaxHighlights.name(filename.
         )};
         `);
     }
+
+    console.log(" ");
+    console.log(
+        "Please star the repo if you liked it! https://github.com/liontariai/samarium",
+    );
+    console.log(" ");
 };
