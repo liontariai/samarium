@@ -9,11 +9,12 @@ You can create a lazy operation by using the `$lazy` property:
 ```typescript
 import sdk from "./sdks/spacex";
 
-const { first10OrNLaunches } = await sdk((op) => ({
-    first10OrNLaunches: op.query((q) =>
-        q.launches({ limit: 10 })(({ id }) => ({ id })),
-    ).$lazy,
-}));
+const { first10OrNLaunches } = await sdk((op) =>
+    op.query((q) => ({
+        first10OrNLaunches: q.launches({ limit: 10 })(({ id }) => ({ id }))
+            .$lazy,
+    })),
+);
 
 // Later:
 const result10 = await first10OrNLaunches({}); // default limit of 10, because we didn't pass a limit argument and it was defined as a default argument
