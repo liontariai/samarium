@@ -9,10 +9,17 @@ import type { EntryContext } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import isbot from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
-import { createGraphQLMiddleware } from "./server/graphql.server";
-import type { Request as ExpressRequest } from "express";
+import { startGraphQLServer } from "./server/graphql.server";
 
 const ABORT_DELAY = 5000;
+
+let started = false;
+if (!started) {
+    started = true;
+    startGraphQLServer().catch((err) => {
+        console.error(err);
+    });
+}
 
 export default async function handleRequest(
     request: Request,
@@ -23,9 +30,6 @@ export default async function handleRequest(
     const callbackName = isbot(request.headers.get("user-agent"))
         ? "onAllReady"
         : "onShellReady";
-
-    // Create GraphQL middleware
-    const graphQLMiddleware = await createGraphQLMiddleware();
 
     return new Promise((resolve, reject) => {
         let didError = false;
@@ -69,36 +73,5 @@ export default async function handleRequest(
         );
 
         setTimeout(abort, ABORT_DELAY);
-    });
-}
-
-export async function handleDataRequest(request: Request) {
-    const graphQLMiddleware = await createGraphQLMiddleware();
-    return new Promise((resolve, reject) => {
-        let responseBody = "";
-        graphQLMiddleware(
-            request as unknown as ExpressRequest,
-            {
-                setHeader: () => {},
-                write: (chunk: string) => {
-                    responseBody += chunk;
-                },
-                end: (chunk?: string) => {
-                    if (chunk) {
-                        responseBody += chunk;
-                    }
-                    resolve(
-                        new Response(responseBody, {
-                            headers: { "Content-Type": "application/json" },
-                        }),
-                    );
-                },
-            } as any,
-            (error: any) => {
-                if (error) {
-                    reject(error);
-                }
-            },
-        );
     });
 }

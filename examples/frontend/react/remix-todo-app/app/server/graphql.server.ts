@@ -1,11 +1,11 @@
 import "reflect-metadata";
-import { ApolloServer } from "apollo-server-express";
+import { createServer } from "node:http";
+import { createYoga } from "graphql-yoga";
 import { buildSchema } from "type-graphql";
 import { resolvers } from "@generated/type-graphql";
-import { prisma } from "~/db.server";
-import express from "express";
+import { prisma } from "@/db.server";
 
-let graphQLServer: ApolloServer | null = null;
+let graphQLServer: ReturnType<typeof createServer> | null = null;
 
 export async function getGraphQLServer() {
     if (!graphQLServer) {
@@ -14,20 +14,28 @@ export async function getGraphQLServer() {
             validate: false,
         });
 
-        graphQLServer = new ApolloServer({
+        const yoga = createYoga({
             schema,
-            context: () => ({ prisma }),
+            context: () => {
+                return { prisma };
+            },
         });
-
-        await graphQLServer.start();
+        graphQLServer = createServer(yoga);
     }
 
     return graphQLServer;
 }
 
-export async function createGraphQLMiddleware() {
-    const app = express();
+export async function startGraphQLServer() {
+    if (graphQLServer) {
+        return;
+    }
     const server = await getGraphQLServer();
-    server.applyMiddleware({ app, path: "/graphql" });
-    return app;
+    server
+        .listen(4000, () => {
+            console.log("Server is running on http://localhost:4000/graphql");
+        })
+        .on("error", (err) => {
+            console.error(err);
+        });
 }
