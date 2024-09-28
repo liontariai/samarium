@@ -1,25 +1,25 @@
-import { json, type LoaderFunction } from "@remix-run/node";
-import { useLoaderData, Form, useSubmit } from "@remix-run/react";
-import {
-    getTodos,
-    createTodo,
-    toggleTodo,
-    deleteTodo,
-    type Todo,
-} from "~/models/todo.server";
-
-export const loader: LoaderFunction = async () => {
-    return json({ todos: await getTodos() });
-};
+import sdk from "sdk";
+import useSWR from "swr";
 
 export default function Index() {
-    const { todos } = useLoaderData<typeof loader>();
-    const submit = useSubmit();
+    const { data: { todos } = { todos: [] }, mutate: mutateTodos } = useSWR(
+        ["todos"],
+        () =>
+            sdk((op) =>
+                op.query(({ todos }) => ({
+                    todos: todos({})(({ id, text, completed }) => ({
+                        id,
+                        text,
+                        completed,
+                    })),
+                })),
+            ),
+    );
 
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">Todo App</h1>
-            <Form method="post" className="mb-4">
+            <div className="mb-4">
                 <input
                     type="text"
                     name="text"
@@ -27,23 +27,44 @@ export default function Index() {
                     required
                 />
                 <button
-                    type="submit"
+                    onClick={() =>
+                        sdk((op) =>
+                            op.mutation(({ createOneTodo }) => ({
+                                created: createOneTodo({
+                                    data: {
+                                        text: "New Todo",
+                                        completed: false,
+                                    },
+                                })(({ id }) => ({ id })),
+                            })),
+                        ).then(() => mutateTodos())
+                    }
                     className="bg-blue-500 text-white p-2 rounded"
                 >
                     Add Todo
                 </button>
-            </Form>
+            </div>
             <ul>
-                {todos.map((todo: Todo) => (
+                {todos?.map((todo: any) => (
                     <li key={todo.id} className="flex items-center mb-2">
                         <input
                             type="checkbox"
                             checked={todo.completed}
                             onChange={() =>
-                                submit(
-                                    { id: todo.id, completed: !todo.completed },
-                                    { method: "put" },
-                                )
+                                sdk((op) =>
+                                    op.mutation(({ updateOneTodo }) => ({
+                                        updated: updateOneTodo({
+                                            data: {
+                                                completed: {
+                                                    set: !todo.completed,
+                                                },
+                                            },
+                                            where: {
+                                                id: todo.id,
+                                            },
+                                        })(({ id }) => ({ id })),
+                                    })),
+                                ).then(() => mutateTodos())
                             }
                             className="mr-2"
                         />
@@ -52,7 +73,15 @@ export default function Index() {
                         </span>
                         <button
                             onClick={() =>
-                                submit({ id: todo.id }, { method: "delete" })
+                                sdk((op) =>
+                                    op.mutation(({ deleteOneTodo }) => ({
+                                        deleted: deleteOneTodo({
+                                            where: {
+                                                id: todo.id,
+                                            },
+                                        })(({ id }) => ({ id })),
+                                    })),
+                                ).then(() => mutateTodos())
                             }
                             className="ml-2 text-red-500"
                         >
@@ -63,19 +92,4 @@ export default function Index() {
             </ul>
         </div>
     );
-}
-
-export async function action({ request }: { request: Request }) {
-    const formData = await request.formData();
-    const { _action, ...values } = Object.fromEntries(formData);
-
-    if (request.method === "POST") {
-        await createTodo(values.text as string);
-    } else if (request.method === "PUT") {
-        await toggleTodo(values.id as string, values.completed === "true");
-    } else if (request.method === "DELETE") {
-        await deleteTodo(values.id as string);
-    }
-
-    return null;
 }
