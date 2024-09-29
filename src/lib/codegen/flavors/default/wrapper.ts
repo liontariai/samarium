@@ -686,7 +686,6 @@ export class SelectionWrapper<
                                 ...args,
                             } as argsT;
 
-                            newThat[SLW_LAZY_FLAG] = true;
                             newThat[SLW_OP_PATH] = that[SLW_OP_PATH];
 
                             newRootOpCollectorRef.ref.registerSelection(
@@ -694,7 +693,14 @@ export class SelectionWrapper<
                                 newThat,
                             );
 
-                            return newThat;
+                            return new Promise((resolve, reject) => {
+                                newRootOpCollectorRef.ref
+                                    .execute()
+                                    .catch(reject)
+                                    .then(() => {
+                                        resolve(newThat);
+                                    });
+                            });
                         }
                         target[SLW_LAZY_FLAG] = true;
                         lazy[SLW_LAZY_FLAG] = true;
@@ -737,24 +743,6 @@ export class SelectionWrapper<
                         return value;
                     }
                     if (prop === "then") {
-                        if (target[SLW_LAZY_FLAG]) {
-                            target[SLW_LAZY_FLAG] = false;
-                            target[ROOT_OP_COLLECTOR]!.ref.registerSelection(
-                                target[SLW_FIELD_NAME]!,
-                                target,
-                            );
-                            return (resolve: (v: any) => any, reject: any) =>
-                                target[ROOT_OP_COLLECTOR]!.ref.execute()
-                                    .catch(reject)
-                                    .then(() => {
-                                        resolve(
-                                            new Promise(() => {
-                                                resolve(this);
-                                            }),
-                                        );
-                                        target[SLW_LAZY_FLAG] = true;
-                                    });
-                        }
                         return this;
                     }
 
