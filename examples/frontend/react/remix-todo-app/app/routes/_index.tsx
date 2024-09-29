@@ -19,11 +19,13 @@ const TodoInput = ({
     setTodoText,
     handleAddTodo,
     showError,
+    setShowError,
 }: {
     todoText: string;
     setTodoText: (text: string) => void;
     handleAddTodo: () => void;
     showError: boolean;
+    setShowError: (show: boolean) => void;
 }) => (
     <div className="mb-6 relative">
         <input
@@ -39,6 +41,13 @@ const TodoInput = ({
                     handleAddTodo();
                 }
             }}
+            onBlur={() => setShowError(false)}
+            onFocus={() => setShowError(false)}
+            autoFocus
+            autoComplete="off"
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
         />
         <AnimatePresence>
             {showError && (
@@ -175,6 +184,7 @@ export default function Index() {
                     setTodoText={setTodoText}
                     handleAddTodo={handleAddTodo}
                     showError={showError}
+                    setShowError={setShowError}
                 />
                 <ul className="space-y-4">
                     {todos
