@@ -1,6 +1,7 @@
 const Proxy = global.Proxy;
 Proxy.prototype = {};
 
+export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 export class RootOperation {
     public static [OPTIONS] = {
