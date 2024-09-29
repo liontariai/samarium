@@ -32,7 +32,7 @@
     "scripts": {
         "prettier": "prettier --write .",
         "prepublishOnly": "./prepublish.sh",
-        "release": "cross-env RELEASE_MODE=true np --no-tests"
+        "release": "cross-env RELEASE_MODE=true np --no-yarn --no-npm"
     },
     "prettier": {
         "tabWidth": 4
