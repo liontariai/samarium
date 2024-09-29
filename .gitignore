@@ -184,3 +184,12 @@ bin
 
 
 dev-examples/
+
+node_modules
+
+/examples/**/build
+/examples/**/.cache
+/examples/**/.env
+/examples/**/*.db
+# TypeGraphQL generated files
+/examples/**/node_modules/@generated
