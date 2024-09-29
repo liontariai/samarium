@@ -1,6 +1,7 @@
 const Proxy = global.Proxy;
 Proxy.prototype = {};
 
+export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 export class RootOperation {
     public static [OPTIONS] = {
@@ -686,7 +687,6 @@ export class SelectionWrapper<
                                 ...args,
                             } as argsT;
 
-                            newThat[SLW_LAZY_FLAG] = true;
                             newThat[SLW_OP_PATH] = that[SLW_OP_PATH];
 
                             newRootOpCollectorRef.ref.registerSelection(
@@ -694,7 +694,14 @@ export class SelectionWrapper<
                                 newThat,
                             );
 
-                            return newThat;
+                            return new Promise((resolve, reject) => {
+                                newRootOpCollectorRef.ref
+                                    .execute()
+                                    .catch(reject)
+                                    .then(() => {
+                                        resolve(newThat);
+                                    });
+                            });
                         }
                         target[SLW_LAZY_FLAG] = true;
                         lazy[SLW_LAZY_FLAG] = true;
@@ -737,24 +744,6 @@ export class SelectionWrapper<
                         return value;
                     }
                     if (prop === "then") {
-                        if (target[SLW_LAZY_FLAG]) {
-                            target[SLW_LAZY_FLAG] = false;
-                            target[ROOT_OP_COLLECTOR]!.ref.registerSelection(
-                                target[SLW_FIELD_NAME]!,
-                                target,
-                            );
-                            return (resolve: (v: any) => any, reject: any) =>
-                                target[ROOT_OP_COLLECTOR]!.ref.execute()
-                                    .catch(reject)
-                                    .then(() => {
-                                        resolve(
-                                            new Promise(() => {
-                                                resolve(this);
-                                            }),
-                                        );
-                                        target[SLW_LAZY_FLAG] = true;
-                                    });
-                        }
                         return this;
                     }
 
@@ -2924,7 +2913,11 @@ createdAt: new SelectionWrapper(
                 } as const;
             };
 
-            
+            type __AuthenticationArg__ =
+            | string
+            | { [key: string]: string }
+            | (() => string | { [key: string]: string })
+            | (() => Promise<string | { [key: string]: string }>);
             function __client__ <
                 T extends object,
                 F extends ReturnType<typeof _makeRootOperationInput>>(
@@ -2937,34 +2930,126 @@ createdAt: new SelectionWrapper(
                 const r = s(selection);
                 const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+                
+                type excludeLazy<T> = { [key in Exclude<keyof T, "$lazy">]: T[key] };
+
+                // remove the $lazy property from the result
                 const result = _result as {
-                    [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<
-                        ReturnType<T[k]>, "$lazy"
-                    > : Omit<
-                        T[k], "$lazy"
-                    >
+                    [k in keyof T]: T[k] extends { $lazy: any }
+                        ? // if T[k] is an array and has a $lazy property, return the type of the array elements
+                        T[k] extends (infer U)[] & { $lazy: any }
+                            ? U[]
+                            : // if T[k] is an object and has a $lazy property, return the type of the object
+                            excludeLazy<T[k]>
+                        : // if T[k] is a function and has a $lazy property, return the type of the function
+                        T[k] extends (args: infer A) => Promise<infer R>
+                        ? (args: A) => Promise<R>
+                        : T[k];
                 };
-                type TR = typeof result;
-                
+
+                type _TR = typeof result;
+                type __HasPromisesAndOrNonPromisesK = {
+                    [k in keyof _TR]: _TR[k] extends (args: any) => Promise<any>
+                        ? "promise"
+                        : "non-promise";
+                };
+                type __HasPromisesAndOrNonPromises =
+                    __HasPromisesAndOrNonPromisesK[keyof __HasPromisesAndOrNonPromisesK];
+                type finalReturnTypeBasedOnIfHasLazyPromises =
+                    __HasPromisesAndOrNonPromises extends "non-promise"
+                        ? Promise<_TR>
+                        : __HasPromisesAndOrNonPromises extends "promise"
+                        ? _TR
+                        : Promise<_TR>;
+
                 let headers: Record<string, string> | undefined = undefined;
-                const finalPromise = {
-                    then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
-                        
-                            root.execute(headers)
-                            .then(() => {
-                                resolve(result);
-                            })
-                            .catch(reject);
-                        
-                    },
-                };
+                let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
                 
-                return finalPromise as Promise<TR>;
+                if (Object.values(result).some((v) => typeof v !== "function")) {
+                    returnValue = new Promise((resolve, reject) => {
+                            
+                                const doExecute = () => {
+                                    root.execute(headers)
+                                        .then(() => {
+                                            resolve(result);
+                                        })
+                                        .catch(reject);
+                                }
+                                if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
+                                    const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
+                                    if (tokenOrPromise instanceof Promise) {
+                                        tokenOrPromise.then((t) => {
+                                            if (typeof t === "string")
+                                                headers = { "Authorization": t };
+                                            else headers = t;
+        
+                                            doExecute();
+                                        });
+                                    }
+                                    else if (typeof tokenOrPromise === "string") {
+                                        headers = { "Authorization": tokenOrPromise };
+
+                                        doExecute();
+                                    } else {
+                                        headers = tokenOrPromise;
+
+                                        doExecute();
+                                    }
+                                }
+                                else {
+                                    doExecute();
+                                }
+                            
+                        }) as finalReturnTypeBasedOnIfHasLazyPromises;
+                }
+                else {
+                    returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
+                }
+                
+                
+                Object.defineProperty(returnValue, "auth", {
+                    enumerable: false,
+                    get: function () {
+                        return function (
+                            auth: __AuthenticationArg__,
+                        ) {
+                            if (typeof auth === "string") {
+                                headers = { "Authorization": auth };
+                            } else if (typeof auth === "function") {
+                                const tokenOrPromise = auth();
+                                if (tokenOrPromise instanceof Promise) {
+                                    return tokenOrPromise.then((t) => {
+                                        if (typeof t === "string")
+                                            headers = { "Authorization": t };
+                                        else headers = t;
+
+                                        return returnValue;
+                                    });
+                                }
+                                if (typeof tokenOrPromise === "string") {
+                                    headers = { "Authorization": tokenOrPromise };
+                                } else {
+                                    headers = tokenOrPromise;
+                                }
+                            } else {
+                                headers = auth;
+                            }
+
+                            return returnValue;
+                        };
+                    },
+                });
+
+                return returnValue as finalReturnTypeBasedOnIfHasLazyPromises & {
+                    auth: (
+                        auth: __AuthenticationArg__,
+                    ) => finalReturnTypeBasedOnIfHasLazyPromises;
+                };
                 
             };
 
             const __init__ = (options: {
-                
+                auth?: __AuthenticationArg__;
                 headers?: { [key: string]: string };
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
@@ -2976,6 +3061,17 @@ createdAt: new SelectionWrapper(
                     ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
+                
+                if (typeof options.auth === "string") {
+                    RootOperation[OPTIONS].headers = {
+                        "Authorization": options.auth,
+                    };
+                } else if (typeof options.auth === "function" ) {
+                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                }
+                else if (options.auth) {
+                    RootOperation[OPTIONS].headers = options.auth;
+                }
                 
 
                 if (options.headers) {

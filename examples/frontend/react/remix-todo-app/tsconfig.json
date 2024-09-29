@@ -8,15 +8,8 @@
         "**/.client/**/*.tsx"
     ],
     "compilerOptions": {
-        "lib": [
-            "DOM",
-            "DOM.Iterable",
-            "ES2022"
-        ],
-        "types": [
-            "@remix-run/node",
-            "vite/client"
-        ],
+        "lib": ["DOM", "DOM.Iterable", "ES2022"],
+        "types": ["@remix-run/node", "vite/client"],
         "isolatedModules": true,
         "esModuleInterop": true,
         "jsx": "react-jsx",
@@ -30,12 +23,8 @@
         "forceConsistentCasingInFileNames": true,
         "baseUrl": ".",
         "paths": {
-            "@/*": [
-                "./app/*"
-            ],
-            "sdk": [
-                "app/sdk/api.ts"
-            ]
+            "@/*": ["./app/*"],
+            "sdk": ["app/sdk/sdk.ts"]
         },
         "noEmit": true,
         "experimentalDecorators": true,
