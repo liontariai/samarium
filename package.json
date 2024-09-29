@@ -32,6 +32,7 @@
     "scripts": {
         "prettier": "prettier --write .",
         "prepublishOnly": "./prepublish.sh",
+        "test": "bun test",
         "release": "cross-env RELEASE_MODE=true np"
     },
     "prettier": {
