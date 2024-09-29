@@ -20,6 +20,7 @@ export default function App() {
                     name="viewport"
                     content="width=device-width, initial-scale=1"
                 />
+                <title>Todo App</title>
                 <Meta />
                 <Links />
             </head>
