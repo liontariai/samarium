@@ -1001,67 +1001,96 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const r = s(selection);
                 const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
-                const result = _result as {
-                    [k in keyof T]: T[k] extends (...args: infer A) => any ? (...args: A) => Omit<
-                        ReturnType<T[k]>, "$lazy"
-                    > : Omit<
-                        T[k], "$lazy"
-                    >
-                };
-                type TR = typeof result;
                 
-                let headers: Record<string, string> | undefined = undefined;
-                const finalPromise = {
-                    then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
-                        ${
-                            authConfig
-                                ? `
-                            const doExecute = () => {
-                                root.execute(headers)
-                                    .then(() => {
-                                        resolve(result);
-                                    })
-                                    .catch(reject);
-                            }
-                            if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
-                                const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
-                                if (tokenOrPromise instanceof Promise) {
-                                    tokenOrPromise.then((t) => {
-                                        if (typeof t === "string")
-                                            headers = { "${authConfig.headerName}": t };
-                                        else headers = t;
-    
-                                        doExecute();
-                                    });
-                                }
-                                else if (typeof tokenOrPromise === "string") {
-                                    headers = { "${authConfig.headerName}": tokenOrPromise };
+                type excludeLazy<T> = { [key in Exclude<keyof T, "$lazy">]: T[key] };
 
-                                    doExecute();
-                                } else {
-                                    headers = tokenOrPromise;
-
-                                    doExecute();
-                                }
-                            }
-                            else {
-                                doExecute();
-                            }
-                        `
-                                : `
-                            root.execute(headers)
-                            .then(() => {
-                                resolve(result);
-                            })
-                            .catch(reject);
-                        `
-                        }
-                    },
+                // remove the $lazy property from the result
+                const result = _result as {
+                    [k in keyof T]: T[k] extends { $lazy: any }
+                        ? // if T[k] is an array and has a $lazy property, return the type of the array elements
+                        T[k] extends (infer U)[] & { $lazy: any }
+                            ? U[]
+                            : // if T[k] is an object and has a $lazy property, return the type of the object
+                            excludeLazy<T[k]>
+                        : // if T[k] is a function and has a $lazy property, return the type of the function
+                        T[k] extends (args: infer A) => Promise<infer R>
+                        ? (args: A) => Promise<R>
+                        : T[k];
                 };
+
+                type _TR = typeof result;
+                type __HasPromisesAndOrNonPromisesK = {
+                    [k in keyof _TR]: _TR[k] extends (args: any) => Promise<any>
+                        ? "promise"
+                        : "non-promise";
+                };
+                type __HasPromisesAndOrNonPromises =
+                    __HasPromisesAndOrNonPromisesK[keyof __HasPromisesAndOrNonPromisesK];
+                type finalReturnTypeBasedOnIfHasLazyPromises =
+                    __HasPromisesAndOrNonPromises extends "non-promise"
+                        ? Promise<_TR>
+                        : __HasPromisesAndOrNonPromises extends "promise"
+                        ? _TR
+                        : Promise<_TR>;
+
+                let headers: Record<string, string> | undefined = undefined;
+                let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
+                
+                if (Object.values(result).some((v) => typeof v !== "function")) {
+                    returnValue = new Promise((resolve, reject) => {
+                            ${
+                                authConfig
+                                    ? `
+                                const doExecute = () => {
+                                    root.execute(headers)
+                                        .then(() => {
+                                            resolve(result);
+                                        })
+                                        .catch(reject);
+                                }
+                                if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
+                                    const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
+                                    if (tokenOrPromise instanceof Promise) {
+                                        tokenOrPromise.then((t) => {
+                                            if (typeof t === "string")
+                                                headers = { "${authConfig.headerName}": t };
+                                            else headers = t;
+        
+                                            doExecute();
+                                        });
+                                    }
+                                    else if (typeof tokenOrPromise === "string") {
+                                        headers = { "${authConfig.headerName}": tokenOrPromise };
+
+                                        doExecute();
+                                    } else {
+                                        headers = tokenOrPromise;
+
+                                        doExecute();
+                                    }
+                                }
+                                else {
+                                    doExecute();
+                                }
+                            `
+                                    : `
+                                root.execute(headers)
+                                .then(() => {
+                                    resolve(result);
+                                })
+                                .catch(reject);
+                            `
+                            }
+                        }) as finalReturnTypeBasedOnIfHasLazyPromises;
+                }
+                else {
+                    returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
+                }
+                
                 ${
                     authConfig
                         ? `
-                Object.defineProperty(finalPromise, "auth", {
+                Object.defineProperty(returnValue, "auth", {
                     enumerable: false,
                     get: function () {
                         return function (
@@ -1077,7 +1106,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             headers = { "${authConfig.headerName}": t };
                                         else headers = t;
 
-                                        return finalPromise as Promise<TR>;
+                                        return returnValue;
                                     });
                                 }
                                 if (typeof tokenOrPromise === "string") {
@@ -1089,19 +1118,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 headers = auth;
                             }
 
-                            return finalPromise as Promise<TR>;
+                            return returnValue;
                         };
                     },
                 });
 
-                return finalPromise as Promise<TR> & {
+                return returnValue as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
                         auth: __AuthenticationArg__,
-                    ) => Promise<TR>;
+                    ) => finalReturnTypeBasedOnIfHasLazyPromises;
                 };
                 `
                         : `
-                return finalPromise as Promise<TR>;
+                return finalPromise;
                 `
                 }
             };
