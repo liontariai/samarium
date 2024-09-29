@@ -17,7 +17,7 @@
         "@remix-run/react": "^2.0.0",
         "@remix-run/serve": "^2.0.0",
         "framer-motion": "^11.9.0",
-        "graphql": "15.3.0",
+        "graphql": "^16.8.1",
         "graphql-yoga": "^5.7.0",
         "isbot": "^3.6.8",
         "react": "^18.3.1",
@@ -37,9 +37,6 @@
         "typegraphql-prisma": "^0.28.0",
         "typescript": "^5.1.6",
         "vite-tsconfig-paths": "^5.0.1"
-    },
-    "resolutions": {
-        "type-graphql/graphql": "15.3.0"
     },
     "engines": {
         "node": ">=18.0.0"
