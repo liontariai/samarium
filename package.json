@@ -64,8 +64,5 @@
     },
     "workspaces": [
         "examples/frontend/react/remix-todo-app"
-    ],
-    "resolutions": {
-        "graphql": "15.3.0"
-    }
+    ]
 }
