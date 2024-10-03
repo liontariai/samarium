@@ -1,6 +1,6 @@
 {
     "name": "@liontari.ai/samarium",
-    "version": "0.12.0",
+    "version": "0.13.0",
     "main": "bin/index.js",
     "type": "module",
     "repository": {
