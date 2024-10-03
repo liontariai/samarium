@@ -132,13 +132,26 @@ const TodoItem = ({
             }
             className="form-checkbox h-5 w-5 text-blue-500 rounded-full border-2 border-gray-300 transition duration-150 ease-in-out focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         />
+        <div className="flex flex-row items-center justify-between w-full px-4">
         <span
             className={`ml-3 text-lg ${
-                todo.completed ? "line-through text-inherit" : "text-inherit"
+                    todo.completed
+                        ? "line-through text-inherit"
+                        : "text-inherit"
             } transition-colors duration-300`}
         >
             {todo.text}
         </span>
+            <span className="text-inherit">
+                {todo.createdAt.toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                    second: "numeric",
+                })}
+            </span>
+        </div>
         <button
             onClick={() =>
                 deleteTodo({
@@ -188,6 +201,7 @@ export default function Index() {
                 />
                 <ul className="space-y-4">
                     {todos
+                        ?.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
                         ?.sort((a, b) =>
                             a.completed ? 1 : b.completed ? -1 : 0,
                         )
