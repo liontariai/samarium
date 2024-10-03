@@ -12,6 +12,7 @@ export class RootOperation {
             | undefined,
         scalars: {
             DateTime: (value: string) => new Date(value),
+            DateTimeISO: (value: string) => new Date(value),
             Date: (value: string) => new Date(value),
             Time: (value: string) => new Date(value),
             JSON: (value: string) => JSON.parse(value),
@@ -321,9 +322,12 @@ export class OperationSelectionCollector {
         };
     }
 
-    private utilGet = (obj: Record<string, any>, path: string[]) =>
+    private utilGet = (obj: Record<string, any>, path: (string | number)[]) =>
         path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(path: string[] = [], type?: string): T {
+    public getOperationResultPath<T>(
+        path: (string | number)[] = [],
+        type?: string,
+    ): T {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
@@ -399,6 +403,8 @@ export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
     "SLW_RECREATE_VALUE_CALLBACK",
 );
 
+export const SLW_CLONE = Symbol("SLW_CLONE");
+
 export class SelectionWrapperImpl<
     fieldName extends string,
     typeNamePure extends string,
@@ -411,6 +417,29 @@ export class SelectionWrapperImpl<
             performance.now().toString(36) +
             Math.random().toString(36).substring(2)
         );
+    }
+    [SLW_CLONE](
+        overrides: {
+            SLW_OP_PATH?: string;
+        } = {},
+    ) {
+        const slw = new SelectionWrapper(
+            this[SLW_FIELD_NAME],
+            this[SLW_FIELD_TYPENAME],
+            this[SLW_FIELD_ARR_DEPTH],
+            this[SLW_VALUE],
+            this[SLW_COLLECTOR],
+            this[SLW_PARENT_COLLECTOR],
+            this[SLW_ARGS],
+            this[SLW_ARGS_META],
+            this[SLW_RECREATE_VALUE_CALLBACK],
+        );
+        slw[SLW_IS_ROOT_TYPE] = this[SLW_IS_ROOT_TYPE];
+        slw[SLW_IS_ON_TYPE_FRAGMENT] = this[SLW_IS_ON_TYPE_FRAGMENT];
+        slw[SLW_IS_FRAGMENT] = this[SLW_IS_FRAGMENT];
+        slw[SLW_PARENT_SLW] = this[SLW_PARENT_SLW];
+        slw[SLW_OP_PATH] = overrides.SLW_OP_PATH ?? this[SLW_OP_PATH];
+        return slw;
     }
 
     readonly [SLW_UID] = this.generateUniqueId();
@@ -729,7 +758,8 @@ export class SelectionWrapper<
                         prop === SLW_OP_PATH ||
                         prop === SLW_REGISTER_PATH ||
                         prop === SLW_RENDER_WITH_ARGS ||
-                        prop === SLW_RECREATE_VALUE_CALLBACK
+                        prop === SLW_RECREATE_VALUE_CALLBACK ||
+                        prop === SLW_CLONE
                     ) {
                         return target[
                             prop as keyof SelectionWrapperImpl<
@@ -764,13 +794,56 @@ export class SelectionWrapper<
                             const data = t[
                                 ROOT_OP_COLLECTOR
                             ]!.ref.getOperationResultPath<valueT>(
-                                t[SLW_OP_PATH]?.split(".") ?? [],
+                                (t[SLW_OP_PATH]?.split(".") ?? []).map((p) =>
+                                    !isNaN(+p) ? +p : p,
+                                ),
                                 t[SLW_FIELD_TYPENAME],
                             );
                             return data;
                         };
 
                         if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
+                            // check if the selected field is an array
+                            if (typeArrDepth) {
+                                if (!isNaN(+String(prop))) {
+                                    const elm = target[SLW_CLONE]({
+                                        SLW_OP_PATH:
+                                            target[SLW_OP_PATH] +
+                                            "." +
+                                            String(prop),
+                                    });
+                                    return elm;
+                                }
+
+                                const data = getResultDataForTarget(target) as
+                                    | valueT[]
+                                    | undefined;
+
+                                if (data === undefined) return undefined;
+
+                                const proxiedData = Array.from(
+                                    { length: data.length },
+                                    (_, i) =>
+                                        target[SLW_CLONE]({
+                                            SLW_OP_PATH:
+                                                target[SLW_OP_PATH] +
+                                                "." +
+                                                String(i),
+                                        }),
+                                );
+
+                                const proto =
+                                    Object.getPrototypeOf(proxiedData);
+                                if (Object.hasOwn(proto, prop)) {
+                                    const v = (proxiedData as any)[prop];
+                                    if (typeof v === "function")
+                                        return v.bind(proxiedData);
+                                    return v;
+                                }
+
+                                return () => proxiedData;
+                            }
+
                             const data = getResultDataForTarget(target);
                             if (data === undefined) return undefined;
                             const proto = Object.getPrototypeOf(data);
@@ -779,16 +852,22 @@ export class SelectionWrapper<
                                 if (typeof v === "function")
                                     return v.bind(data);
                                 return v;
-                            } else if (
-                                !isNaN(+String(prop)) &&
-                                Array.isArray(proto)
-                            ) {
-                                return (data as any)[prop];
                             }
+
                             return () => data;
                         }
 
-                        const slw = slw_value?.[String(prop)];
+                        let slw = slw_value?.[String(prop)];
+                        const slwOpPathIsIndexAccess = !isNaN(
+                            +target[SLW_OP_PATH]?.split(".").pop()!,
+                        );
+                        if (slwOpPathIsIndexAccess) {
+                            // index access detected, cloning
+                            slw = slw[SLW_CLONE]({
+                                SLW_OP_PATH:
+                                    target[SLW_OP_PATH] + "." + String(prop),
+                            });
+                        }
 
                         if (
                             slw instanceof SelectionWrapperImpl &&
@@ -838,2261 +917,2196 @@ export class SelectionWrapper<
     }
 }
 
+export interface ScalarTypeMapWithCustom {}
+export interface ScalarTypeMapDefault {
+    String: string;
+    Int: number;
+    Float: number;
+    Boolean: boolean;
+    ID: string;
+    Date: Date;
+    DateTime: Date;
+    DateTimeISO: Date;
+    Time: Date;
+    JSON: Record<string, any>;
+}
 
-    export interface ScalarTypeMapWithCustom {}
-    export interface ScalarTypeMapDefault {
-        "String": string;
-"Int": number;
-"Float": number;
-"Boolean": boolean;
-"ID": string;
-"Date": Date;
-"DateTime": Date;
-"Time": Date;
-"JSON": Record<string, any>;
-    };
+type SelectionFnParent =
+    | {
+          collector:
+              | OperationSelectionCollector
+              | OperationSelectionCollectorRef;
+          fieldName?: string;
+          args?: Record<string, any>;
+          argsMeta?: Record<string, string>;
 
-    type SelectionFnParent = {
-        collector: OperationSelectionCollector | OperationSelectionCollectorRef;
-        fieldName?: string;
-        args?: Record<string, any>;
-        argsMeta?: Record<string, string>;
+          isRootType?: "Query" | "Mutation" | "Subscription";
+          onTypeFragment?: string;
+          isFragment?: string;
+      }
+    | undefined;
 
-        isRootType?: "Query" | "Mutation" | "Subscription";
-        onTypeFragment?: string;
-        isFragment?: string;
-    } | undefined;
+type CleanupNever<A> = Omit<A, keyof A> & {
+    [K in keyof A as A[K] extends never ? never : K]: A[K];
+};
+type Prettify<T> = {
+    [K in keyof T]: T[K];
+} & {};
 
-    type CleanupNever<A> = Omit<A, keyof A> & {
-        [K in keyof A as A[K] extends never ? never : K]: A[K];
-    };
-    type Prettify<T> = {
-        [K in keyof T]: T[K];
-    } & {};
+type SLWsFromSelection<
+    S,
+    R = {
+        [K in keyof S]: S[K] extends SelectionWrapperImpl<
+            infer FN,
+            infer TNP,
+            infer TAD
+        >
+            ? S[K]
+            : never;
+    },
+> = Prettify<CleanupNever<R>>;
+type ReturnTypeFromFragment<T> = T extends (
+    this: any,
+    ...args: any[]
+) => infer R
+    ? R
+    : never;
+type ArgumentsTypeFromFragment<T> = T extends (
+    this: any,
+    ...args: infer A
+) => any
+    ? A
+    : never;
 
-    type SLWsFromSelection<
-        S,
-        R = {
-            [K in keyof S]: S[K] extends SelectionWrapperImpl<
-                infer FN,
-                infer TNP,
-                infer TAD
-            >
-                ? S[K]
-                : never;
-        },
-    > = Prettify<CleanupNever<R>>;
-    type ReturnTypeFromFragment<T> = T extends (
-        this: any,
-        ...args: any[]
-    ) => infer R
-        ? R
-        : never;
-    type ArgumentsTypeFromFragment<T> = T extends (
-        this: any,
-        ...args: infer A
-    ) => any
-        ? A
-        : never;
-
-    type ReplaceReturnType<T, R> = T extends (...a: any) => any
+type ReplaceReturnType<T, R> = T extends (...a: any) => any
     ? (
           ...a: Parameters<T>
       ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
     : never;
-    type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
-        ? ScalarTypeMapWithCustom[TNP]
-        : TNP extends keyof ScalarTypeMapDefault
-        ? ScalarTypeMapDefault[TNP]
-        : never;
-    type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
-    type ToTArrayWithDepth<T, D extends number> = D extends 0
-        ? T
-        : ToTArrayWithDepth<T[], Prev[D]>;
+type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
+    ? ScalarTypeMapWithCustom[TNP]
+    : TNP extends keyof ScalarTypeMapDefault
+      ? ScalarTypeMapDefault[TNP]
+      : never;
+type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
+type ToTArrayWithDepth<T, D extends number> = D extends 0
+    ? T
+    : ToTArrayWithDepth<T[], Prev[D]>;
 
-    export type SLFN<
-        T extends object,
-        F,
-        N extends string,
-        TNP extends string,
-        TAD extends number,
-        E extends { [key: string | number | symbol]: any } = {},
-        REP extends string | number | symbol = never,
-    > = (
-        makeSLFNInput: () => F,
-        SLFN_name: N,
-        SLFN_typeNamePure: TNP,
-        SLFN_typeArrDepth: TAD,
-    ) => <TT = T, FF = F, EE = E>(
-        this: any,
-        s: (selection: FF) => TT,
-    ) => ToTArrayWithDepth<
-        {
-            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                infer FN,
-                infer TTNP,
-                infer TTAD,
-                infer VT,
-                infer AT
-            >
-                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                : TT[K];
-        },
-        TAD
-    > & {
-        [k in keyof EE]: k extends REP
-            ? EE[k] extends (...args: any) => any
-                ? ReplaceReturnType<
-                    EE[k],
-                    ToTArrayWithDepth<
-                        {
-                            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                                infer FN,
-                                infer TTNP,
-                                infer TTAD,
-                                infer VT,
-                                infer AT
-                            >
-                                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                                : TT[K];
-                        },
-                        TAD
-                    >
-                >
-                : ToTArrayWithDepth<
-                    {
-                        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                            infer FN,
-                            infer TTNP,
-                            infer TTAD,
-                            infer VT,
-                            infer AT
-                        >
-                            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                            : TT[K];
-                    },
-                    TAD
-                >
-            : EE[k];
-    };
-    
+export type SLFN<
+    T extends object,
+    F,
+    N extends string,
+    TNP extends string,
+    TAD extends number,
+    E extends { [key: string | number | symbol]: any } = {},
+    REP extends string | number | symbol = never,
+> = (
+    makeSLFNInput: () => F,
+    SLFN_name: N,
+    SLFN_typeNamePure: TNP,
+    SLFN_typeArrDepth: TAD,
+) => <TT = T, FF = F, EE = E>(
+    this: any,
+    s: (selection: FF) => TT,
+) => ToTArrayWithDepth<
+    {
+        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+            infer FN,
+            infer TTNP,
+            infer TTAD,
+            infer VT,
+            infer AT
+        >
+            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+            : TT[K];
+    },
+    TAD
+> & {
+    [k in keyof EE]: k extends REP
+        ? EE[k] extends (...args: any) => any
+            ? ReplaceReturnType<
+                  EE[k],
+                  ToTArrayWithDepth<
+                      {
+                          [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                              infer FN,
+                              infer TTNP,
+                              infer TTAD,
+                              infer VT,
+                              infer AT
+                          >
+                              ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                              : TT[K];
+                      },
+                      TAD
+                  >
+              >
+            : ToTArrayWithDepth<
+                  {
+                      [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                          infer FN,
+                          infer TTNP,
+                          infer TTAD,
+                          infer VT,
+                          infer AT
+                      >
+                          ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                          : TT[K];
+                  },
+                  TAD
+              >
+        : EE[k];
+};
 
-    const selectScalars = <S>(selection: Record<string, any>) =>
+const selectScalars = <S>(selection: Record<string, any>) =>
     Object.fromEntries(
         Object.entries(selection).filter(
             ([k, v]) => v instanceof SelectionWrapperImpl,
         ),
     ) as S;
 
-    const makeSLFN = <
-        T extends object,
-        F,
-        N extends string,
-        TNP extends string,
-        TAD extends number,
-    >(
-        makeSLFNInput: () => F,
-        SLFN_name: N,
-        SLFN_typeNamePure: TNP,
-        SLFN_typeArrDepth: TAD,
-    ) => {
-        function _SLFN<TT extends T, FF extends F>(
-            this: any,
-            s: (selection: FF) => TT,
-        ) {
-            let parent: SelectionFnParent = this ?? {
-                collector: new OperationSelectionCollector(),
-            };
-            function innerFn(this: any) {
-                const selection: FF = makeSLFNInput.bind(this)() as any;
-                const r = s(selection);
-                const _result = new SelectionWrapper(
-                    parent?.fieldName,
-                    SLFN_typeNamePure,
-                    SLFN_typeArrDepth,
-                    r,
-                    this,
-                    parent?.collector,
-                    parent?.args,
-                    parent?.argsMeta,
-                    function (this: OperationSelectionCollector) {
-                        return s(makeSLFNInput.bind(this)() as FF);
-                    },
-                );
-                _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
-                _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
-                _result[SLW_IS_FRAGMENT] = parent?.isFragment;
+const makeSLFN = <
+    T extends object,
+    F,
+    N extends string,
+    TNP extends string,
+    TAD extends number,
+>(
+    makeSLFNInput: () => F,
+    SLFN_name: N,
+    SLFN_typeNamePure: TNP,
+    SLFN_typeArrDepth: TAD,
+) => {
+    function _SLFN<TT extends T, FF extends F>(
+        this: any,
+        s: (selection: FF) => TT,
+    ) {
+        let parent: SelectionFnParent = this ?? {
+            collector: new OperationSelectionCollector(),
+        };
+        function innerFn(this: any) {
+            const selection: FF = makeSLFNInput.bind(this)() as any;
+            const r = s(selection);
+            const _result = new SelectionWrapper(
+                parent?.fieldName,
+                SLFN_typeNamePure,
+                SLFN_typeArrDepth,
+                r,
+                this,
+                parent?.collector,
+                parent?.args,
+                parent?.argsMeta,
+                function (this: OperationSelectionCollector) {
+                    return s(makeSLFNInput.bind(this)() as FF);
+                },
+            );
+            _result[SLW_IS_ROOT_TYPE] = parent?.isRootType;
+            _result[SLW_IS_ON_TYPE_FRAGMENT] = parent?.onTypeFragment;
+            _result[SLW_IS_FRAGMENT] = parent?.isFragment;
 
-                Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
-                const result = _result as unknown as T;
+            Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+            const result = _result as unknown as T;
 
-                if (parent?.onTypeFragment) {
-                    return {
-                        [parent.onTypeFragment]: result,
-                    } as unknown as typeof result;
-                }
-                if (parent?.isFragment) {
-                    return {
-                        [parent.isFragment]: result,
-                    } as unknown as typeof result;
-                }
-
-                return result;
+            if (parent?.onTypeFragment) {
+                return {
+                    [parent.onTypeFragment]: result,
+                } as unknown as typeof result;
             }
-            return innerFn.bind(
-                new OperationSelectionCollector(SLFN_name, parent?.collector),
-            )();
+            if (parent?.isFragment) {
+                return {
+                    [parent.isFragment]: result,
+                } as unknown as typeof result;
+            }
+
+            return result;
         }
-        return _SLFN as ReturnType<SLFN<T, F, N, TNP, TAD>>;
+        return innerFn.bind(
+            new OperationSelectionCollector(SLFN_name, parent?.collector),
+        )();
+    }
+    return _SLFN as ReturnType<SLFN<T, F, N, TNP, TAD>>;
+};
+
+export type SortOrder = "asc" | "desc";
+export enum SortOrderEnum {
+    asc = "asc",
+    desc = "desc",
+}
+
+export type TodoScalarFieldEnum = "id" | "text" | "completed" | "createdAt";
+export enum TodoScalarFieldEnumEnum {
+    id = "id",
+    text = "text",
+    completed = "completed",
+    createdAt = "createdAt",
+}
+
+export type Directive_includeArgs = {
+    /** Included when true. */
+    if: boolean;
+};
+export type Directive_skipArgs = {
+    /** Skipped when true. */
+    if: boolean;
+};
+export type QueryAggregateTodoArgs = {
+    where?: TodoWhereInput;
+    orderBy?: TodoOrderByWithRelationInput[];
+    cursor?: TodoWhereUniqueInput;
+    take?: number;
+    skip?: number;
+};
+export type QueryFindFirstTodoArgs = {
+    where?: TodoWhereInput;
+    orderBy?: TodoOrderByWithRelationInput[];
+    cursor?: TodoWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: TodoScalarFieldEnum[];
+};
+export type QueryFindFirstTodoOrThrowArgs = {
+    where?: TodoWhereInput;
+    orderBy?: TodoOrderByWithRelationInput[];
+    cursor?: TodoWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: TodoScalarFieldEnum[];
+};
+export type QueryTodosArgs = {
+    where?: TodoWhereInput;
+    orderBy?: TodoOrderByWithRelationInput[];
+    cursor?: TodoWhereUniqueInput;
+    take?: number;
+    skip?: number;
+    distinct?: TodoScalarFieldEnum[];
+};
+export type QueryTodoArgs = {
+    where: TodoWhereUniqueInput;
+};
+export type QueryGetTodoArgs = {
+    where: TodoWhereUniqueInput;
+};
+export type QueryGroupByTodoArgs = {
+    where?: TodoWhereInput;
+    orderBy?: TodoOrderByWithAggregationInput[];
+    by: TodoScalarFieldEnum[];
+    having?: TodoScalarWhereWithAggregatesInput;
+    take?: number;
+    skip?: number;
+};
+export type MutationCreateManyTodoArgs = {
+    data: TodoCreateManyInput[];
+};
+export type MutationCreateManyAndReturnTodoArgs = {
+    data: TodoCreateManyInput[];
+};
+export type MutationCreateOneTodoArgs = {
+    data: TodoCreateInput;
+};
+export type MutationDeleteManyTodoArgs = {
+    where?: TodoWhereInput;
+};
+export type MutationDeleteOneTodoArgs = {
+    where: TodoWhereUniqueInput;
+};
+export type MutationUpdateManyTodoArgs = {
+    data: TodoUpdateManyMutationInput;
+    where?: TodoWhereInput;
+};
+export type MutationUpdateOneTodoArgs = {
+    data: TodoUpdateInput;
+    where: TodoWhereUniqueInput;
+};
+export type MutationUpsertOneTodoArgs = {
+    where: TodoWhereUniqueInput;
+    create: TodoCreateInput;
+    update: TodoUpdateInput;
+};
+export const Directive_includeArgsMeta = { if: "Boolean!" } as const;
+export const Directive_skipArgsMeta = { if: "Boolean!" } as const;
+export const QueryAggregateTodoArgsMeta = {
+    where: "TodoWhereInput",
+    orderBy: "[TodoOrderByWithRelationInput!]",
+    cursor: "TodoWhereUniqueInput",
+    take: "Int",
+    skip: "Int",
+} as const;
+export const QueryFindFirstTodoArgsMeta = {
+    where: "TodoWhereInput",
+    orderBy: "[TodoOrderByWithRelationInput!]",
+    cursor: "TodoWhereUniqueInput",
+    take: "Int",
+    skip: "Int",
+    distinct: "[TodoScalarFieldEnum!]",
+} as const;
+export const QueryFindFirstTodoOrThrowArgsMeta = {
+    where: "TodoWhereInput",
+    orderBy: "[TodoOrderByWithRelationInput!]",
+    cursor: "TodoWhereUniqueInput",
+    take: "Int",
+    skip: "Int",
+    distinct: "[TodoScalarFieldEnum!]",
+} as const;
+export const QueryTodosArgsMeta = {
+    where: "TodoWhereInput",
+    orderBy: "[TodoOrderByWithRelationInput!]",
+    cursor: "TodoWhereUniqueInput",
+    take: "Int",
+    skip: "Int",
+    distinct: "[TodoScalarFieldEnum!]",
+} as const;
+export const QueryTodoArgsMeta = { where: "TodoWhereUniqueInput!" } as const;
+export const QueryGetTodoArgsMeta = { where: "TodoWhereUniqueInput!" } as const;
+export const QueryGroupByTodoArgsMeta = {
+    where: "TodoWhereInput",
+    orderBy: "[TodoOrderByWithAggregationInput!]",
+    by: "[TodoScalarFieldEnum!]!",
+    having: "TodoScalarWhereWithAggregatesInput",
+    take: "Int",
+    skip: "Int",
+} as const;
+export const MutationCreateManyTodoArgsMeta = {
+    data: "[TodoCreateManyInput!]!",
+} as const;
+export const MutationCreateManyAndReturnTodoArgsMeta = {
+    data: "[TodoCreateManyInput!]!",
+} as const;
+export const MutationCreateOneTodoArgsMeta = {
+    data: "TodoCreateInput!",
+} as const;
+export const MutationDeleteManyTodoArgsMeta = {
+    where: "TodoWhereInput",
+} as const;
+export const MutationDeleteOneTodoArgsMeta = {
+    where: "TodoWhereUniqueInput!",
+} as const;
+export const MutationUpdateManyTodoArgsMeta = {
+    data: "TodoUpdateManyMutationInput!",
+    where: "TodoWhereInput",
+} as const;
+export const MutationUpdateOneTodoArgsMeta = {
+    data: "TodoUpdateInput!",
+    where: "TodoWhereUniqueInput!",
+} as const;
+export const MutationUpsertOneTodoArgsMeta = {
+    where: "TodoWhereUniqueInput!",
+    create: "TodoCreateInput!",
+    update: "TodoUpdateInput!",
+} as const;
+
+export type TodoWhereInput = {
+    AND?: TodoWhereInput[];
+    OR?: TodoWhereInput[];
+    NOT?: TodoWhereInput[];
+    id?: StringFilter;
+    text?: StringFilter;
+    completed?: BoolFilter;
+    createdAt?: DateTimeFilter;
+};
+
+export type StringFilter = {
+    equals?: string;
+    in?: Array<string>;
+    notIn?: Array<string>;
+    lt?: string;
+    lte?: string;
+    gt?: string;
+    gte?: string;
+    contains?: string;
+    startsWith?: string;
+    endsWith?: string;
+    not?: NestedStringFilter;
+};
+
+export type NestedStringFilter = {
+    equals?: string;
+    in?: Array<string>;
+    notIn?: Array<string>;
+    lt?: string;
+    lte?: string;
+    gt?: string;
+    gte?: string;
+    contains?: string;
+    startsWith?: string;
+    endsWith?: string;
+    not?: NestedStringFilter;
+};
+
+export type BoolFilter = {
+    equals?: boolean;
+    not?: NestedBoolFilter;
+};
+
+export type NestedBoolFilter = {
+    equals?: boolean;
+    not?: NestedBoolFilter;
+};
+
+export type DateTimeFilter = {
+    equals?: Date;
+    in?: Array<Date>;
+    notIn?: Array<Date>;
+    lt?: Date;
+    lte?: Date;
+    gt?: Date;
+    gte?: Date;
+    not?: NestedDateTimeFilter;
+};
+
+export type NestedDateTimeFilter = {
+    equals?: Date;
+    in?: Array<Date>;
+    notIn?: Array<Date>;
+    lt?: Date;
+    lte?: Date;
+    gt?: Date;
+    gte?: Date;
+    not?: NestedDateTimeFilter;
+};
+
+export type TodoOrderByWithRelationInput = {
+    id?: any;
+    text?: any;
+    completed?: any;
+    createdAt?: any;
+};
+
+export type TodoWhereUniqueInput = {
+    id?: string;
+    AND?: TodoWhereInput[];
+    OR?: TodoWhereInput[];
+    NOT?: TodoWhereInput[];
+    text?: StringFilter;
+    completed?: BoolFilter;
+    createdAt?: DateTimeFilter;
+};
+
+export type TodoOrderByWithAggregationInput = {
+    id?: any;
+    text?: any;
+    completed?: any;
+    createdAt?: any;
+    _count?: TodoCountOrderByAggregateInput;
+    _max?: TodoMaxOrderByAggregateInput;
+    _min?: TodoMinOrderByAggregateInput;
+};
+
+export type TodoCountOrderByAggregateInput = {
+    id?: any;
+    text?: any;
+    completed?: any;
+    createdAt?: any;
+};
+
+export type TodoMaxOrderByAggregateInput = {
+    id?: any;
+    text?: any;
+    completed?: any;
+    createdAt?: any;
+};
+
+export type TodoMinOrderByAggregateInput = {
+    id?: any;
+    text?: any;
+    completed?: any;
+    createdAt?: any;
+};
+
+export type TodoScalarWhereWithAggregatesInput = {
+    AND?: TodoScalarWhereWithAggregatesInput[];
+    OR?: TodoScalarWhereWithAggregatesInput[];
+    NOT?: TodoScalarWhereWithAggregatesInput[];
+    id?: StringWithAggregatesFilter;
+    text?: StringWithAggregatesFilter;
+    completed?: BoolWithAggregatesFilter;
+    createdAt?: DateTimeWithAggregatesFilter;
+};
+
+export type StringWithAggregatesFilter = {
+    equals?: string;
+    in?: Array<string>;
+    notIn?: Array<string>;
+    lt?: string;
+    lte?: string;
+    gt?: string;
+    gte?: string;
+    contains?: string;
+    startsWith?: string;
+    endsWith?: string;
+    not?: NestedStringWithAggregatesFilter;
+    _count?: NestedIntFilter;
+    _min?: NestedStringFilter;
+    _max?: NestedStringFilter;
+};
+
+export type NestedStringWithAggregatesFilter = {
+    equals?: string;
+    in?: Array<string>;
+    notIn?: Array<string>;
+    lt?: string;
+    lte?: string;
+    gt?: string;
+    gte?: string;
+    contains?: string;
+    startsWith?: string;
+    endsWith?: string;
+    not?: NestedStringWithAggregatesFilter;
+    _count?: NestedIntFilter;
+    _min?: NestedStringFilter;
+    _max?: NestedStringFilter;
+};
+
+export type NestedIntFilter = {
+    equals?: number;
+    in?: Array<number>;
+    notIn?: Array<number>;
+    lt?: number;
+    lte?: number;
+    gt?: number;
+    gte?: number;
+    not?: NestedIntFilter;
+};
+
+export type BoolWithAggregatesFilter = {
+    equals?: boolean;
+    not?: NestedBoolWithAggregatesFilter;
+    _count?: NestedIntFilter;
+    _min?: NestedBoolFilter;
+    _max?: NestedBoolFilter;
+};
+
+export type NestedBoolWithAggregatesFilter = {
+    equals?: boolean;
+    not?: NestedBoolWithAggregatesFilter;
+    _count?: NestedIntFilter;
+    _min?: NestedBoolFilter;
+    _max?: NestedBoolFilter;
+};
+
+export type DateTimeWithAggregatesFilter = {
+    equals?: Date;
+    in?: Array<Date>;
+    notIn?: Array<Date>;
+    lt?: Date;
+    lte?: Date;
+    gt?: Date;
+    gte?: Date;
+    not?: NestedDateTimeWithAggregatesFilter;
+    _count?: NestedIntFilter;
+    _min?: NestedDateTimeFilter;
+    _max?: NestedDateTimeFilter;
+};
+
+export type NestedDateTimeWithAggregatesFilter = {
+    equals?: Date;
+    in?: Array<Date>;
+    notIn?: Array<Date>;
+    lt?: Date;
+    lte?: Date;
+    gt?: Date;
+    gte?: Date;
+    not?: NestedDateTimeWithAggregatesFilter;
+    _count?: NestedIntFilter;
+    _min?: NestedDateTimeFilter;
+    _max?: NestedDateTimeFilter;
+};
+
+export type TodoCreateManyInput = {
+    id?: string;
+    text: string;
+    completed?: boolean;
+    createdAt?: Date;
+};
+
+export type TodoCreateInput = {
+    id?: string;
+    text: string;
+    completed?: boolean;
+    createdAt?: Date;
+};
+
+export type TodoUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput;
+    text?: StringFieldUpdateOperationsInput;
+    completed?: BoolFieldUpdateOperationsInput;
+    createdAt?: DateTimeFieldUpdateOperationsInput;
+};
+
+export type StringFieldUpdateOperationsInput = {
+    set?: string;
+};
+
+export type BoolFieldUpdateOperationsInput = {
+    set?: boolean;
+};
+
+export type DateTimeFieldUpdateOperationsInput = {
+    set?: Date;
+};
+
+export type TodoUpdateInput = {
+    id?: StringFieldUpdateOperationsInput;
+    text?: StringFieldUpdateOperationsInput;
+    completed?: BoolFieldUpdateOperationsInput;
+    createdAt?: DateTimeFieldUpdateOperationsInput;
+};
+
+type ReturnTypeFromTodoCountAggregateSelection = {
+    id: SelectionWrapperImpl<"id", "Int", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "Int", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Int", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<"createdAt", "Int", 0, {}, undefined>;
+    _all: SelectionWrapperImpl<"_all", "Int", 0, {}, undefined>;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoCountAggregateSelectionInput>
+    >;
+};
+
+export function makeTodoCountAggregateSelectionInput(
+    this: any,
+): ReturnTypeFromTodoCountAggregateSelection {
+    return {
+        id: new SelectionWrapper("id", "Int", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "Int", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Int",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "Int",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        _all: new SelectionWrapper("_all", "Int", 0, {}, this, undefined),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoCountAggregateSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeTodoCountAggregateSelectionInput>
+            >,
+    } as const;
+}
+export const TodoCountAggregateSelection = makeSLFN(
+    makeTodoCountAggregateSelectionInput,
+    "TodoCountAggregateSelection",
+    "TodoCountAggregate",
+    0,
+);
+
+type ReturnTypeFromTodoMinAggregateSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoMinAggregateSelectionInput>
+    >;
+};
+
+export function makeTodoMinAggregateSelectionInput(
+    this: any,
+): ReturnTypeFromTodoMinAggregateSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoMinAggregateSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeTodoMinAggregateSelectionInput>
+            >,
+    } as const;
+}
+export const TodoMinAggregateSelection = makeSLFN(
+    makeTodoMinAggregateSelectionInput,
+    "TodoMinAggregateSelection",
+    "TodoMinAggregate",
+    0,
+);
+
+type ReturnTypeFromTodoMaxAggregateSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoMaxAggregateSelectionInput>
+    >;
+};
+
+export function makeTodoMaxAggregateSelectionInput(
+    this: any,
+): ReturnTypeFromTodoMaxAggregateSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoMaxAggregateSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeTodoMaxAggregateSelectionInput>
+            >,
+    } as const;
+}
+export const TodoMaxAggregateSelection = makeSLFN(
+    makeTodoMaxAggregateSelectionInput,
+    "TodoMaxAggregateSelection",
+    "TodoMaxAggregate",
+    0,
+);
+
+type ReturnTypeFromAggregateTodoNotNullSelection = {
+    _count: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoCountAggregateSelectionInput>,
+            "TodoCountAggregateSelection",
+            "TodoCountAggregate",
+            0
+        >
+    >;
+    _min: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMinAggregateSelectionInput>,
+            "TodoMinAggregateSelection",
+            "TodoMinAggregate",
+            0
+        >
+    >;
+    _max: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
+            "TodoMaxAggregateSelection",
+            "TodoMaxAggregate",
+            0
+        >
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+};
+
+export function makeAggregateTodoNotNullSelectionInput(
+    this: any,
+): ReturnTypeFromAggregateTodoNotNullSelection {
+    return {
+        _count: TodoCountAggregateSelection.bind({
+            collector: this,
+            fieldName: "_count",
+        }),
+        _min: TodoMinAggregateSelection.bind({
+            collector: this,
+            fieldName: "_min",
+        }),
+        _max: TodoMaxAggregateSelection.bind({
+            collector: this,
+            fieldName: "_max",
+        }),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+    } as const;
+}
+export const AggregateTodoNotNullSelection = makeSLFN(
+    makeAggregateTodoNotNullSelectionInput,
+    "AggregateTodoNotNullSelection",
+    "AggregateTodo",
+    0,
+);
+
+type ReturnTypeFromTodoSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoSelectionInput>
+    >;
+};
+
+export function makeTodoSelectionInput(this: any): ReturnTypeFromTodoSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<ReturnType<typeof makeTodoSelectionInput>>,
+    } as const;
+}
+export const TodoSelection = makeSLFN(
+    makeTodoSelectionInput,
+    "TodoSelection",
+    "Todo",
+    0,
+);
+
+type ReturnTypeFromTodoNotNullArrayNotNullSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>
+    >;
+};
+
+export function makeTodoNotNullArrayNotNullSelectionInput(
+    this: any,
+): ReturnTypeFromTodoNotNullArrayNotNullSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoNotNullArrayNotNullSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>
+            >,
+    } as const;
+}
+export const TodoNotNullArrayNotNullSelection = makeSLFN(
+    makeTodoNotNullArrayNotNullSelectionInput,
+    "TodoNotNullArrayNotNullSelection",
+    "Todo",
+    1,
+);
+
+type ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+    _count: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoCountAggregateSelectionInput>,
+            "TodoCountAggregateSelection",
+            "TodoCountAggregate",
+            0
+        >
+    >;
+    _min: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMinAggregateSelectionInput>,
+            "TodoMinAggregateSelection",
+            "TodoMinAggregate",
+            0
+        >
+    >;
+    _max: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
+            "TodoMaxAggregateSelection",
+            "TodoMaxAggregate",
+            0
+        >
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoGroupByNotNullArrayNotNullSelectionInput>
+    >;
+};
+
+export function makeTodoGroupByNotNullArrayNotNullSelectionInput(
+    this: any,
+): ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        _count: TodoCountAggregateSelection.bind({
+            collector: this,
+            fieldName: "_count",
+        }),
+        _min: TodoMinAggregateSelection.bind({
+            collector: this,
+            fieldName: "_min",
+        }),
+        _max: TodoMaxAggregateSelection.bind({
+            collector: this,
+            fieldName: "_max",
+        }),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoGroupByNotNullArrayNotNullSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<
+                    typeof makeTodoGroupByNotNullArrayNotNullSelectionInput
+                >
+            >,
+    } as const;
+}
+export const TodoGroupByNotNullArrayNotNullSelection = makeSLFN(
+    makeTodoGroupByNotNullArrayNotNullSelectionInput,
+    "TodoGroupByNotNullArrayNotNullSelection",
+    "TodoGroupBy",
+    1,
+);
+
+type ReturnTypeFromAffectedRowsOutputNotNullSelection = {
+    count: SelectionWrapperImpl<"count", "Int", 0, {}, undefined>;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>
+    >;
+};
+
+export function makeAffectedRowsOutputNotNullSelectionInput(
+    this: any,
+): ReturnTypeFromAffectedRowsOutputNotNullSelection {
+    return {
+        count: new SelectionWrapper("count", "Int", 0, {}, this, undefined),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeAffectedRowsOutputNotNullSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>
+            >,
+    } as const;
+}
+export const AffectedRowsOutputNotNullSelection = makeSLFN(
+    makeAffectedRowsOutputNotNullSelectionInput,
+    "AffectedRowsOutputNotNullSelection",
+    "AffectedRowsOutput",
+    0,
+);
+
+type ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<
+            typeof makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput
+        >
+    >;
+};
+
+export function makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput(
+    this: any,
+): ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput.bind(
+                    this,
+                )(),
+            ) as SLWsFromSelection<
+                ReturnType<
+                    typeof makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput
+                >
+            >,
+    } as const;
+}
+export const CreateManyAndReturnTodoNotNullArrayNotNullSelection = makeSLFN(
+    makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput,
+    "CreateManyAndReturnTodoNotNullArrayNotNullSelection",
+    "CreateManyAndReturnTodo",
+    1,
+);
+
+type ReturnTypeFromTodoNotNullSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoNotNullSelectionInput>
+    >;
+};
+
+export function makeTodoNotNullSelectionInput(
+    this: any,
+): ReturnTypeFromTodoNotNullSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoNotNullSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeTodoNotNullSelectionInput>
+            >,
+    } as const;
+}
+export const TodoNotNullSelection = makeSLFN(
+    makeTodoNotNullSelectionInput,
+    "TodoNotNullSelection",
+    "Todo",
+    0,
+);
+
+type ReturnTypeFromQuerySelection = {
+    aggregateTodo: (args: QueryAggregateTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeAggregateTodoNotNullSelectionInput>,
+            "AggregateTodoNotNullSelection",
+            "AggregateTodo",
+            0,
+            {
+                $lazy: (args: QueryAggregateTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    findFirstTodo: (args: QueryFindFirstTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoSelectionInput>,
+            "TodoSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: QueryFindFirstTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    findFirstTodoOrThrow: (args: QueryFindFirstTodoOrThrowArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoSelectionInput>,
+            "TodoSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: QueryFindFirstTodoOrThrowArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    todos: (args: QueryTodosArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>,
+            "TodoNotNullArrayNotNullSelection",
+            "Todo",
+            1,
+            {
+                $lazy: (args: QueryTodosArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    todo: (args: QueryTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoSelectionInput>,
+            "TodoSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: QueryTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    getTodo: (args: QueryGetTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoSelectionInput>,
+            "TodoSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: QueryGetTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    groupByTodo: (args: QueryGroupByTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoGroupByNotNullArrayNotNullSelectionInput>,
+            "TodoGroupByNotNullArrayNotNullSelection",
+            "TodoGroupBy",
+            1,
+            {
+                $lazy: (args: QueryGroupByTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+};
+
+export function makeQuerySelectionInput(
+    this: any,
+): ReturnTypeFromQuerySelection {
+    return {
+        aggregateTodo: (args: QueryAggregateTodoArgs) =>
+            AggregateTodoNotNullSelection.bind({
+                collector: this,
+                fieldName: "aggregateTodo",
+                args,
+                argsMeta: QueryAggregateTodoArgsMeta,
+            }),
+        findFirstTodo: (args: QueryFindFirstTodoArgs) =>
+            TodoSelection.bind({
+                collector: this,
+                fieldName: "findFirstTodo",
+                args,
+                argsMeta: QueryFindFirstTodoArgsMeta,
+            }),
+        findFirstTodoOrThrow: (args: QueryFindFirstTodoOrThrowArgs) =>
+            TodoSelection.bind({
+                collector: this,
+                fieldName: "findFirstTodoOrThrow",
+                args,
+                argsMeta: QueryFindFirstTodoOrThrowArgsMeta,
+            }),
+        todos: (args: QueryTodosArgs) =>
+            TodoNotNullArrayNotNullSelection.bind({
+                collector: this,
+                fieldName: "todos",
+                args,
+                argsMeta: QueryTodosArgsMeta,
+            }),
+        todo: (args: QueryTodoArgs) =>
+            TodoSelection.bind({
+                collector: this,
+                fieldName: "todo",
+                args,
+                argsMeta: QueryTodoArgsMeta,
+            }),
+        getTodo: (args: QueryGetTodoArgs) =>
+            TodoSelection.bind({
+                collector: this,
+                fieldName: "getTodo",
+                args,
+                argsMeta: QueryGetTodoArgsMeta,
+            }),
+        groupByTodo: (args: QueryGroupByTodoArgs) =>
+            TodoGroupByNotNullArrayNotNullSelection.bind({
+                collector: this,
+                fieldName: "groupByTodo",
+                args,
+                argsMeta: QueryGroupByTodoArgsMeta,
+            }),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+    } as const;
+}
+export const QuerySelection = makeSLFN(
+    makeQuerySelectionInput,
+    "QuerySelection",
+    "Query",
+    0,
+);
+
+type ReturnTypeFromAggregateTodoSelection = {
+    _count: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoCountAggregateSelectionInput>,
+            "TodoCountAggregateSelection",
+            "TodoCountAggregate",
+            0
+        >
+    >;
+    _min: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMinAggregateSelectionInput>,
+            "TodoMinAggregateSelection",
+            "TodoMinAggregate",
+            0
+        >
+    >;
+    _max: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
+            "TodoMaxAggregateSelection",
+            "TodoMaxAggregate",
+            0
+        >
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+};
+
+export function makeAggregateTodoSelectionInput(
+    this: any,
+): ReturnTypeFromAggregateTodoSelection {
+    return {
+        _count: TodoCountAggregateSelection.bind({
+            collector: this,
+            fieldName: "_count",
+        }),
+        _min: TodoMinAggregateSelection.bind({
+            collector: this,
+            fieldName: "_min",
+        }),
+        _max: TodoMaxAggregateSelection.bind({
+            collector: this,
+            fieldName: "_max",
+        }),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+    } as const;
+}
+export const AggregateTodoSelection = makeSLFN(
+    makeAggregateTodoSelectionInput,
+    "AggregateTodoSelection",
+    "AggregateTodo",
+    0,
+);
+
+type ReturnTypeFromTodoGroupBySelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+    _count: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoCountAggregateSelectionInput>,
+            "TodoCountAggregateSelection",
+            "TodoCountAggregate",
+            0
+        >
+    >;
+    _min: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMinAggregateSelectionInput>,
+            "TodoMinAggregateSelection",
+            "TodoMinAggregate",
+            0
+        >
+    >;
+    _max: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
+            "TodoMaxAggregateSelection",
+            "TodoMaxAggregate",
+            0
+        >
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeTodoGroupBySelectionInput>
+    >;
+};
+
+export function makeTodoGroupBySelectionInput(
+    this: any,
+): ReturnTypeFromTodoGroupBySelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        _count: TodoCountAggregateSelection.bind({
+            collector: this,
+            fieldName: "_count",
+        }),
+        _min: TodoMinAggregateSelection.bind({
+            collector: this,
+            fieldName: "_min",
+        }),
+        _max: TodoMaxAggregateSelection.bind({
+            collector: this,
+            fieldName: "_max",
+        }),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeTodoGroupBySelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeTodoGroupBySelectionInput>
+            >,
+    } as const;
+}
+export const TodoGroupBySelection = makeSLFN(
+    makeTodoGroupBySelectionInput,
+    "TodoGroupBySelection",
+    "TodoGroupBy",
+    0,
+);
+
+type ReturnTypeFromMutationSelection = {
+    createManyTodo: (args: MutationCreateManyTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
+            "AffectedRowsOutputNotNullSelection",
+            "AffectedRowsOutput",
+            0,
+            {
+                $lazy: (args: MutationCreateManyTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    createManyAndReturnTodo: (
+        args: MutationCreateManyAndReturnTodoArgs,
+    ) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<
+                typeof makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput
+            >,
+            "CreateManyAndReturnTodoNotNullArrayNotNullSelection",
+            "CreateManyAndReturnTodo",
+            1,
+            {
+                $lazy: (
+                    args: MutationCreateManyAndReturnTodoArgs,
+                ) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    createOneTodo: (args: MutationCreateOneTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoNotNullSelectionInput>,
+            "TodoNotNullSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: MutationCreateOneTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    deleteManyTodo: (args: MutationDeleteManyTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
+            "AffectedRowsOutputNotNullSelection",
+            "AffectedRowsOutput",
+            0,
+            {
+                $lazy: (args: MutationDeleteManyTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    deleteOneTodo: (args: MutationDeleteOneTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoSelectionInput>,
+            "TodoSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: MutationDeleteOneTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    updateManyTodo: (args: MutationUpdateManyTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
+            "AffectedRowsOutputNotNullSelection",
+            "AffectedRowsOutput",
+            0,
+            {
+                $lazy: (args: MutationUpdateManyTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    updateOneTodo: (args: MutationUpdateOneTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoSelectionInput>,
+            "TodoSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: MutationUpdateOneTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+    upsertOneTodo: (args: MutationUpsertOneTodoArgs) => ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeTodoNotNullSelectionInput>,
+            "TodoNotNullSelection",
+            "Todo",
+            0,
+            {
+                $lazy: (args: MutationUpsertOneTodoArgs) => Promise<"T">;
+            },
+            "$lazy"
+        >
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+};
+
+export function makeMutationSelectionInput(
+    this: any,
+): ReturnTypeFromMutationSelection {
+    return {
+        createManyTodo: (args: MutationCreateManyTodoArgs) =>
+            AffectedRowsOutputNotNullSelection.bind({
+                collector: this,
+                fieldName: "createManyTodo",
+                args,
+                argsMeta: MutationCreateManyTodoArgsMeta,
+            }),
+        createManyAndReturnTodo: (args: MutationCreateManyAndReturnTodoArgs) =>
+            CreateManyAndReturnTodoNotNullArrayNotNullSelection.bind({
+                collector: this,
+                fieldName: "createManyAndReturnTodo",
+                args,
+                argsMeta: MutationCreateManyAndReturnTodoArgsMeta,
+            }),
+        createOneTodo: (args: MutationCreateOneTodoArgs) =>
+            TodoNotNullSelection.bind({
+                collector: this,
+                fieldName: "createOneTodo",
+                args,
+                argsMeta: MutationCreateOneTodoArgsMeta,
+            }),
+        deleteManyTodo: (args: MutationDeleteManyTodoArgs) =>
+            AffectedRowsOutputNotNullSelection.bind({
+                collector: this,
+                fieldName: "deleteManyTodo",
+                args,
+                argsMeta: MutationDeleteManyTodoArgsMeta,
+            }),
+        deleteOneTodo: (args: MutationDeleteOneTodoArgs) =>
+            TodoSelection.bind({
+                collector: this,
+                fieldName: "deleteOneTodo",
+                args,
+                argsMeta: MutationDeleteOneTodoArgsMeta,
+            }),
+        updateManyTodo: (args: MutationUpdateManyTodoArgs) =>
+            AffectedRowsOutputNotNullSelection.bind({
+                collector: this,
+                fieldName: "updateManyTodo",
+                args,
+                argsMeta: MutationUpdateManyTodoArgsMeta,
+            }),
+        updateOneTodo: (args: MutationUpdateOneTodoArgs) =>
+            TodoSelection.bind({
+                collector: this,
+                fieldName: "updateOneTodo",
+                args,
+                argsMeta: MutationUpdateOneTodoArgsMeta,
+            }),
+        upsertOneTodo: (args: MutationUpsertOneTodoArgs) =>
+            TodoNotNullSelection.bind({
+                collector: this,
+                fieldName: "upsertOneTodo",
+                args,
+                argsMeta: MutationUpsertOneTodoArgsMeta,
+            }),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+    } as const;
+}
+export const MutationSelection = makeSLFN(
+    makeMutationSelectionInput,
+    "MutationSelection",
+    "Mutation",
+    0,
+);
+
+type ReturnTypeFromAffectedRowsOutputSelection = {
+    count: SelectionWrapperImpl<"count", "Int", 0, {}, undefined>;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeAffectedRowsOutputSelectionInput>
+    >;
+};
+
+export function makeAffectedRowsOutputSelectionInput(
+    this: any,
+): ReturnTypeFromAffectedRowsOutputSelection {
+    return {
+        count: new SelectionWrapper("count", "Int", 0, {}, this, undefined),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeAffectedRowsOutputSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeAffectedRowsOutputSelectionInput>
+            >,
+    } as const;
+}
+export const AffectedRowsOutputSelection = makeSLFN(
+    makeAffectedRowsOutputSelectionInput,
+    "AffectedRowsOutputSelection",
+    "AffectedRowsOutput",
+    0,
+);
+
+type ReturnTypeFromCreateManyAndReturnTodoSelection = {
+    id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
+    text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
+    completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
+    createdAt: SelectionWrapperImpl<
+        "createdAt",
+        "DateTimeISO",
+        0,
+        {},
+        undefined
+    >;
+} & {
+    $fragment: <F extends (this: any, ...args: any[]) => any>(
+        f: F,
+    ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $scalars: () => SLWsFromSelection<
+        ReturnType<typeof makeCreateManyAndReturnTodoSelectionInput>
+    >;
+};
+
+export function makeCreateManyAndReturnTodoSelectionInput(
+    this: any,
+): ReturnTypeFromCreateManyAndReturnTodoSelection {
+    return {
+        id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
+        text: new SelectionWrapper("text", "String", 0, {}, this, undefined),
+        completed: new SelectionWrapper(
+            "completed",
+            "Boolean",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+        createdAt: new SelectionWrapper(
+            "createdAt",
+            "DateTimeISO",
+            0,
+            {},
+            this,
+            undefined,
+        ),
+
+        $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
+            f.bind({
+                collector: this,
+                fieldName: "",
+                isFragment: f.name,
+            }) as (
+                ...args: ArgumentsTypeFromFragment<F>
+            ) => ReturnTypeFromFragment<F>,
+
+        $scalars: () =>
+            selectScalars(
+                makeCreateManyAndReturnTodoSelectionInput.bind(this)(),
+            ) as SLWsFromSelection<
+                ReturnType<typeof makeCreateManyAndReturnTodoSelectionInput>
+            >,
+    } as const;
+}
+export const CreateManyAndReturnTodoSelection = makeSLFN(
+    makeCreateManyAndReturnTodoSelectionInput,
+    "CreateManyAndReturnTodoSelection",
+    "CreateManyAndReturnTodo",
+    0,
+);
+
+export const _directive_include =
+    (args: Directive_includeArgs) =>
+    <F>(f: F) => {
+        (f as any)[SLW_DIRECTIVE] = "include";
+        (f as any)[SLW_DIRECTIVE_ARGS] = args;
+        (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_includeArgsMeta;
+        return f;
     };
-    
 
-            export type SortOrder = "asc" | "desc";
-            export enum SortOrderEnum {
-                asc = "asc",
-desc = "desc",
+export const _directive_skip =
+    (args: Directive_skipArgs) =>
+    <F>(f: F) => {
+        (f as any)[SLW_DIRECTIVE] = "skip";
+        (f as any)[SLW_DIRECTIVE_ARGS] = args;
+        (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_skipArgsMeta;
+        return f;
+    };
+
+export const $directives = {
+    include: _directive_include,
+    skip: _directive_skip,
+} as const;
+export function _makeRootOperationInput(this: any) {
+    return {
+        query: QuerySelection.bind({
+            collector: this,
+            isRootType: "Query",
+        }),
+        mutation: MutationSelection.bind({
+            collector: this,
+            isRootType: "Mutation",
+        }),
+
+        $directives,
+    } as const;
+}
+
+type __AuthenticationArg__ =
+    | string
+    | { [key: string]: string }
+    | (() => string | { [key: string]: string })
+    | (() => Promise<string | { [key: string]: string }>);
+function __client__<
+    T extends object,
+    F extends ReturnType<typeof _makeRootOperationInput>,
+>(this: any, s: (selection: F) => T) {
+    const root = new OperationSelectionCollector(
+        undefined,
+        undefined,
+        new RootOperation(),
+    );
+    const rootRef = { ref: root };
+    const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
+    const r = s(selection);
+    const _result = new SelectionWrapper(
+        undefined,
+        undefined,
+        undefined,
+        r,
+        root,
+        undefined,
+    ) as unknown as T;
+    Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+
+    type excludeLazy<T> = { [key in Exclude<keyof T, "$lazy">]: T[key] };
+
+    // remove the $lazy property from the result
+    const result = _result as {
+        [k in keyof T]: T[k] extends { $lazy: any }
+            ? // if T[k] is an array and has a $lazy property, return the type of the array elements
+              T[k] extends (infer U)[] & { $lazy: any }
+                ? U[]
+                : // if T[k] is an object and has a $lazy property, return the type of the object
+                  excludeLazy<T[k]>
+            : // if T[k] is a function and has a $lazy property, return the type of the function
+              T[k] extends (args: infer A) => Promise<infer R>
+              ? (args: A) => Promise<R>
+              : T[k];
+    };
+
+    type _TR = typeof result;
+    type __HasPromisesAndOrNonPromisesK = {
+        [k in keyof _TR]: _TR[k] extends (args: any) => Promise<any>
+            ? "promise"
+            : "non-promise";
+    };
+    type __HasPromisesAndOrNonPromises =
+        __HasPromisesAndOrNonPromisesK[keyof __HasPromisesAndOrNonPromisesK];
+    type finalReturnTypeBasedOnIfHasLazyPromises =
+        __HasPromisesAndOrNonPromises extends "non-promise"
+            ? Promise<_TR>
+            : __HasPromisesAndOrNonPromises extends "promise"
+              ? _TR
+              : Promise<_TR>;
+
+    let headers: Record<string, string> | undefined = undefined;
+    let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
+
+    if (Object.values(result).some((v) => typeof v !== "function")) {
+        returnValue = new Promise((resolve, reject) => {
+            const doExecute = () => {
+                root.execute(headers)
+                    .then(() => {
+                        resolve(result);
+                    })
+                    .catch(reject);
             };
-        
-
-            export type TodoScalarFieldEnum = "id" | "text" | "completed" | "createdAt";
-            export enum TodoScalarFieldEnumEnum {
-                id = "id",
-text = "text",
-completed = "completed",
-createdAt = "createdAt",
-            };
-        
-export type Directive_includeArgs = { 
-                /** Included when true. */
-                if: boolean; };
-export type Directive_skipArgs = { 
-                /** Skipped when true. */
-                if: boolean; };
-export type QueryAggregateTodoArgs = { 
-                        where?: TodoWhereInput; 
-                        orderBy?: TodoOrderByWithRelationInput[]; 
-                        cursor?: TodoWhereUniqueInput; 
-                        take?: number; 
-                        skip?: number; };
-export type QueryFindFirstTodoArgs = { 
-                        where?: TodoWhereInput; 
-                        orderBy?: TodoOrderByWithRelationInput[]; 
-                        cursor?: TodoWhereUniqueInput; 
-                        take?: number; 
-                        skip?: number; 
-                        distinct?: TodoScalarFieldEnum[]; };
-export type QueryFindFirstTodoOrThrowArgs = { 
-                        where?: TodoWhereInput; 
-                        orderBy?: TodoOrderByWithRelationInput[]; 
-                        cursor?: TodoWhereUniqueInput; 
-                        take?: number; 
-                        skip?: number; 
-                        distinct?: TodoScalarFieldEnum[]; };
-export type QueryTodosArgs = { 
-                        where?: TodoWhereInput; 
-                        orderBy?: TodoOrderByWithRelationInput[]; 
-                        cursor?: TodoWhereUniqueInput; 
-                        take?: number; 
-                        skip?: number; 
-                        distinct?: TodoScalarFieldEnum[]; };
-export type QueryTodoArgs = { 
-                        where: TodoWhereUniqueInput; };
-export type QueryGetTodoArgs = { 
-                        where: TodoWhereUniqueInput; };
-export type QueryGroupByTodoArgs = { 
-                        where?: TodoWhereInput; 
-                        orderBy?: TodoOrderByWithAggregationInput[]; 
-                        by: TodoScalarFieldEnum[]; 
-                        having?: TodoScalarWhereWithAggregatesInput; 
-                        take?: number; 
-                        skip?: number; };
-export type MutationCreateManyTodoArgs = { 
-                        data: TodoCreateManyInput[]; };
-export type MutationCreateManyAndReturnTodoArgs = { 
-                        data: TodoCreateManyInput[]; };
-export type MutationCreateOneTodoArgs = { 
-                        data: TodoCreateInput; };
-export type MutationDeleteManyTodoArgs = { 
-                        where?: TodoWhereInput; };
-export type MutationDeleteOneTodoArgs = { 
-                        where: TodoWhereUniqueInput; };
-export type MutationUpdateManyTodoArgs = { 
-                        data: TodoUpdateManyMutationInput; 
-                        where?: TodoWhereInput; };
-export type MutationUpdateOneTodoArgs = { 
-                        data: TodoUpdateInput; 
-                        where: TodoWhereUniqueInput; };
-export type MutationUpsertOneTodoArgs = { 
-                        where: TodoWhereUniqueInput; 
-                        create: TodoCreateInput; 
-                        update: TodoUpdateInput; };
-export const Directive_includeArgsMeta = { if: "Boolean!", } as const;
-export const Directive_skipArgsMeta = { if: "Boolean!", } as const;
-export const QueryAggregateTodoArgsMeta = { where: "TodoWhereInput", orderBy: "[TodoOrderByWithRelationInput!]", cursor: "TodoWhereUniqueInput", take: "Int", skip: "Int", } as const;
-export const QueryFindFirstTodoArgsMeta = { where: "TodoWhereInput", orderBy: "[TodoOrderByWithRelationInput!]", cursor: "TodoWhereUniqueInput", take: "Int", skip: "Int", distinct: "[TodoScalarFieldEnum!]", } as const;
-export const QueryFindFirstTodoOrThrowArgsMeta = { where: "TodoWhereInput", orderBy: "[TodoOrderByWithRelationInput!]", cursor: "TodoWhereUniqueInput", take: "Int", skip: "Int", distinct: "[TodoScalarFieldEnum!]", } as const;
-export const QueryTodosArgsMeta = { where: "TodoWhereInput", orderBy: "[TodoOrderByWithRelationInput!]", cursor: "TodoWhereUniqueInput", take: "Int", skip: "Int", distinct: "[TodoScalarFieldEnum!]", } as const;
-export const QueryTodoArgsMeta = { where: "TodoWhereUniqueInput!", } as const;
-export const QueryGetTodoArgsMeta = { where: "TodoWhereUniqueInput!", } as const;
-export const QueryGroupByTodoArgsMeta = { where: "TodoWhereInput", orderBy: "[TodoOrderByWithAggregationInput!]", by: "[TodoScalarFieldEnum!]!", having: "TodoScalarWhereWithAggregatesInput", take: "Int", skip: "Int", } as const;
-export const MutationCreateManyTodoArgsMeta = { data: "[TodoCreateManyInput!]!", } as const;
-export const MutationCreateManyAndReturnTodoArgsMeta = { data: "[TodoCreateManyInput!]!", } as const;
-export const MutationCreateOneTodoArgsMeta = { data: "TodoCreateInput!", } as const;
-export const MutationDeleteManyTodoArgsMeta = { where: "TodoWhereInput", } as const;
-export const MutationDeleteOneTodoArgsMeta = { where: "TodoWhereUniqueInput!", } as const;
-export const MutationUpdateManyTodoArgsMeta = { data: "TodoUpdateManyMutationInput!", where: "TodoWhereInput", } as const;
-export const MutationUpdateOneTodoArgsMeta = { data: "TodoUpdateInput!", where: "TodoWhereUniqueInput!", } as const;
-export const MutationUpsertOneTodoArgsMeta = { where: "TodoWhereUniqueInput!", create: "TodoCreateInput!", update: "TodoUpdateInput!", } as const;
-
-            export type TodoWhereInput = {
-                AND?: TodoWhereInput[];
-OR?: TodoWhereInput[];
-NOT?: TodoWhereInput[];
-id?: StringFilter;
-text?: StringFilter;
-completed?: BoolFilter;
-createdAt?: DateTimeFilter;
-            };
-        
-
-            export type StringFilter = {
-                equals?: string;
-in?: Array<string>;
-notIn?: Array<string>;
-lt?: string;
-lte?: string;
-gt?: string;
-gte?: string;
-contains?: string;
-startsWith?: string;
-endsWith?: string;
-not?: NestedStringFilter;
-            };
-        
-
-            export type NestedStringFilter = {
-                equals?: string;
-in?: Array<string>;
-notIn?: Array<string>;
-lt?: string;
-lte?: string;
-gt?: string;
-gte?: string;
-contains?: string;
-startsWith?: string;
-endsWith?: string;
-not?: NestedStringFilter;
-            };
-        
-
-            export type BoolFilter = {
-                equals?: boolean;
-not?: NestedBoolFilter;
-            };
-        
-
-            export type NestedBoolFilter = {
-                equals?: boolean;
-not?: NestedBoolFilter;
-            };
-        
-
-            export type DateTimeFilter = {
-                equals?: Date;
-in?: Array<Date>;
-notIn?: Array<Date>;
-lt?: Date;
-lte?: Date;
-gt?: Date;
-gte?: Date;
-not?: NestedDateTimeFilter;
-            };
-        
-
-            export type NestedDateTimeFilter = {
-                equals?: Date;
-in?: Array<Date>;
-notIn?: Array<Date>;
-lt?: Date;
-lte?: Date;
-gt?: Date;
-gte?: Date;
-not?: NestedDateTimeFilter;
-            };
-        
-
-            export type TodoOrderByWithRelationInput = {
-                id?: any;
-text?: any;
-completed?: any;
-createdAt?: any;
-            };
-        
-
-            export type TodoWhereUniqueInput = {
-                id?: string;
-AND?: TodoWhereInput[];
-OR?: TodoWhereInput[];
-NOT?: TodoWhereInput[];
-text?: StringFilter;
-completed?: BoolFilter;
-createdAt?: DateTimeFilter;
-            };
-        
-
-            export type TodoOrderByWithAggregationInput = {
-                id?: any;
-text?: any;
-completed?: any;
-createdAt?: any;
-_count?: TodoCountOrderByAggregateInput;
-_max?: TodoMaxOrderByAggregateInput;
-_min?: TodoMinOrderByAggregateInput;
-            };
-        
-
-            export type TodoCountOrderByAggregateInput = {
-                id?: any;
-text?: any;
-completed?: any;
-createdAt?: any;
-            };
-        
-
-            export type TodoMaxOrderByAggregateInput = {
-                id?: any;
-text?: any;
-completed?: any;
-createdAt?: any;
-            };
-        
-
-            export type TodoMinOrderByAggregateInput = {
-                id?: any;
-text?: any;
-completed?: any;
-createdAt?: any;
-            };
-        
-
-            export type TodoScalarWhereWithAggregatesInput = {
-                AND?: TodoScalarWhereWithAggregatesInput[];
-OR?: TodoScalarWhereWithAggregatesInput[];
-NOT?: TodoScalarWhereWithAggregatesInput[];
-id?: StringWithAggregatesFilter;
-text?: StringWithAggregatesFilter;
-completed?: BoolWithAggregatesFilter;
-createdAt?: DateTimeWithAggregatesFilter;
-            };
-        
-
-            export type StringWithAggregatesFilter = {
-                equals?: string;
-in?: Array<string>;
-notIn?: Array<string>;
-lt?: string;
-lte?: string;
-gt?: string;
-gte?: string;
-contains?: string;
-startsWith?: string;
-endsWith?: string;
-not?: NestedStringWithAggregatesFilter;
-_count?: NestedIntFilter;
-_min?: NestedStringFilter;
-_max?: NestedStringFilter;
-            };
-        
-
-            export type NestedStringWithAggregatesFilter = {
-                equals?: string;
-in?: Array<string>;
-notIn?: Array<string>;
-lt?: string;
-lte?: string;
-gt?: string;
-gte?: string;
-contains?: string;
-startsWith?: string;
-endsWith?: string;
-not?: NestedStringWithAggregatesFilter;
-_count?: NestedIntFilter;
-_min?: NestedStringFilter;
-_max?: NestedStringFilter;
-            };
-        
-
-            export type NestedIntFilter = {
-                equals?: number;
-in?: Array<number>;
-notIn?: Array<number>;
-lt?: number;
-lte?: number;
-gt?: number;
-gte?: number;
-not?: NestedIntFilter;
-            };
-        
-
-            export type BoolWithAggregatesFilter = {
-                equals?: boolean;
-not?: NestedBoolWithAggregatesFilter;
-_count?: NestedIntFilter;
-_min?: NestedBoolFilter;
-_max?: NestedBoolFilter;
-            };
-        
-
-            export type NestedBoolWithAggregatesFilter = {
-                equals?: boolean;
-not?: NestedBoolWithAggregatesFilter;
-_count?: NestedIntFilter;
-_min?: NestedBoolFilter;
-_max?: NestedBoolFilter;
-            };
-        
-
-            export type DateTimeWithAggregatesFilter = {
-                equals?: Date;
-in?: Array<Date>;
-notIn?: Array<Date>;
-lt?: Date;
-lte?: Date;
-gt?: Date;
-gte?: Date;
-not?: NestedDateTimeWithAggregatesFilter;
-_count?: NestedIntFilter;
-_min?: NestedDateTimeFilter;
-_max?: NestedDateTimeFilter;
-            };
-        
-
-            export type NestedDateTimeWithAggregatesFilter = {
-                equals?: Date;
-in?: Array<Date>;
-notIn?: Array<Date>;
-lt?: Date;
-lte?: Date;
-gt?: Date;
-gte?: Date;
-not?: NestedDateTimeWithAggregatesFilter;
-_count?: NestedIntFilter;
-_min?: NestedDateTimeFilter;
-_max?: NestedDateTimeFilter;
-            };
-        
-
-            export type TodoCreateManyInput = {
-                id?: string;
-text: string;
-completed?: boolean;
-createdAt?: Date;
-            };
-        
-
-            export type TodoCreateInput = {
-                id?: string;
-text: string;
-completed?: boolean;
-createdAt?: Date;
-            };
-        
-
-            export type TodoUpdateManyMutationInput = {
-                id?: StringFieldUpdateOperationsInput;
-text?: StringFieldUpdateOperationsInput;
-completed?: BoolFieldUpdateOperationsInput;
-createdAt?: DateTimeFieldUpdateOperationsInput;
-            };
-        
-
-            export type StringFieldUpdateOperationsInput = {
-                set?: string;
-            };
-        
-
-            export type BoolFieldUpdateOperationsInput = {
-                set?: boolean;
-            };
-        
-
-            export type DateTimeFieldUpdateOperationsInput = {
-                set?: Date;
-            };
-        
-
-            export type TodoUpdateInput = {
-                id?: StringFieldUpdateOperationsInput;
-text?: StringFieldUpdateOperationsInput;
-completed?: BoolFieldUpdateOperationsInput;
-createdAt?: DateTimeFieldUpdateOperationsInput;
-            };
-        
-
-        type ReturnTypeFromTodoCountAggregateSelection = {
-            id:  SelectionWrapperImpl<"id", "Int", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "Int", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Int", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "Int", 0, {}, undefined>
-_all:  SelectionWrapperImpl<"_all", "Int", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoCountAggregateSelectionInput>>;
-            
-        };
-            
-            export function makeTodoCountAggregateSelectionInput(this: any) : ReturnTypeFromTodoCountAggregateSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-_all: new SelectionWrapper(
-            "_all",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoCountAggregateSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoCountAggregateSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoCountAggregateSelection = makeSLFN(
-                makeTodoCountAggregateSelectionInput,
-                "TodoCountAggregateSelection",
-                "TodoCountAggregate",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromTodoMinAggregateSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoMinAggregateSelectionInput>>;
-            
-        };
-            
-            export function makeTodoMinAggregateSelectionInput(this: any) : ReturnTypeFromTodoMinAggregateSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoMinAggregateSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoMinAggregateSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoMinAggregateSelection = makeSLFN(
-                makeTodoMinAggregateSelectionInput,
-                "TodoMinAggregateSelection",
-                "TodoMinAggregate",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromTodoMaxAggregateSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoMaxAggregateSelectionInput>>;
-            
-        };
-            
-            export function makeTodoMaxAggregateSelectionInput(this: any) : ReturnTypeFromTodoMaxAggregateSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoMaxAggregateSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoMaxAggregateSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoMaxAggregateSelection = makeSLFN(
-                makeTodoMaxAggregateSelectionInput,
-                "TodoMaxAggregateSelection",
-                "TodoMaxAggregate",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromAggregateTodoNotNullSelection = {
-            _count:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoCountAggregateSelectionInput>,
-                                                "TodoCountAggregateSelection",
-                                                "TodoCountAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_min:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMinAggregateSelectionInput>,
-                                                "TodoMinAggregateSelection",
-                                                "TodoMinAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_max:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
-                                                "TodoMaxAggregateSelection",
-                                                "TodoMaxAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-        };
-            
-            export function makeAggregateTodoNotNullSelectionInput(this: any) : ReturnTypeFromAggregateTodoNotNullSelection {
-                return {
-                    _count: TodoCountAggregateSelection.bind({ collector: this, fieldName: "_count" }),
-_min: TodoMinAggregateSelection.bind({ collector: this, fieldName: "_min" }),
-_max: TodoMaxAggregateSelection.bind({ collector: this, fieldName: "_max" }),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-                } as const;
-            };
-            export const AggregateTodoNotNullSelection = makeSLFN(
-                makeAggregateTodoNotNullSelectionInput,
-                "AggregateTodoNotNullSelection",
-                "AggregateTodo",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromTodoSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoSelectionInput>>;
-            
-        };
-            
-            export function makeTodoSelectionInput(this: any) : ReturnTypeFromTodoSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoSelection = makeSLFN(
-                makeTodoSelectionInput,
-                "TodoSelection",
-                "Todo",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromTodoNotNullArrayNotNullSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>>;
-            
-        };
-            
-            export function makeTodoNotNullArrayNotNullSelectionInput(this: any) : ReturnTypeFromTodoNotNullArrayNotNullSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoNotNullArrayNotNullSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoNotNullArrayNotNullSelection = makeSLFN(
-                makeTodoNotNullArrayNotNullSelectionInput,
-                "TodoNotNullArrayNotNullSelection",
-                "Todo",
-                1
-            );
-        
-        
-
-        type ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-_count:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoCountAggregateSelectionInput>,
-                                                "TodoCountAggregateSelection",
-                                                "TodoCountAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_min:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMinAggregateSelectionInput>,
-                                                "TodoMinAggregateSelection",
-                                                "TodoMinAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_max:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
-                                                "TodoMaxAggregateSelection",
-                                                "TodoMaxAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoGroupByNotNullArrayNotNullSelectionInput>>;
-            
-        };
-            
-            export function makeTodoGroupByNotNullArrayNotNullSelectionInput(this: any) : ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-_count: TodoCountAggregateSelection.bind({ collector: this, fieldName: "_count" }),
-_min: TodoMinAggregateSelection.bind({ collector: this, fieldName: "_min" }),
-_max: TodoMaxAggregateSelection.bind({ collector: this, fieldName: "_max" }),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoGroupByNotNullArrayNotNullSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoGroupByNotNullArrayNotNullSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoGroupByNotNullArrayNotNullSelection = makeSLFN(
-                makeTodoGroupByNotNullArrayNotNullSelectionInput,
-                "TodoGroupByNotNullArrayNotNullSelection",
-                "TodoGroupBy",
-                1
-            );
-        
-        
-
-        type ReturnTypeFromAffectedRowsOutputNotNullSelection = {
-            count:  SelectionWrapperImpl<"count", "Int", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>>;
-            
-        };
-            
-            export function makeAffectedRowsOutputNotNullSelectionInput(this: any) : ReturnTypeFromAffectedRowsOutputNotNullSelection {
-                return {
-                    count: new SelectionWrapper(
-            "count",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeAffectedRowsOutputNotNullSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const AffectedRowsOutputNotNullSelection = makeSLFN(
-                makeAffectedRowsOutputNotNullSelectionInput,
-                "AffectedRowsOutputNotNullSelection",
-                "AffectedRowsOutput",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput>>;
-            
-        };
-            
-            export function makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput(this: any) : ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const CreateManyAndReturnTodoNotNullArrayNotNullSelection = makeSLFN(
-                makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput,
-                "CreateManyAndReturnTodoNotNullArrayNotNullSelection",
-                "CreateManyAndReturnTodo",
-                1
-            );
-        
-        
-
-        type ReturnTypeFromTodoNotNullSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoNotNullSelectionInput>>;
-            
-        };
-            
-            export function makeTodoNotNullSelectionInput(this: any) : ReturnTypeFromTodoNotNullSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoNotNullSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoNotNullSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoNotNullSelection = makeSLFN(
-                makeTodoNotNullSelectionInput,
-                "TodoNotNullSelection",
-                "Todo",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromQuerySelection = {
-            aggregateTodo: (
-                                        args: QueryAggregateTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeAggregateTodoNotNullSelectionInput>,
-                                                "AggregateTodoNotNullSelection",
-                                                "AggregateTodo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryAggregateTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-findFirstTodo: (
-                                        args: QueryFindFirstTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoSelectionInput>,
-                                                "TodoSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryFindFirstTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-findFirstTodoOrThrow: (
-                                        args: QueryFindFirstTodoOrThrowArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoSelectionInput>,
-                                                "TodoSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryFindFirstTodoOrThrowArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-todos: (
-                                        args: QueryTodosArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>,
-                                                "TodoNotNullArrayNotNullSelection",
-                                                "Todo",
-                                                1
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryTodosArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-todo: (
-                                        args: QueryTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoSelectionInput>,
-                                                "TodoSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-getTodo: (
-                                        args: QueryGetTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoSelectionInput>,
-                                                "TodoSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryGetTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-groupByTodo: (
-                                        args: QueryGroupByTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoGroupByNotNullArrayNotNullSelectionInput>,
-                                                "TodoGroupByNotNullArrayNotNullSelection",
-                                                "TodoGroupBy",
-                                                1
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: QueryGroupByTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-        };
-            
-            export function makeQuerySelectionInput(this: any) : ReturnTypeFromQuerySelection {
-                return {
-                    aggregateTodo: (args: QueryAggregateTodoArgs) => AggregateTodoNotNullSelection.bind({ collector: this, fieldName: "aggregateTodo", args, argsMeta: QueryAggregateTodoArgsMeta }),
-findFirstTodo: (args: QueryFindFirstTodoArgs) => TodoSelection.bind({ collector: this, fieldName: "findFirstTodo", args, argsMeta: QueryFindFirstTodoArgsMeta }),
-findFirstTodoOrThrow: (args: QueryFindFirstTodoOrThrowArgs) => TodoSelection.bind({ collector: this, fieldName: "findFirstTodoOrThrow", args, argsMeta: QueryFindFirstTodoOrThrowArgsMeta }),
-todos: (args: QueryTodosArgs) => TodoNotNullArrayNotNullSelection.bind({ collector: this, fieldName: "todos", args, argsMeta: QueryTodosArgsMeta }),
-todo: (args: QueryTodoArgs) => TodoSelection.bind({ collector: this, fieldName: "todo", args, argsMeta: QueryTodoArgsMeta }),
-getTodo: (args: QueryGetTodoArgs) => TodoSelection.bind({ collector: this, fieldName: "getTodo", args, argsMeta: QueryGetTodoArgsMeta }),
-groupByTodo: (args: QueryGroupByTodoArgs) => TodoGroupByNotNullArrayNotNullSelection.bind({ collector: this, fieldName: "groupByTodo", args, argsMeta: QueryGroupByTodoArgsMeta }),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-                } as const;
-            };
-            export const QuerySelection = makeSLFN(
-                makeQuerySelectionInput,
-                "QuerySelection",
-                "Query",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromAggregateTodoSelection = {
-            _count:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoCountAggregateSelectionInput>,
-                                                "TodoCountAggregateSelection",
-                                                "TodoCountAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_min:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMinAggregateSelectionInput>,
-                                                "TodoMinAggregateSelection",
-                                                "TodoMinAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_max:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
-                                                "TodoMaxAggregateSelection",
-                                                "TodoMaxAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-        };
-            
-            export function makeAggregateTodoSelectionInput(this: any) : ReturnTypeFromAggregateTodoSelection {
-                return {
-                    _count: TodoCountAggregateSelection.bind({ collector: this, fieldName: "_count" }),
-_min: TodoMinAggregateSelection.bind({ collector: this, fieldName: "_min" }),
-_max: TodoMaxAggregateSelection.bind({ collector: this, fieldName: "_max" }),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-                } as const;
-            };
-            export const AggregateTodoSelection = makeSLFN(
-                makeAggregateTodoSelectionInput,
-                "AggregateTodoSelection",
-                "AggregateTodo",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromTodoGroupBySelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-_count:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoCountAggregateSelectionInput>,
-                                                "TodoCountAggregateSelection",
-                                                "TodoCountAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_min:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMinAggregateSelectionInput>,
-                                                "TodoMinAggregateSelection",
-                                                "TodoMinAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-_max:  ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoMaxAggregateSelectionInput>,
-                                                "TodoMaxAggregateSelection",
-                                                "TodoMaxAggregate",
-                                                0
-                                                
-                                            >
-                                        >
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeTodoGroupBySelectionInput>>;
-            
-        };
-            
-            export function makeTodoGroupBySelectionInput(this: any) : ReturnTypeFromTodoGroupBySelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-_count: TodoCountAggregateSelection.bind({ collector: this, fieldName: "_count" }),
-_min: TodoMinAggregateSelection.bind({ collector: this, fieldName: "_min" }),
-_max: TodoMaxAggregateSelection.bind({ collector: this, fieldName: "_max" }),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeTodoGroupBySelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeTodoGroupBySelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const TodoGroupBySelection = makeSLFN(
-                makeTodoGroupBySelectionInput,
-                "TodoGroupBySelection",
-                "TodoGroupBy",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromMutationSelection = {
-            createManyTodo: (
-                                        args: MutationCreateManyTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
-                                                "AffectedRowsOutputNotNullSelection",
-                                                "AffectedRowsOutput",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationCreateManyTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-createManyAndReturnTodo: (
-                                        args: MutationCreateManyAndReturnTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeCreateManyAndReturnTodoNotNullArrayNotNullSelectionInput>,
-                                                "CreateManyAndReturnTodoNotNullArrayNotNullSelection",
-                                                "CreateManyAndReturnTodo",
-                                                1
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationCreateManyAndReturnTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-createOneTodo: (
-                                        args: MutationCreateOneTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoNotNullSelectionInput>,
-                                                "TodoNotNullSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationCreateOneTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-deleteManyTodo: (
-                                        args: MutationDeleteManyTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
-                                                "AffectedRowsOutputNotNullSelection",
-                                                "AffectedRowsOutput",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationDeleteManyTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-deleteOneTodo: (
-                                        args: MutationDeleteOneTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoSelectionInput>,
-                                                "TodoSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationDeleteOneTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-updateManyTodo: (
-                                        args: MutationUpdateManyTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
-                                                "AffectedRowsOutputNotNullSelection",
-                                                "AffectedRowsOutput",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationUpdateManyTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-updateOneTodo: (
-                                        args: MutationUpdateOneTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoSelectionInput>,
-                                                "TodoSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationUpdateOneTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-upsertOneTodo: (
-                                        args: MutationUpsertOneTodoArgs
-                                    ) => ReturnType<
-                                            SLFN<
-                                                {},
-                                                ReturnType<typeof makeTodoNotNullSelectionInput>,
-                                                "TodoNotNullSelection",
-                                                "Todo",
-                                                0
-                                                ,
-                                                { 
-                                                    $lazy: (
-                                                        args: MutationUpsertOneTodoArgs
-                                                    ) => Promise<"T">
-                                                },
-                                                "$lazy"
-                                                
-                                            >
-                                        >
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-        };
-            
-            export function makeMutationSelectionInput(this: any) : ReturnTypeFromMutationSelection {
-                return {
-                    createManyTodo: (args: MutationCreateManyTodoArgs) => AffectedRowsOutputNotNullSelection.bind({ collector: this, fieldName: "createManyTodo", args, argsMeta: MutationCreateManyTodoArgsMeta }),
-createManyAndReturnTodo: (args: MutationCreateManyAndReturnTodoArgs) => CreateManyAndReturnTodoNotNullArrayNotNullSelection.bind({ collector: this, fieldName: "createManyAndReturnTodo", args, argsMeta: MutationCreateManyAndReturnTodoArgsMeta }),
-createOneTodo: (args: MutationCreateOneTodoArgs) => TodoNotNullSelection.bind({ collector: this, fieldName: "createOneTodo", args, argsMeta: MutationCreateOneTodoArgsMeta }),
-deleteManyTodo: (args: MutationDeleteManyTodoArgs) => AffectedRowsOutputNotNullSelection.bind({ collector: this, fieldName: "deleteManyTodo", args, argsMeta: MutationDeleteManyTodoArgsMeta }),
-deleteOneTodo: (args: MutationDeleteOneTodoArgs) => TodoSelection.bind({ collector: this, fieldName: "deleteOneTodo", args, argsMeta: MutationDeleteOneTodoArgsMeta }),
-updateManyTodo: (args: MutationUpdateManyTodoArgs) => AffectedRowsOutputNotNullSelection.bind({ collector: this, fieldName: "updateManyTodo", args, argsMeta: MutationUpdateManyTodoArgsMeta }),
-updateOneTodo: (args: MutationUpdateOneTodoArgs) => TodoSelection.bind({ collector: this, fieldName: "updateOneTodo", args, argsMeta: MutationUpdateOneTodoArgsMeta }),
-upsertOneTodo: (args: MutationUpsertOneTodoArgs) => TodoNotNullSelection.bind({ collector: this, fieldName: "upsertOneTodo", args, argsMeta: MutationUpsertOneTodoArgsMeta }),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-                } as const;
-            };
-            export const MutationSelection = makeSLFN(
-                makeMutationSelectionInput,
-                "MutationSelection",
-                "Mutation",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromAffectedRowsOutputSelection = {
-            count:  SelectionWrapperImpl<"count", "Int", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeAffectedRowsOutputSelectionInput>>;
-            
-        };
-            
-            export function makeAffectedRowsOutputSelectionInput(this: any) : ReturnTypeFromAffectedRowsOutputSelection {
-                return {
-                    count: new SelectionWrapper(
-            "count",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeAffectedRowsOutputSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeAffectedRowsOutputSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const AffectedRowsOutputSelection = makeSLFN(
-                makeAffectedRowsOutputSelectionInput,
-                "AffectedRowsOutputSelection",
-                "AffectedRowsOutput",
-                0
-            );
-        
-        
-
-        type ReturnTypeFromCreateManyAndReturnTodoSelection = {
-            id:  SelectionWrapperImpl<"id", "String", 0, {}, undefined>
-text:  SelectionWrapperImpl<"text", "String", 0, {}, undefined>
-completed:  SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>
-createdAt:  SelectionWrapperImpl<"createdAt", "DateTime", 0, {}, undefined>
-        } & {
-            $fragment: <F extends (this: any, ...args: any[]) => any>(
-                f: F,
-            ) => (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>;
-            
-            $scalars: () => SLWsFromSelection<ReturnType<typeof makeCreateManyAndReturnTodoSelectionInput>>;
-            
-        };
-            
-            export function makeCreateManyAndReturnTodoSelectionInput(this: any) : ReturnTypeFromCreateManyAndReturnTodoSelection {
-                return {
-                    id: new SelectionWrapper(
-            "id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-text: new SelectionWrapper(
-            "text",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-completed: new SelectionWrapper(
-            "completed",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-createdAt: new SelectionWrapper(
-            "createdAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-            ),
-
-                    
-            $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
-                f.bind({
-                    collector: this,
-                    fieldName: "",
-                    isFragment: f.name,
-                }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            
-            $scalars: () =>
-                selectScalars(
-                        makeCreateManyAndReturnTodoSelectionInput.bind(this)(),
-                    ) as SLWsFromSelection<
-                        ReturnType<typeof makeCreateManyAndReturnTodoSelectionInput>
-                    >,
-            
-                } as const;
-            };
-            export const CreateManyAndReturnTodoSelection = makeSLFN(
-                makeCreateManyAndReturnTodoSelectionInput,
-                "CreateManyAndReturnTodoSelection",
-                "CreateManyAndReturnTodo",
-                0
-            );
-        
-        
-
-            export const _directive_include = (
-                args: Directive_includeArgs
-            ) => <F>(
-                f: F
-            ) => {
-                (f as any)[SLW_DIRECTIVE] = "include";
-                (f as any)[SLW_DIRECTIVE_ARGS] = args;
-                (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_includeArgsMeta;
-                return f;
-            }
-        
-
-            export const _directive_skip = (
-                args: Directive_skipArgs
-            ) => <F>(
-                f: F
-            ) => {
-                (f as any)[SLW_DIRECTIVE] = "skip";
-                (f as any)[SLW_DIRECTIVE_ARGS] = args;
-                (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_skipArgsMeta;
-                return f;
-            }
-        
-
-            export const $directives = {
-                        "include": _directive_include,
-"skip": _directive_skip
-                    } as const;
-            export function _makeRootOperationInput(this: any) {
-                return {
-                    query: QuerySelection.bind({
-                        collector: this,
-                        isRootType: "Query",
-                    }),
-                    mutation: MutationSelection.bind({
-                        collector: this,
-                        isRootType: "Mutation",
-                    }),
-                    
-
-                    
-                        $directives,
-                } as const;
-            };
-
-            type __AuthenticationArg__ =
-            | string
-            | { [key: string]: string }
-            | (() => string | { [key: string]: string })
-            | (() => Promise<string | { [key: string]: string }>);
-            function __client__ <
-                T extends object,
-                F extends ReturnType<typeof _makeRootOperationInput>>(
-                this: any, 
-                s: (selection: F) => T
-            ) {
-                const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
-                const rootRef = { ref: root };
-                const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
-                const r = s(selection);
-                const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
-                Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
-                
-                type excludeLazy<T> = { [key in Exclude<keyof T, "$lazy">]: T[key] };
-
-                // remove the $lazy property from the result
-                const result = _result as {
-                    [k in keyof T]: T[k] extends { $lazy: any }
-                        ? // if T[k] is an array and has a $lazy property, return the type of the array elements
-                        T[k] extends (infer U)[] & { $lazy: any }
-                            ? U[]
-                            : // if T[k] is an object and has a $lazy property, return the type of the object
-                            excludeLazy<T[k]>
-                        : // if T[k] is a function and has a $lazy property, return the type of the function
-                        T[k] extends (args: infer A) => Promise<infer R>
-                        ? (args: A) => Promise<R>
-                        : T[k];
-                };
-
-                type _TR = typeof result;
-                type __HasPromisesAndOrNonPromisesK = {
-                    [k in keyof _TR]: _TR[k] extends (args: any) => Promise<any>
-                        ? "promise"
-                        : "non-promise";
-                };
-                type __HasPromisesAndOrNonPromises =
-                    __HasPromisesAndOrNonPromisesK[keyof __HasPromisesAndOrNonPromisesK];
-                type finalReturnTypeBasedOnIfHasLazyPromises =
-                    __HasPromisesAndOrNonPromises extends "non-promise"
-                        ? Promise<_TR>
-                        : __HasPromisesAndOrNonPromises extends "promise"
-                        ? _TR
-                        : Promise<_TR>;
-
-                let headers: Record<string, string> | undefined = undefined;
-                let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
-                
-                if (Object.values(result).some((v) => typeof v !== "function")) {
-                    returnValue = new Promise((resolve, reject) => {
-                            
-                                const doExecute = () => {
-                                    root.execute(headers)
-                                        .then(() => {
-                                            resolve(result);
-                                        })
-                                        .catch(reject);
-                                }
-                                if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
-                                    const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
-                                    if (tokenOrPromise instanceof Promise) {
-                                        tokenOrPromise.then((t) => {
-                                            if (typeof t === "string")
-                                                headers = { "Authorization": t };
-                                            else headers = t;
-        
-                                            doExecute();
-                                        });
-                                    }
-                                    else if (typeof tokenOrPromise === "string") {
-                                        headers = { "Authorization": tokenOrPromise };
-
-                                        doExecute();
-                                    } else {
-                                        headers = tokenOrPromise;
-
-                                        doExecute();
-                                    }
-                                }
-                                else {
-                                    doExecute();
-                                }
-                            
-                        }) as finalReturnTypeBasedOnIfHasLazyPromises;
+            if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
+                const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
+                if (tokenOrPromise instanceof Promise) {
+                    tokenOrPromise.then((t) => {
+                        if (typeof t === "string")
+                            headers = { Authorization: t };
+                        else headers = t;
+
+                        doExecute();
+                    });
+                } else if (typeof tokenOrPromise === "string") {
+                    headers = { Authorization: tokenOrPromise };
+
+                    doExecute();
+                } else {
+                    headers = tokenOrPromise;
+
+                    doExecute();
                 }
-                else {
-                    returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
-                }
-                
-                
-                Object.defineProperty(returnValue, "auth", {
-                    enumerable: false,
-                    get: function () {
-                        return function (
-                            auth: __AuthenticationArg__,
-                        ) {
-                            if (typeof auth === "string") {
-                                headers = { "Authorization": auth };
-                            } else if (typeof auth === "function") {
-                                const tokenOrPromise = auth();
-                                if (tokenOrPromise instanceof Promise) {
-                                    return tokenOrPromise.then((t) => {
-                                        if (typeof t === "string")
-                                            headers = { "Authorization": t };
-                                        else headers = t;
+            } else {
+                doExecute();
+            }
+        }) as finalReturnTypeBasedOnIfHasLazyPromises;
+    } else {
+        returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
+    }
 
-                                        return returnValue;
-                                    });
-                                }
-                                if (typeof tokenOrPromise === "string") {
-                                    headers = { "Authorization": tokenOrPromise };
-                                } else {
-                                    headers = tokenOrPromise;
-                                }
-                            } else {
-                                headers = auth;
-                            }
+    Object.defineProperty(returnValue, "auth", {
+        enumerable: false,
+        get: function () {
+            return function (auth: __AuthenticationArg__) {
+                if (typeof auth === "string") {
+                    headers = { Authorization: auth };
+                } else if (typeof auth === "function") {
+                    const tokenOrPromise = auth();
+                    if (tokenOrPromise instanceof Promise) {
+                        return tokenOrPromise.then((t) => {
+                            if (typeof t === "string")
+                                headers = { Authorization: t };
+                            else headers = t;
 
                             return returnValue;
-                        };
-                    },
-                });
+                        });
+                    }
+                    if (typeof tokenOrPromise === "string") {
+                        headers = { Authorization: tokenOrPromise };
+                    } else {
+                        headers = tokenOrPromise;
+                    }
+                } else {
+                    headers = auth;
+                }
 
-                return returnValue as finalReturnTypeBasedOnIfHasLazyPromises & {
-                    auth: (
-                        auth: __AuthenticationArg__,
-                    ) => finalReturnTypeBasedOnIfHasLazyPromises;
-                };
-                
+                return returnValue;
             };
+        },
+    });
 
-            const __init__ = (options: {
-                auth?: __AuthenticationArg__;
-                headers?: { [key: string]: string };
-                scalars?: {
-                    [key in keyof ScalarTypeMapDefault]?: (
-                        v: string,
-                    ) => ScalarTypeMapDefault[key];
-                } & {
-                    [key in keyof ScalarTypeMapWithCustom]?: (
-                        v: string,
-                    ) => ScalarTypeMapWithCustom[key];
-                };
-            }) => {
-                
-                if (typeof options.auth === "string") {
-                    RootOperation[OPTIONS].headers = {
-                        "Authorization": options.auth,
-                    };
-                } else if (typeof options.auth === "function" ) {
-                    RootOperation[OPTIONS]._auth_fn = options.auth;
-                }
-                else if (options.auth) {
-                    RootOperation[OPTIONS].headers = options.auth;
-                }
-                
+    return returnValue as finalReturnTypeBasedOnIfHasLazyPromises & {
+        auth: (
+            auth: __AuthenticationArg__,
+        ) => finalReturnTypeBasedOnIfHasLazyPromises;
+    };
+}
 
-                if (options.headers) {
-                    RootOperation[OPTIONS].headers = {
-                        ...RootOperation[OPTIONS].headers,
-                        ...options.headers,
-                    };
-                }
-                if (options.scalars) {
-                    RootOperation[OPTIONS].scalars = {
-                        ...RootOperation[OPTIONS].scalars,
-                        ...options.scalars,
-                    };
-                }
-            };
-            Object.defineProperty(__client__, "init", {
-                enumerable: false,
-                value: __init__,
-            });
+const __init__ = (options: {
+    auth?: __AuthenticationArg__;
+    headers?: { [key: string]: string };
+    scalars?: {
+        [key in keyof ScalarTypeMapDefault]?: (
+            v: string,
+        ) => ScalarTypeMapDefault[key];
+    } & {
+        [key in keyof ScalarTypeMapWithCustom]?: (
+            v: string,
+        ) => ScalarTypeMapWithCustom[key];
+    };
+}) => {
+    if (typeof options.auth === "string") {
+        RootOperation[OPTIONS].headers = {
+            Authorization: options.auth,
+        };
+    } else if (typeof options.auth === "function") {
+        RootOperation[OPTIONS]._auth_fn = options.auth;
+    } else if (options.auth) {
+        RootOperation[OPTIONS].headers = options.auth;
+    }
 
-            export default __client__ as typeof __client__ & {
-                init: typeof __init__;
-            };
-        
+    if (options.headers) {
+        RootOperation[OPTIONS].headers = {
+            ...RootOperation[OPTIONS].headers,
+            ...options.headers,
+        };
+    }
+    if (options.scalars) {
+        RootOperation[OPTIONS].scalars = {
+            ...RootOperation[OPTIONS].scalars,
+            ...options.scalars,
+        };
+    }
+};
+Object.defineProperty(__client__, "init", {
+    enumerable: false,
+    value: __init__,
+});
+
+export default __client__ as typeof __client__ & {
+    init: typeof __init__;
+};
