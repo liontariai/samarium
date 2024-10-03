@@ -98,7 +98,7 @@ const TodoItem = ({
         key={todo.id}
         initial={{
             opacity: 0,
-            y: 20,
+            y: -20,
             backgroundColor: "rgb(59, 130, 246)",
             color: "rgb(255, 255, 255)",
         }}
@@ -133,15 +133,15 @@ const TodoItem = ({
             className="form-checkbox h-5 w-5 text-blue-500 rounded-full border-2 border-gray-300 transition duration-150 ease-in-out focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         />
         <div className="flex flex-row items-center justify-between w-full px-4">
-        <span
-            className={`ml-3 text-lg ${
+            <span
+                className={`ml-3 text-lg ${
                     todo.completed
                         ? "line-through text-inherit"
                         : "text-inherit"
-            } transition-colors duration-300`}
-        >
-            {todo.text}
-        </span>
+                } transition-colors duration-300`}
+            >
+                {todo.text}
+            </span>
             <span className="text-inherit">
                 {todo.createdAt.toLocaleDateString("en-US", {
                     month: "long",
