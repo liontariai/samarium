@@ -12,6 +12,7 @@ export class RootOperation {
             | undefined,
         scalars: {
             DateTime: (value: string) => new Date(value),
+            DateTimeISO: (value: string) => new Date(value),
             Date: (value: string) => new Date(value),
             Time: (value: string) => new Date(value),
             JSON: (value: string) => JSON.parse(value),
@@ -321,9 +322,12 @@ export class OperationSelectionCollector {
         };
     }
 
-    private utilGet = (obj: Record<string, any>, path: string[]) =>
+    private utilGet = (obj: Record<string, any>, path: (string | number)[]) =>
         path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(path: string[] = [], type?: string): T {
+    public getOperationResultPath<T>(
+        path: (string | number)[] = [],
+        type?: string,
+    ): T {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
@@ -399,6 +403,8 @@ export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
     "SLW_RECREATE_VALUE_CALLBACK",
 );
 
+export const SLW_CLONE = Symbol("SLW_CLONE");
+
 export class SelectionWrapperImpl<
     fieldName extends string,
     typeNamePure extends string,
@@ -411,6 +417,29 @@ export class SelectionWrapperImpl<
             performance.now().toString(36) +
             Math.random().toString(36).substring(2)
         );
+    }
+    [SLW_CLONE](
+        overrides: {
+            SLW_OP_PATH?: string;
+        } = {},
+    ) {
+        const slw = new SelectionWrapper(
+            this[SLW_FIELD_NAME],
+            this[SLW_FIELD_TYPENAME],
+            this[SLW_FIELD_ARR_DEPTH],
+            this[SLW_VALUE],
+            this[SLW_COLLECTOR],
+            this[SLW_PARENT_COLLECTOR],
+            this[SLW_ARGS],
+            this[SLW_ARGS_META],
+            this[SLW_RECREATE_VALUE_CALLBACK],
+        );
+        slw[SLW_IS_ROOT_TYPE] = this[SLW_IS_ROOT_TYPE];
+        slw[SLW_IS_ON_TYPE_FRAGMENT] = this[SLW_IS_ON_TYPE_FRAGMENT];
+        slw[SLW_IS_FRAGMENT] = this[SLW_IS_FRAGMENT];
+        slw[SLW_PARENT_SLW] = this[SLW_PARENT_SLW];
+        slw[SLW_OP_PATH] = overrides.SLW_OP_PATH ?? this[SLW_OP_PATH];
+        return slw;
     }
 
     readonly [SLW_UID] = this.generateUniqueId();
@@ -729,7 +758,8 @@ export class SelectionWrapper<
                         prop === SLW_OP_PATH ||
                         prop === SLW_REGISTER_PATH ||
                         prop === SLW_RENDER_WITH_ARGS ||
-                        prop === SLW_RECREATE_VALUE_CALLBACK
+                        prop === SLW_RECREATE_VALUE_CALLBACK ||
+                        prop === SLW_CLONE
                     ) {
                         return target[
                             prop as keyof SelectionWrapperImpl<
@@ -764,13 +794,56 @@ export class SelectionWrapper<
                             const data = t[
                                 ROOT_OP_COLLECTOR
                             ]!.ref.getOperationResultPath<valueT>(
-                                t[SLW_OP_PATH]?.split(".") ?? [],
+                                (t[SLW_OP_PATH]?.split(".") ?? []).map((p) =>
+                                    !isNaN(+p) ? +p : p,
+                                ),
                                 t[SLW_FIELD_TYPENAME],
                             );
                             return data;
                         };
 
                         if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
+                            // check if the selected field is an array
+                            if (typeArrDepth) {
+                                if (!isNaN(+String(prop))) {
+                                    const elm = target[SLW_CLONE]({
+                                        SLW_OP_PATH:
+                                            target[SLW_OP_PATH] +
+                                            "." +
+                                            String(prop),
+                                    });
+                                    return elm;
+                                }
+
+                                const data = getResultDataForTarget(target) as
+                                    | valueT[]
+                                    | undefined;
+
+                                if (data === undefined) return undefined;
+
+                                const proxiedData = Array.from(
+                                    { length: data.length },
+                                    (_, i) =>
+                                        target[SLW_CLONE]({
+                                            SLW_OP_PATH:
+                                                target[SLW_OP_PATH] +
+                                                "." +
+                                                String(i),
+                                        }),
+                                );
+
+                                const proto =
+                                    Object.getPrototypeOf(proxiedData);
+                                if (Object.hasOwn(proto, prop)) {
+                                    const v = (proxiedData as any)[prop];
+                                    if (typeof v === "function")
+                                        return v.bind(proxiedData);
+                                    return v;
+                                }
+
+                                return () => proxiedData;
+                            }
+
                             const data = getResultDataForTarget(target);
                             if (data === undefined) return undefined;
                             const proto = Object.getPrototypeOf(data);
@@ -779,16 +852,22 @@ export class SelectionWrapper<
                                 if (typeof v === "function")
                                     return v.bind(data);
                                 return v;
-                            } else if (
-                                !isNaN(+String(prop)) &&
-                                Array.isArray(proto)
-                            ) {
-                                return (data as any)[prop];
                             }
+
                             return () => data;
                         }
 
-                        const slw = slw_value?.[String(prop)];
+                        let slw = slw_value?.[String(prop)];
+                        const slwOpPathIsIndexAccess = !isNaN(
+                            +target[SLW_OP_PATH]?.split(".").pop()!,
+                        );
+                        if (slwOpPathIsIndexAccess) {
+                            // index access detected, cloning
+                            slw = slw[SLW_CLONE]({
+                                SLW_OP_PATH:
+                                    target[SLW_OP_PATH] + "." + String(prop),
+                            });
+                        }
 
                         if (
                             slw instanceof SelectionWrapperImpl &&
