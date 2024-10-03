@@ -12,6 +12,7 @@ export class RootOperation {
             | undefined,
         scalars: {
             DateTime: (value: string) => new Date(value),
+            DateTimeISO: (value: string) => new Date(value),
             Date: (value: string) => new Date(value),
             Time: (value: string) => new Date(value),
             JSON: (value: string) => JSON.parse(value),
