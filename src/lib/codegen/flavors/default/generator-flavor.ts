@@ -98,6 +98,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ["ID", "string"],
         ["Date", "Date"],
         ["DateTime", "Date"],
+        ["DateTimeISO", "Date"],
         ["Time", "Date"],
         ["JSON", "Record<string, any>"],
     ]);
