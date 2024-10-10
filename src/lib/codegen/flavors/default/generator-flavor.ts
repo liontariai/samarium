@@ -1131,7 +1131,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 };
                 `
                         : `
-                return finalPromise;
+                return returnValue;
                 `
                 }
             };
