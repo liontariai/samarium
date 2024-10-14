@@ -15,6 +15,12 @@ export abstract class GeneratorSelectionTypeFlavor {
     public static readonly FieldValueWrapperType: string;
 
     /**
+     * The code for the EnumTypesMapped interface.
+     * The EnumTypesMapped interface is used to map the enum names used in SelectionWrapper to the actual enum types.
+     */
+    public static EnumTypesMapped: (collector: Collector) => string;
+
+    /**
      * The code for the helper types.
      * The helper types are types that are used by the selection type flavor.
      */

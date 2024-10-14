@@ -100,6 +100,7 @@ export class Generator {
                 .filter(([type]) => type.isInput)
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
+            this.Codegen.EnumTypesMapped(collector),
             ...[...collector.selectionFunctions.entries()]
                 .filter(
                     ([type]) => !type.isScalar && !type.isEnum && !type.isInput,

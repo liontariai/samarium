@@ -108,8 +108,23 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     public static readonly FieldValueWrapperType = readFileSync(
         join(import.meta.dir ?? __dirname, "wrapper.ts"),
     ).toString();
+
+    public static EnumTypesMapped = (collector: Collector) => {
+        return `export interface EnumTypesMapped {
+            ${Array.from(collector.enumsTypes.keys())
+                .map((k) =>
+                    k.name
+                        .replaceAll("[", "")
+                        .replaceAll("]", "")
+                        .replaceAll("!", ""),
+                )
+                .map((k) => `"${k}": ${k},`)
+                .join("\n")}
+        };`;
+    };
+
     public static readonly HelperTypes = `
-    export interface ScalarTypeMapWithCustom {}
+    export interface ScalarTypeMapWithCustom {};
     export interface ScalarTypeMapDefault {
         ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
             .map(([k, v]) => `"${k}": ${v};`)
@@ -168,6 +183,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? ScalarTypeMapWithCustom[TNP]
         : TNP extends keyof ScalarTypeMapDefault
         ? ScalarTypeMapDefault[TNP]
+        : TNP extends keyof EnumTypesMapped
+        ? EnumTypesMapped[TNP]
         : never;
     type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
     type ToTArrayWithDepth<T, D extends number> = D extends 0
