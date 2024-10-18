@@ -7,7 +7,7 @@ import {
     SLW_DIRECTIVE,
     SLW_DIRECTIVE_ARGS,
     SLW_DIRECTIVE_ARGS_META,
-} from "@/lib/codegen/flavors/default/wrapper";
+} from "@/lib/codegen/graphql/flavors/default/wrapper";
 import { makeSLFN, selectScalars } from "../utils";
 import type {
     SelectionFnParent,

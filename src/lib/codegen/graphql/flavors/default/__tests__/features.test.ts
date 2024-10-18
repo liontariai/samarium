@@ -5,14 +5,14 @@ import {
     RootOperation,
     SelectionWrapper,
     SLW_COLLECTOR,
-} from "@/lib/codegen/flavors/default/wrapper";
+} from "@/lib/codegen/graphql/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
-import * as examplesBooksSimple from "@/lib/codegen/flavors/default/__tests__/examples/books.simple";
-import * as examplesSpaceX from "@/lib/codegen/flavors/default/__tests__/examples/spacex.with-test-slw";
-import * as examplesUnions from "@/lib/codegen/flavors/default/__tests__/examples/unions.simple";
-import * as examplesDirectives from "@/lib/codegen/flavors/default/__tests__/examples/directives.simple";
-import * as examplesDates from "@/lib/codegen/flavors/default/__tests__/examples/dates.generated";
-import * as examplesContentful from "@/lib/codegen/flavors/default/__tests__/examples/contentful.with-test-slw";
+import * as examplesBooksSimple from "@/lib/codegen/graphql/flavors/default/__tests__/examples/books.simple";
+import * as examplesSpaceX from "@/lib/codegen/graphql/flavors/default/__tests__/examples/spacex.with-test-slw";
+import * as examplesUnions from "@/lib/codegen/graphql/flavors/default/__tests__/examples/unions.simple";
+import * as examplesDirectives from "@/lib/codegen/graphql/flavors/default/__tests__/examples/directives.simple";
+import * as examplesDates from "@/lib/codegen/graphql/flavors/default/__tests__/examples/dates.generated";
+import * as examplesContentful from "@/lib/codegen/graphql/flavors/default/__tests__/examples/contentful.with-test-slw";
 
 describe("Testing and validating features", () => {
     it("executes multiple operations and returns results", async () => {

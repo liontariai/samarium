@@ -8,7 +8,7 @@ import {
     SLW_IS_ROOT_TYPE,
     SLW_PARENT_COLLECTOR,
     SLW_PARENT_SLW,
-} from "@/lib/codegen/flavors/default/wrapper";
+} from "@/lib/codegen/graphql/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
 import * as examplesBooksSimple from "./examples/books.simple";
 
