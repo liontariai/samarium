@@ -1,6 +1,6 @@
-import { GeneratorSelectionTypeFlavorDefault } from "./flavors/default/generator-flavor";
+import { GeneratorSelectionTypeFlavorDefault } from "./graphql/flavors/default/generator-flavor";
 
-export { Generator } from "./builder/generator";
+export { Generator } from "./graphql/builder/generator";
 
 export const Flavors = {
     default: GeneratorSelectionTypeFlavorDefault,
