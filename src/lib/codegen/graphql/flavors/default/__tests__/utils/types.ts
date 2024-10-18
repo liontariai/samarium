@@ -2,7 +2,7 @@ import {
     SelectionWrapperImpl,
     type OperationSelectionCollector,
     type OperationSelectionCollectorRef,
-} from "@/lib/codegen/flavors/default/wrapper";
+} from "@/lib/codegen/graphql/flavors/default/wrapper";
 
 export interface ScalarTypeMapWithCustom {}
 export interface ScalarTypeMapDefault {
