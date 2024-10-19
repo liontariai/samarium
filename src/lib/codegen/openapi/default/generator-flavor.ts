@@ -222,6 +222,51 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? T
         : ToTArrayWithDepth<T[], Prev[D]>;
 
+    export type SLFNScalarOp<
+        F extends object,
+        N extends string,
+        TNP extends string,
+        TAD extends number,
+        ARGS extends any,
+        E extends { [key: string | number | symbol]: any } = {
+            $lazy: ARGS extends undefined
+                ? () => Promise<"T">
+                : (args: ARGS) => Promise<"T">;
+        },
+        REP extends string | number | symbol = "$lazy",
+    > = (
+        makeSLFNInput: () => F,
+        SLFN_name: N,
+        SLFN_typeNamePure: TNP,
+        SLFN_typeArrDepth: TAD,
+    ) => <FF = F, EE = E>(
+        this: any,
+    ) => ToTArrayWithDepth<
+        typeof OP_SCALAR_RESULT extends keyof FF
+            ? ToTArrayWithDepth<SLW_TPN_ToType<TNP>, TAD>
+            : never,
+        TAD
+    > & {
+        [k in keyof EE]: k extends REP
+            ? EE[k] extends (...args: any) => any
+                ? ReplaceReturnType<
+                    EE[k],
+                    ToTArrayWithDepth<
+                        typeof OP_SCALAR_RESULT extends keyof FF
+                            ? ToTArrayWithDepth<SLW_TPN_ToType<TNP>, TAD>
+                            : never,
+                        TAD
+                    >
+                >
+                : ToTArrayWithDepth<
+                    typeof OP_SCALAR_RESULT extends keyof FF
+                        ? ToTArrayWithDepth<SLW_TPN_ToType<TNP>, TAD>
+                        : never,
+                    TAD
+                >
+            : EE[k];
+    };
+
     export type SLFN<
         T extends object,
         F,
@@ -297,6 +342,98 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ([k, v]) => v instanceof SelectionWrapperImpl,
         ),
     ) as S;
+
+    const makeScalarOperationSelection = <
+        name extends string,
+        typeName extends string,
+        isList extends number,
+        args extends any,
+        argsMeta extends Record<
+            string,
+            {
+                type: string;
+                location: "path" | "body" | "query" | "header" | "cookie";
+            }
+        >,
+    >(
+        name: name,
+        typeName: typeName,
+        isList: isList,
+        args?: args,
+        argsMeta?: argsMeta,
+    ) => function(this: any) {
+        return {
+            [OP_SCALAR_RESULT]: new SelectionWrapper(
+                name,
+                typeName,
+                isList,
+                {},
+                this,
+                undefined,
+                args,
+                argsMeta,
+                undefined,
+                true,
+            ),
+        } as const;
+    };
+
+    const makeSLFNScalarOp = <
+        F extends object,
+        N extends string,
+        TNP extends string,
+        TAD extends number,
+        ARGS extends any,
+    >(
+        makeSLFNInput: () => F,
+        SLFN_name: N,
+        SLFN_typeNamePure: TNP,
+        SLFN_typeArrDepth: TAD,
+        ARGS: ARGS,
+    ) => {
+        function _SLFN<FF extends F>(this: any) {
+            let parent: SelectionFnParent = this ?? {
+                collector: new OperationSelectionCollector(),
+            };
+            function innerFn(this: any) {
+                const r: FF = makeSLFNInput.bind(this)() as any;
+                const _result = new SelectionWrapper(
+                    parent?.fieldName,
+                    SLFN_typeNamePure,
+                    SLFN_typeArrDepth,
+                    r,
+                    this,
+                    parent?.collector,
+                    parent?.args,
+                    parent?.argsMeta,
+                    function (this: OperationSelectionCollector) {
+                        return makeSLFNInput.bind(this)() as FF;
+                    },
+                    true,
+                );
+
+                _result[ROOT_OP_META] = parent?.opPath
+                    ? {
+                        path: parent.opPath,
+                        method: parent.method!,
+                    }
+                    : undefined;
+
+                Object.keys(r).forEach((key) => (_result as FF)[key as keyof FF]);
+                const result = _result as unknown as FF;
+
+                if ((result as any)[OP_SCALAR_RESULT]) {
+                    return (result as any)[OP_SCALAR_RESULT];
+                }
+
+                return result;
+            }
+            return innerFn.bind(
+                new OperationSelectionCollector(SLFN_name, parent?.collector),
+            )();
+        }
+        return _SLFN as ReturnType<SLFNScalarOp<F, N, TNP, TAD, ARGS>>;
+    };
 
     const makeSLFN = <
         T extends object,
@@ -831,8 +968,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         operations: OperationMeta[],
         collector: Collector,
         options: CodegenOptions,
-    ): string[] {
-        const fns: string[] = [];
+    ) {
+        const makeSelectionFunctionInputReturnTypeParts = new Map<
+            string,
+            string
+        >();
+        const fnsWithoutScalarOps: string[] = [];
+        const fnsScalarOps: string[] = [];
 
         const conformToTypeKey = (str: string) => {
             if (str.includes("-") || !isNaN(+str.at(0)!)) {
@@ -1035,21 +1177,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
             const returnTypeSelectionFunctionNameOrScalarOrEnum =
                 operation.type.isScalar || operation.type.isEnum
-                    ? `makeSLFN(
-                        () => ({
-                            [OP_SCALAR_RESULT]: new SelectionWrapper(
-                                "${operation.type.name}",
-                                "${operation.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
-                                ${operation.type.isList ?? 0},
-                                {},
-                                this,
-                                undefined,
-                                ${argMeta ? `args, ${argMeta.argsTypeName}Meta` : ""}
-                            )
-                        }),
+                    ? `makeSLFNScalarOp(
+                        makeScalarOperationSelection(
+                            "${operation.name}",
+                            "${operation.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                            ${operation.type.isList ?? 0},
+                            ${argMeta ? `args, ${argMeta.argsTypeName}Meta` : ""}
+                        ),
                         "${operation.name}",
                         "${operation.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
-                        ${operation.type.isList ?? 0}
+                        ${operation.type.isList ?? 0},
+                        ${argTypes ? `args` : "undefined"}
                     )`
                     : new GeneratorSelectionTypeFlavorDefault(
                           operation.type.name,
@@ -1065,13 +1203,53 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         opPath: "${operation.path}",
                         method: "${operation.method}",
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
-                    })${operation.type.isScalar || operation.type.isEnum ? "((s) => s)" : ""},
+                    })${operation.type.isScalar || operation.type.isEnum ? "()" : ""},
             `;
 
-            fns.push(operationAsOpNameToFunction);
+            if (!operation.type.isScalar && !operation.type.isEnum) {
+                makeSelectionFunctionInputReturnTypeParts.set(
+                    operation.name,
+                    `(
+                    ${argTypes ? `args: ${argTypes.argsTypeName}` : ""}
+                    ) =>
+                        ReturnType<
+                            SLFN<
+                                {},
+                                ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
+                                    operation.type.name,
+                                )}SelectionInput>,
+                                "${super.originalTypeNameToTypescriptFriendlyName(operation.type.name)}Selection",
+                                "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                                    operation.type.name,
+                                )}",
+                                ${operation.type.isList ?? 0},
+                                { 
+                                    $lazy: (
+                                        ${
+                                            argTypes
+                                                ? `args: ${argTypes.argsTypeName}`
+                                                : ""
+                                        }
+                                    ) => Promise<"T">
+                                },
+                                "$lazy"
+                            >
+                        >,`,
+                );
+            }
+
+            if (!operation.type.isScalar && !operation.type.isEnum) {
+                fnsWithoutScalarOps.push(operationAsOpNameToFunction);
+            } else {
+                fnsScalarOps.push(operationAsOpNameToFunction);
+            }
         }
 
-        return fns;
+        return {
+            fnsWithoutScalarOps,
+            fnsScalarOps,
+            makeSelectionFunctionInputReturnTypeParts,
+        };
     }
 
     public static makeRootOperationFunction(
@@ -1082,11 +1260,30 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             headerName: string;
         },
     ): string {
+        const {
+            fnsWithoutScalarOps,
+            fnsScalarOps,
+            makeSelectionFunctionInputReturnTypeParts,
+        } = this.makeOperationFunctions(operations, collector, options);
         const rootOperationFunction = `
+            export type ReturnTypeFromRootOperationWithoutScalarOps = {
+                ${Array.from(makeSelectionFunctionInputReturnTypeParts)
+                    .map(([k, v]) => `${k}: ${v}`)
+                    .join("\n")}
+            };
             export function _makeRootOperationInput(this: any) {
-                return {
-                    ${this.makeOperationFunctions(operations, collector, options).join("\n")}
+                const withoutScalarOps = {
+                    ${fnsWithoutScalarOps.join("\n")}
                 } as const;
+
+                const withScalarOps = {
+                    ${fnsScalarOps.join("\n")}
+                } as const;
+
+                return {
+                    ...withoutScalarOps,
+                    ...withScalarOps,
+                } as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
             };
 
             ${
@@ -1111,20 +1308,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
                 Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
                 
-                type excludeLazy<T> = { [key in Exclude<keyof T, "$lazy">]: T[key] };
-
                 // remove the $lazy property from the result
                 const result = _result as {
-                    [k in keyof T]: T[k] extends { $lazy: any }
-                        ? // if T[k] is an array and has a $lazy property, return the type of the array elements
-                        T[k] extends (infer U)[] & { $lazy: any }
-                            ? U[]
-                            : // if T[k] is an object and has a $lazy property, return the type of the object
-                            excludeLazy<T[k]>
+                    [k in keyof T]: T[k] extends infer U & {
+                        $lazy: (args: any) => Promise<infer R>;
+                    }
+                        ? R
                         : // if T[k] is a function and has a $lazy property, return the type of the function
-                        T[k] extends (args: infer A) => Promise<infer R>
-                        ? (args: A) => Promise<R>
-                        : T[k];
+                        T[k] extends () => Promise<infer R>
+                        ? () => Promise<R>
+                        : T[k] extends (args: infer A) => Promise<infer R>
+                            ? (args: A) => Promise<R>
+                            : T[k];
                 };
 
                 type _TR = typeof result;
@@ -1146,7 +1341,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
                 
                 if (Object.values(result).some((v) => typeof v !== "function")) {
-                    returnValue = new Promise((resolve, reject) => {
+                    returnValue = {
+                        then: (resolve: any, reject: any) => {
                             ${
                                 authConfig
                                     ? `
@@ -1190,7 +1386,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 .catch(reject);
                             `
                             }
-                        }) as finalReturnTypeBasedOnIfHasLazyPromises;
+                        },
+                    } as finalReturnTypeBasedOnIfHasLazyPromises;
                 }
                 else {
                     returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
