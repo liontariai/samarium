@@ -51,7 +51,7 @@ export class RootOperation {
 
             const rootSlw = opSelection;
             const selection = rootSlw[SLW_PARENT_COLLECTOR]!.renderSelections(
-                [opName],
+                [],
                 [rootSlw],
             );
 
@@ -63,23 +63,28 @@ export class RootOperation {
 
         const ops = Object.entries(operations).reduce(
             (acc, [opName, { selection, rootSlw }]) => {
-                const body = Object.fromEntries(
-                    Object.entries(selection.variableDefinitions)
-                        .filter(([_, v]) => v.location === "body")
-                        .flatMap(([k, _]) =>
-                            k === "$body"
-                                ? Object.entries(
-                                      // if $body is the only variableDefinion,
-                                      // we take the variable object as body,
-                                      // else we take the value from variables["$body"]
-                                      Object.keys(selection.variableDefinitions)
-                                          .length === 1
-                                          ? selection.variables
-                                          : selection.variables["$body"],
-                                  )
-                                : [[k, selection.variables[k]]],
-                        ),
-                );
+                const bodyVarDefCount = Object.entries(
+                    selection.variableDefinitions,
+                ).filter(([_, v]) => v.location === "body").length;
+                const body =
+                    bodyVarDefCount === 0
+                        ? undefined
+                        : bodyVarDefCount === 1 &&
+                            Object.keys(selection.variableDefinitions)
+                                .length === 1
+                          ? selection.variables
+                          : bodyVarDefCount === 1 &&
+                              "$body" in selection.variableDefinitions &&
+                              "$body" in selection.variables
+                            ? selection.variables["$body"]
+                            : Object.fromEntries(
+                                  Object.entries(selection.variableDefinitions)
+                                      .filter(([_, v]) => v.location === "body")
+                                      .map(([k, _]) => [
+                                          k,
+                                          selection.variables[k],
+                                      ]),
+                              );
 
                 return {
                     ...acc,
@@ -190,6 +195,17 @@ export class RootOperation {
         }`;
         const cookies = new URLSearchParams(request.cookie).toString();
 
+        console.log(`[ENDPOINT]${finalPath}`, {
+            method: request.method,
+            headers: {
+                ...(request.body ? { "Content-Type": "application/json" } : {}),
+                ...(request.header ? request.header : {}),
+                ...(cookies ? { Cookie: cookies } : {}),
+                ...headers,
+            },
+            body: request.body ? JSON.stringify(request.body) : undefined,
+        });
+
         const res = await fetch(`[ENDPOINT]${finalPath}`, {
             method: request.method,
             headers: {
@@ -200,6 +216,11 @@ export class RootOperation {
             },
             body: request.body ? JSON.stringify(request.body) : undefined,
         });
+
+        if (!res.ok) {
+            throw new Error(`${res.statusText}: ${await res.text()}`);
+        }
+
         const data = (await res.json()) as any;
 
         return data;
@@ -382,6 +403,7 @@ export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
 export const SLW_CLONE = Symbol("SLW_CLONE");
 
 export const OP_SCALAR_RESULT = Symbol("OP_SCALAR_RESULT");
+export const SLW_IS_SCALAR_OP = Symbol("SLW_IS_SCALAR_OP");
 
 export class SelectionWrapperImpl<
     fieldName extends string,
@@ -411,6 +433,7 @@ export class SelectionWrapperImpl<
             this[SLW_ARGS],
             this[SLW_ARGS_META],
             this[SLW_RECREATE_VALUE_CALLBACK],
+            this[SLW_IS_SCALAR_OP],
         );
         slw[ROOT_OP_META] = this[ROOT_OP_META];
         slw[SLW_PARENT_SLW] = this[SLW_PARENT_SLW];
@@ -454,6 +477,9 @@ export class SelectionWrapperImpl<
     [SLW_LAZY_FLAG]?: boolean;
 
     [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
+
+    [SLW_IS_SCALAR_OP]?: boolean;
+
     constructor(
         fieldName?: fieldName,
         typeNamePure?: typeNamePure,
@@ -470,6 +496,7 @@ export class SelectionWrapperImpl<
             }
         >,
         reCreateValueCallback?: () => valueT,
+        isScalarOp?: boolean,
     ) {
         this[SLW_FIELD_NAME] = fieldName;
         this[SLW_FIELD_TYPENAME] = typeNamePure;
@@ -502,6 +529,9 @@ export class SelectionWrapperImpl<
         if (reCreateValueCallback) {
             this[SLW_RECREATE_VALUE_CALLBACK] = reCreateValueCallback;
         }
+        if (isScalarOp !== undefined) {
+            this[SLW_IS_SCALAR_OP] = isScalarOp;
+        }
     }
 
     [SLW_OP_PATH]?: string;
@@ -521,27 +551,29 @@ export class SelectionWrapperImpl<
             }
 
             return {
-                variables: args,
-                variableDefinitions: argsMeta["$body"]
-                    ? argsMeta
-                    : Object.keys(args).reduce(
-                          (acc, key) => {
-                              acc[key] = argsMeta[key];
-                              return acc;
-                          },
-                          {} as Record<
-                              string,
-                              {
-                                  type: string;
-                                  location:
-                                      | "path"
-                                      | "query"
-                                      | "header"
-                                      | "cookie"
-                                      | "body";
-                              }
-                          >,
-                      ),
+                variables: args ?? {},
+                variableDefinitions: argsMeta?.["$body"]
+                    ? argsMeta ?? {}
+                    : args
+                      ? Object.keys(args).reduce(
+                            (acc, key) => {
+                                acc[key] = argsMeta?.[key];
+                                return acc;
+                            },
+                            {} as Record<
+                                string,
+                                {
+                                    type: string;
+                                    location:
+                                        | "path"
+                                        | "query"
+                                        | "header"
+                                        | "cookie"
+                                        | "body";
+                                }
+                            >,
+                        )
+                      : {},
             };
         }
         return {
@@ -581,6 +613,7 @@ export class SelectionWrapper<
             }
         >,
         reCreateValueCallback?: () => valueT,
+        isScalarOp?: boolean,
     ) {
         super(
             new SelectionWrapperImpl<
@@ -599,6 +632,7 @@ export class SelectionWrapper<
                 args,
                 argsMeta,
                 reCreateValueCallback,
+                isScalarOp,
             ),
             {
                 // implement ProxyHandler methods
@@ -657,6 +691,8 @@ export class SelectionWrapper<
                                 newRootOpCollectorRef,
                                 that[SLW_ARGS],
                                 that[SLW_ARGS_META],
+                                that[SLW_RECREATE_VALUE_CALLBACK],
+                                that[SLW_IS_SCALAR_OP],
                             );
                             Object.keys(r!).forEach(
                                 (key) =>
@@ -695,13 +731,15 @@ export class SelectionWrapper<
                         lazy[SLW_LAZY_FLAG] = true;
                         return lazy;
                     }
+                    if (prop === SLW_VALUE && target[SLW_IS_SCALAR_OP]) {
+                        return (target[SLW_VALUE] as any)[OP_SCALAR_RESULT];
+                    }
                     if (
                         prop === SLW_UID ||
                         prop === SLW_FIELD_NAME ||
                         prop === SLW_FIELD_TYPENAME ||
                         prop === SLW_FIELD_ARR_DEPTH ||
                         prop === ROOT_OP_META ||
-                        prop === SLW_VALUE ||
                         prop === SLW_ARGS ||
                         prop === SLW_ARGS_META ||
                         prop === SLW_PARENT_SLW ||
@@ -710,10 +748,12 @@ export class SelectionWrapper<
                         prop === SLW_PARENT_COLLECTOR ||
                         prop === SLW_COLLECTOR ||
                         prop === SLW_OP_PATH ||
+                        prop === SLW_VALUE ||
                         prop === SLW_REGISTER_PATH ||
                         prop === SLW_RENDER_WITH_ARGS ||
                         prop === SLW_RECREATE_VALUE_CALLBACK ||
-                        prop === SLW_CLONE
+                        prop === SLW_CLONE ||
+                        prop === SLW_IS_SCALAR_OP
                     ) {
                         return target[
                             prop as keyof SelectionWrapperImpl<
