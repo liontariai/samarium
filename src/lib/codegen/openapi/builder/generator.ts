@@ -1,8 +1,7 @@
-import { DirectiveLocation, GraphQLSchema } from "graphql";
 import { type CodegenOptions, gatherMeta } from "./meta";
 import { Collector } from "./collector";
 
-import type { GeneratorSelectionTypeFlavorDefault } from "../default/generator-flavor";
+import type { GeneratorSelectionTypeFlavorDefault } from "../flavors/default/generator-flavor";
 import type { OpenAPI3 } from "openapi-typescript";
 
 /**

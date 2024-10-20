@@ -5,7 +5,7 @@ import type { OpenAPI3 } from "openapi-typescript";
 import thingsboardJson from "./examples/thingsboard.json";
 import testapiJson from "./examples/testapi.json";
 
-import { GeneratorSelectionTypeFlavorDefault } from "../../default/generator-flavor";
+import { GeneratorSelectionTypeFlavorDefault } from "../../flavors/default/generator-flavor";
 import { Generator } from "../generator";
 
 describe.only("generate", () => {
