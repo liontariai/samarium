@@ -1,4 +1,4 @@
-import type { GraphQLSchema } from "graphql";
+import type { OpenAPI3 } from "openapi-typescript";
 import type { Collector } from "./collector";
 import type {
     CodegenOptions,
@@ -147,7 +147,7 @@ export abstract class GeneratorSelectionTypeFlavor {
         parents: string[],
     ): string;
 
-    public abstract makeSelectionFunction(schema: GraphQLSchema): string;
+    public abstract makeSelectionFunction(schema: OpenAPI3): string;
 
     public static makeRootOperationFunction(
         operations: OperationMeta[],
