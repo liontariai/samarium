@@ -195,17 +195,6 @@ export class RootOperation {
         }`;
         const cookies = new URLSearchParams(request.cookie).toString();
 
-        console.log(`[ENDPOINT]${finalPath}`, {
-            method: request.method,
-            headers: {
-                ...(request.body ? { "Content-Type": "application/json" } : {}),
-                ...(request.header ? request.header : {}),
-                ...(cookies ? { Cookie: cookies } : {}),
-                ...headers,
-            },
-            body: request.body ? JSON.stringify(request.body) : undefined,
-        });
-
         const res = await fetch(`[ENDPOINT]${finalPath}`, {
             method: request.method,
             headers: {
