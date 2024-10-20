@@ -17,6 +17,7 @@ export const generate = async (
     let showLogo = true;
 
     remote.url = await detectAndReplacePlaceholders(
+        "GraphQL",
         remote.url,
         "The URL",
         showLogo,
@@ -24,6 +25,7 @@ export const generate = async (
     if (remote.headers?.length) {
         for (const header of remote.headers) {
             const output = await detectAndReplacePlaceholders(
+                "GraphQL",
                 header,
                 "The header",
                 showLogo,
@@ -33,6 +35,7 @@ export const generate = async (
     }
     if (options.endpoint) {
         options.endpoint = await detectAndReplacePlaceholders(
+            "GraphQL",
             options.endpoint,
             "The endpoint",
             showLogo,
@@ -40,11 +43,14 @@ export const generate = async (
     }
     if (options.authHeaderName) {
         options.authHeaderName = await detectAndReplacePlaceholders(
+            "GraphQL",
             options.authHeaderName,
             "The auth header name",
+            showLogo,
         );
     }
     output = await detectAndReplacePlaceholders(
+        "GraphQL",
         output,
         "The output file",
         showLogo,

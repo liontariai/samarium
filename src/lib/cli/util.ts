@@ -6,6 +6,7 @@ import chalk from "chalk";
 import detectIndent from "detect-indent";
 
 export const detectAndReplacePlaceholders = async (
+    mode: "GraphQL" | "OpenAPI",
     str: string,
     descriptor: string,
     showLogo: boolean = false,
@@ -19,7 +20,7 @@ export const detectAndReplacePlaceholders = async (
     }
     if (placeholders.length > 0) {
         if (!showLogo) {
-            printLogo();
+            printLogo(mode);
             showLogo = false;
         }
 
