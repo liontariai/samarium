@@ -1,5 +1,5 @@
 import { expect, describe, it } from "bun:test";
-import { gatherMetaForType } from "./meta";
+import { gatherMeta, gatherMetaForType } from "./meta";
 import {
     GraphQLSchema,
     GraphQLObjectType,
@@ -7,8 +7,25 @@ import {
     GraphQLNonNull,
     GraphQLString,
 } from "graphql";
+import { Collector } from "./collector";
+import { introspectGraphQLSchema } from "@/commands/util/introspect";
 
 describe("gatherMetaForType", () => {
+    it("should gather meta for a whole schema", async () => {
+        // Arrange
+        const schema = await introspectGraphQLSchema(
+            "https://spacex-production.up.railway.app/graphql",
+        );
+        // Act
+        const meta = gatherMeta(
+            schema,
+            {},
+            new Collector("Query", "Mutation", "Subscription"),
+        );
+
+        console.log(meta);
+    });
+
     it("should gather meta for object types", () => {
         // Arrange
         const schema = new GraphQLSchema({

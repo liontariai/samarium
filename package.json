@@ -44,7 +44,7 @@
         "@rollup/plugin-node-resolve": "^15.2.3",
         "@rollup/plugin-terser": "^0.4.4",
         "@rollup/plugin-typescript": "^11.1.6",
-        "bun-types": "latest",
+        "bun-types": "^1.1.29",
         "cross-env": "^7.0.3",
         "np": "^10.0.5",
         "rollup": "^4.17.2",
@@ -61,6 +61,7 @@
         "detect-indent": "^7.0.1",
         "graphql": "^16.8.1",
         "graphql-request": "^6.1.0",
+        "openapi-typescript": "^7.4.1",
         "prettier": "^3.2.5"
     },
     "workspaces": [

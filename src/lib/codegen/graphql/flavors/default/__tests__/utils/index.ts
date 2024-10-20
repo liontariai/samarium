@@ -7,7 +7,7 @@ import {
     RootOperation,
     SelectionWrapperImpl,
     ROOT_OP_COLLECTOR,
-} from "@/lib/codegen/flavors/default/wrapper";
+} from "@/lib/codegen/graphql/flavors/default/wrapper";
 import type { SelectionFnParent, SLFN } from "./types";
 
 export const makeSLFN = <

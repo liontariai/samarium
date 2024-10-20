@@ -1,4 +1,4 @@
-import { SelectionWrapper } from "@/lib/codegen/flavors/default/wrapper";
+import { SelectionWrapper } from "@/lib/codegen/graphql/flavors/default/wrapper";
 import { makeSLFN } from "../utils";
 
 export function makeBookArraySelectionInput(this: any) {

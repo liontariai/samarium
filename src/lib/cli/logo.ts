@@ -1,6 +1,6 @@
 import packageJson from "../../../package.json";
 
-export const printLogo = () => {
+export const printLogo = (mode: "GraphQL" | "OpenAPI") => {
     process.stdout.write("\x1Bc");
     process.stdout.write(`
  _____                                 _                   
@@ -16,7 +16,7 @@ export const printLogo = () => {
     console.log("Welcome to the Samarium CLI Assistant");
     console.log(" ");
     console.log(
-        "This assistant will help you generate a Samarium client from a GraphQL endpoint and use it in your project.",
+        `This assistant will help you compile an ${mode} API into a samarium typescript sdk.`,
     );
     console.log(" ");
 };
