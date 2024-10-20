@@ -92,6 +92,9 @@ export const generate = async (
 
     fs.writeFileSync(
         output,
-        code.replace("[ENDPOINT]", options.endpoint ?? remote.url),
+        code.replace(
+            "[ENDPOINT]",
+            options.endpoint ?? schema.servers?.[0]?.url ?? remote.url,
+        ),
     );
 };
