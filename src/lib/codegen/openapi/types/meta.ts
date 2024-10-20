@@ -1,5 +1,3 @@
-import type { OpenAPI3 } from "openapi-typescript";
-
 export type CodegenOptions = {};
 
 export interface SchemaMeta {
