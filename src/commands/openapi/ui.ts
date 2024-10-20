@@ -17,7 +17,7 @@ import {
 import type { OpenAPI3 } from "openapi-typescript";
 
 export const ui = async () => {
-    printLogo();
+    printLogo("OpenAPI");
 
     const url = await requestUrlFromUser(
         "Enter the url to the OpenAPI schema json file:",

@@ -195,7 +195,6 @@ program
 
 program
     .command("generate-gql <url> <output>")
-    .alias("generate-gql")
     .option(
         "-h, --header [header]",
         "Header to send with the request, e.g. 'Authorization=Bearer 1234'",

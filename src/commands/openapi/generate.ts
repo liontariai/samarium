@@ -17,6 +17,7 @@ export const generate = async (
     let showLogo = true;
 
     remote.url = await detectAndReplacePlaceholders(
+        "OpenAPI",
         remote.url,
         "The URL",
         showLogo,
@@ -24,6 +25,7 @@ export const generate = async (
     if (remote.headers?.length) {
         for (const header of remote.headers) {
             const output = await detectAndReplacePlaceholders(
+                "OpenAPI",
                 header,
                 "The header",
                 showLogo,
@@ -33,6 +35,7 @@ export const generate = async (
     }
     if (options.endpoint) {
         options.endpoint = await detectAndReplacePlaceholders(
+            "OpenAPI",
             options.endpoint,
             "The endpoint",
             showLogo,
@@ -40,11 +43,14 @@ export const generate = async (
     }
     if (options.authHeaderName) {
         options.authHeaderName = await detectAndReplacePlaceholders(
+            "OpenAPI",
             options.authHeaderName,
             "The auth header name",
+            showLogo,
         );
     }
     output = await detectAndReplacePlaceholders(
+        "OpenAPI",
         output,
         "The output file",
         showLogo,

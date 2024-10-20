@@ -17,7 +17,7 @@ import {
 } from "@/lib/cli/util";
 
 export const ui = async () => {
-    printLogo();
+    printLogo("GraphQL");
 
     const url = await requestUrlFromUser("Enter the graphql endpoint url:");
 
