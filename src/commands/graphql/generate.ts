@@ -1,94 +1,60 @@
 import type { GraphQLSchema } from "graphql";
-import { Generator, Flavors } from "../lib/codegen";
+import { GraphQLGenerator, Flavors } from "@/lib/codegen";
 import { introspectGraphQLSchema } from "./util/introspect";
 
 import fs from "fs";
-import { printLogo } from "@/lib/cli/logo";
-import { confirm, input } from "@inquirer/prompts";
+import { detectAndReplacePlaceholders } from "@/lib/cli/util";
 
 export const generate = async (
     remote: { url: string; headers?: string[] },
-    flavor: keyof typeof Flavors,
+    flavor: keyof (typeof Flavors)["GraphQL"],
     output: string,
     options: {
         endpoint?: string;
         authHeaderName?: string;
     } = {},
 ) => {
-    let logoShown = false;
-    const detectAndReplacePlaceholders = async (
-        str: string,
-        descriptor: string,
-    ) => {
-        // detect placeholders in the str, e.g. /slug/<name>/other or /slug/[name]/other
-        const regex = /<([^>]+)>|\[([^\]]+)\]/g;
-        let match;
-        const placeholders = [];
-        while ((match = regex.exec(str))) {
-            placeholders.push(match[1] ?? match[2]);
-        }
-        if (placeholders.length > 0) {
-            if (!logoShown) {
-                printLogo();
-                logoShown = true;
-            }
+    let showLogo = true;
 
-            const strColoredGreenPlaceholders = str.replace(
-                regex,
-                (match) => `\x1b[32m${match}\x1b[0m`,
-            );
-
-            if (
-                await confirm({
-                    message: `${descriptor} contains placeholders: ${strColoredGreenPlaceholders} . Do you want to replace them with actual values?`,
-                })
-            ) {
-                const values: string[] = [];
-                for (const placeholder of placeholders) {
-                    const value = await input({
-                        message: `Enter value for placeholder ${placeholder}:`,
-                    });
-                    values.push(value);
-                }
-                str = str.replace(regex, () => values.shift() ?? "");
-
-                console.log(`${descriptor} has been updated to: ${str}`);
-                console.log(" ");
-            } else {
-                console.log(
-                    `${descriptor} has not been updated. Using the original value: ${str}`,
-                );
-                console.log(" ");
-            }
-
-            return str;
-        }
-        return str;
-    };
-
-    remote.url = await detectAndReplacePlaceholders(remote.url, "The URL");
+    remote.url = await detectAndReplacePlaceholders(
+        "GraphQL",
+        remote.url,
+        "The URL",
+        showLogo,
+    );
     if (remote.headers?.length) {
         for (const header of remote.headers) {
             const output = await detectAndReplacePlaceholders(
+                "GraphQL",
                 header,
                 "The header",
+                showLogo,
             );
             remote.headers[remote.headers.indexOf(header)] = output;
         }
     }
     if (options.endpoint) {
         options.endpoint = await detectAndReplacePlaceholders(
+            "GraphQL",
             options.endpoint,
             "The endpoint",
+            showLogo,
         );
     }
     if (options.authHeaderName) {
         options.authHeaderName = await detectAndReplacePlaceholders(
+            "GraphQL",
             options.authHeaderName,
             "The auth header name",
+            showLogo,
         );
     }
-    output = await detectAndReplacePlaceholders(output, "The output file");
+    output = await detectAndReplacePlaceholders(
+        "GraphQL",
+        output,
+        "The output file",
+        showLogo,
+    );
 
     let schema: GraphQLSchema | undefined;
     try {
@@ -103,7 +69,7 @@ export const generate = async (
         console.error("Failed to introspect schema", e);
         return;
     }
-    const generator = new Generator(Flavors[flavor]);
+    const generator = new GraphQLGenerator.Generator(Flavors.GraphQL[flavor]);
     const code = await generator.generate({
         schema,
         options: {},
