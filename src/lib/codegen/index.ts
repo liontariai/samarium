@@ -1,7 +1,14 @@
-import { GeneratorSelectionTypeFlavorDefault } from "./graphql/flavors/default/generator-flavor";
+import * as GraphQL from "./graphql/flavors/default/generator-flavor";
+import * as OpenAPI from "./openapi/flavors/default/generator-flavor";
 
-export { Generator } from "./graphql/builder/generator";
+export * as GraphQLGenerator from "./graphql/builder/generator";
+export * as OpenAPIGenerator from "./openapi/builder/generator";
 
 export const Flavors = {
-    default: GeneratorSelectionTypeFlavorDefault,
+    GraphQL: {
+        default: GraphQL.GeneratorSelectionTypeFlavorDefault,
+    },
+    OpenAPI: {
+        default: OpenAPI.GeneratorSelectionTypeFlavorDefault,
+    },
 } as const;
