@@ -1,15 +1,15 @@
 import { fileURLToPath } from "url";
 import { readFileSync } from "fs";
 import { join, dirname } from "path";
-import { GeneratorSelectionTypeFlavor } from "../builder/base";
-import type { Collector } from "../builder/collector";
+import { GeneratorSelectionTypeFlavor } from "../../builder/base";
+import type { Collector } from "../../builder/collector";
 import {
     type CodegenOptions,
     type TypeMeta,
     type FieldMeta,
     type OperationMeta,
     type ParameterMeta,
-} from "../builder/meta";
+} from "../../builder/meta";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
