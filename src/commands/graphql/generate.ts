@@ -1,5 +1,5 @@
 import type { GraphQLSchema } from "graphql";
-import { GraphQLGenerator, Flavors } from "../lib/codegen";
+import { GraphQLGenerator, Flavors } from "@/lib/codegen";
 import { introspectGraphQLSchema } from "./util/introspect";
 
 import fs from "fs";

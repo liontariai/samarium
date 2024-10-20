@@ -1,9 +1,7 @@
 import packageJson from "../package.json";
 
 import { Command } from "commander";
-import { introspect } from "./commands/introspect";
-import { generate } from "./commands/generate";
-import { ui } from "./commands/ui";
+import * as GraphQLCommands from "./commands/graphql";
 
 function collect(value: string, previous: string[]) {
     return previous.concat([value]);
@@ -20,7 +18,7 @@ program
     .command("ui", { isDefault: true })
     .description("Start the assistant UI")
     .action(async () => {
-        await ui().catch((error) => {});
+        await GraphQLCommands.ui().catch((error) => {});
     });
 
 // Example command
@@ -39,7 +37,7 @@ program
             output: string,
             { header: headers }: { header?: string[] } = {},
         ) => {
-            await introspect({ url, headers }, output);
+            await GraphQLCommands.introspect({ url, headers }, output);
         },
     );
 
@@ -75,10 +73,15 @@ program
                 authHeaderName?: string;
             } = {},
         ) => {
-            await generate({ url, headers }, "default", output, {
-                endpoint,
-                authHeaderName,
-            });
+            await GraphQLCommands.generate(
+                { url, headers },
+                "default",
+                output,
+                {
+                    endpoint,
+                    authHeaderName,
+                },
+            );
         },
     );
 
