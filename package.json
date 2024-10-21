@@ -24,38 +24,18 @@
     "publishConfig": {
         "access": "public"
     },
-    "files": [
-        "bin/**/*",
-        "README.md",
-        "package.json"
-    ],
     "scripts": {
         "prettier": "prettier --write .",
-        "prepublishOnly": "./prepublish.sh",
-        "test": "bun test",
-        "release": "cross-env RELEASE_MODE=true np"
+        "test": "bun test"
+    },
+    "dependencies": {
+        "@inquirer/prompts": "^5.0.5"
     },
     "prettier": {
         "tabWidth": 4
     },
-    "devDependencies": {
-        "bun-types": "^1.1.29",
-        "cross-env": "^7.0.3",
-        "np": "^10.0.5"
-    },
-    "peerDependencies": {
-        "typescript": "^5.0.0"
-    },
-    "dependencies": {
-        "@inquirer/prompts": "^5.0.5",
-        "commander": "^11.1.0",
-        "detect-indent": "^7.0.1",
-        "graphql": "^16.8.1",
-        "graphql-request": "^6.1.0",
-        "openapi-typescript": "^7.4.1",
-        "prettier": "^3.2.5"
-    },
     "workspaces": [
-        "examples/frontend/react/remix-todo-app"
+        "examples/frontend/react/remix-todo-app",
+        "packages/**/*"
     ]
 }

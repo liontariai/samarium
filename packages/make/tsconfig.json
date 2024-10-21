@@ -5,9 +5,9 @@
         "target": "esnext",
         "moduleResolution": "bundler",
         "moduleDetection": "force",
-        "outDir": "bin",
+        "outDir": "dist/types",
         "allowImportingTsExtensions": true,
-        "noEmit": true,
+        "emitDeclarationOnly": true,
         "composite": true,
         "strict": true,
         "downlevelIteration": true,
@@ -25,5 +25,5 @@
         },
         "verbatimModuleSyntax": true
     },
-    "include": ["examples/**/*", "dev-examples/**/*"]
+    "include": ["src/**/*", "src/**/*.json", "tests/**/*", "package.json"]
 }
