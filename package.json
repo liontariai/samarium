@@ -1,7 +1,7 @@
 {
     "name": "@liontari.ai/samarium",
     "version": "0.13.1",
-    "main": "bin/index.js",
+    "main": "bin/samarium",
     "type": "module",
     "repository": {
         "type": "git",
@@ -39,18 +39,9 @@
         "tabWidth": 4
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "^25.0.7",
-        "@rollup/plugin-json": "^6.1.0",
-        "@rollup/plugin-node-resolve": "^15.2.3",
-        "@rollup/plugin-terser": "^0.4.4",
-        "@rollup/plugin-typescript": "^11.1.6",
         "bun-types": "^1.1.29",
         "cross-env": "^7.0.3",
-        "np": "^10.0.5",
-        "rollup": "^4.17.2",
-        "rollup-plugin-brfs": "^1.0.1",
-        "rollup-plugin-exclude-dependencies-from-bundle": "^1.1.23",
-        "tslib": "^2.6.2"
+        "np": "^10.0.5"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
