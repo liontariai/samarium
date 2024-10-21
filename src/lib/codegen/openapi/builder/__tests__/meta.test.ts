@@ -17,19 +17,19 @@ describe.only("gatherMetaForType", () => {
         const collector = new Collector();
         const schemaMeta = gatherMeta(schema, {}, collector);
 
-        fs.writeFileSync(
-            "./schemaMeta.ts",
-            await prettier.format(
-                `export default ${inspect(schemaMeta, { depth: 10 })
-                    .replace(/\.\.\. .* more items/gm, "")
-                    .replace(/<ref .*>/g, "")
-                    .replace(/\[Circular .*\]/g, '"Circular"')
-                    .replace(/\n/g, "")}`,
-                {
-                    parser: "typescript",
-                    tabWidth: 4,
-                },
-            ),
-        );
+        // fs.writeFileSync(
+        //     "./schemaMeta.ts",
+        //     await prettier.format(
+        //         `export default ${inspect(schemaMeta, { depth: 10 })
+        //             .replace(/\.\.\. .* more items/gm, "")
+        //             .replace(/<ref .*>/g, "")
+        //             .replace(/\[Circular .*\]/g, '"Circular"')
+        //             .replace(/\n/g, "")}`,
+        //         {
+        //             parser: "typescript",
+        //             tabWidth: 4,
+        //         },
+        //     ),
+        // );
     });
 });

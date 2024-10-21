@@ -21,6 +21,6 @@ describe.only("generate", () => {
             },
         });
 
-        fs.writeFileSync("./code.ts", code);
+        // fs.writeFileSync("./code.ts", code);
     });
 });

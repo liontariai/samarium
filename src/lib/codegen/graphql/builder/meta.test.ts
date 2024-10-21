@@ -8,7 +8,7 @@ import {
     GraphQLString,
 } from "graphql";
 import { Collector } from "./collector";
-import { introspectGraphQLSchema } from "@/commands/util/introspect";
+import { introspectGraphQLSchema } from "@/commands/graphql/util/introspect";
 
 describe("gatherMetaForType", () => {
     it("should gather meta for a whole schema", async () => {
