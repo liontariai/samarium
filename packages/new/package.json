@@ -1,0 +1,56 @@
+{
+    "name": "@samarium.sdk/new",
+    "version": "0.13.1",
+    "main": "bin/samarium",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/liontariai/samarium",
+        "directory": "packages/new"
+    },
+    "keywords": [
+        "graphql",
+        "typescript",
+        "compiler",
+        "api",
+        "sdk",
+        "graphql-sdk",
+        "graphql-codegen"
+    ],
+    "homepage": "https://github.com/liontariai/samarium",
+    "bin": {
+        "samarium": "bin/samarium"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "bin/**/*",
+        "README.md",
+        "package.json"
+    ],
+    "scripts": {
+        "prettier": "prettier --write .",
+        "bundle": "bun bundle.js && chmod +x ./bin/index.js",
+        "test": "bun test",
+        "release": "cross-env RELEASE_MODE=true np"
+    },
+    "prettier": {
+        "tabWidth": 4
+    },
+    "devDependencies": {
+        "bun-types": "^1.1.29",
+        "cross-env": "^7.0.3",
+        "np": "^10.0.5"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@samarium.sdk/make": "workspace:*",
+        "@inquirer/prompts": "^5.0.5",
+        "commander": "^11.1.0",
+        "detect-indent": "^7.0.1",
+        "prettier": "^3.2.5"
+    }
+}
