@@ -1,6 +1,3 @@
-import { fileURLToPath } from "url";
-import { readFileSync } from "fs";
-import { join, dirname } from "path";
 import { GeneratorSelectionTypeFlavor } from "../../builder/base";
 import type { Collector } from "../../builder/collector";
 import {
@@ -10,8 +7,9 @@ import {
 } from "../../builder/meta";
 import { DirectiveLocation } from "graphql";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// @ts-ignore
+import wrapperCode from "./wrapper.ts" with { type: "text" };
+
 /**
  * Default selection type flavor implementation.
  * A selection type flavor is a class that generates the code for a selection type.
@@ -105,9 +103,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     public ScalarTypeMap: Map<string, string> =
         GeneratorSelectionTypeFlavorDefault.ScalarTypeMap;
 
-    public static readonly FieldValueWrapperType = readFileSync(
-        join(import.meta.dir ?? __dirname, "wrapper.ts"),
-    ).toString();
+    public static readonly FieldValueWrapperType = wrapperCode;
 
     public static EnumTypesMapped = (collector: Collector) => {
         return `export interface EnumTypesMapped {
