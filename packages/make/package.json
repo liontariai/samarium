@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.13.1",
+    "version": "0.14.0",
     "exports": "./src/index.ts",
     "type": "module",
     "repository": {
@@ -14,6 +14,10 @@
         "compiler",
         "api",
         "sdk",
+        "openapi",
+        "oas3",
+        "oas3.1",
+        "swagger",
         "graphql-sdk",
         "graphql-codegen"
     ],

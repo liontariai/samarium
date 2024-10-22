@@ -2,14 +2,16 @@
 <img src="https://github.com/liontariai/samarium/raw/main/docs/images/hero-image.jpg" alt="Samarium Hero Image" style="width: 830px;"/>
 <br />
 <div align="center"><strong>Samarium</strong></div>
-<div align="center"><strong>The API to Typescript Compiler</strong></div>
+<div align="center"><strong>The universal API to Typescript Compiler</strong></div>
 <br />
-<div align="center">Learning & writing GraphQL, setting up the IDE and managing types is annoying.
+<div align="center">
+Imagine having all APIs at your disposal, as if it was your local code.
 <br/>
 <br/>
-Not needed anymore. Compile the API to Typescript. 
-<br/>Continue writing your code.
-Done in 10s.</div>
+Compile any API to Typescript and then use it as fully typed SDK.
+<br/>
+It's done in 10s and you'll never bother with GraphQL or clumsy OpenAPI fetch wrappers again.
+</div>
 <br />
 <div align="center">
 <a href="https://liontari.ai/#playground">Online Playground</a> 
@@ -27,18 +29,26 @@ Done in 10s.</div>
 <hr/>
 </div>
 
-<div align="left">
+<div align="justify">
 <br/>
-GraphQL is great, but it comes with a steep learning curve and a lot of boilerplate.
-
-Nothing would be more convenient than just importing the API as Typescript SDK. Now you can.
+APIs expose interfaces, so developers don't have to worry about the implementation details.
+<br/>
+That's great, but you still have to handle the details of the communication. Be it GraphQL or REST.
+<br/>
+<br/>
+We are so used to our Typescript & Copilot autocomplete heaven,
+<br/>
+that it would be absolute dreamland if we could just use all APIs in the same way, like local code.
+<br/>
+<br/>
+Well, welcome to dreamland. Introducing: <strong>The universal API to Typescript compiler, Samarium</strong>.
 
 ## Quickstart
 
 #### 1. Compile the API to Typescript
 
 ```bash
-npx @liontari.ai/samarium # this will start the assistant ui
+npx @samarium.sdk/new # this will start the assistant ui
 ```
 
 #### 2. Import the API as Typescript SDK
@@ -84,37 +94,6 @@ The CLI will prompt you for the authentication if needed and allows for more cus
 <a href="https://liontari.ai/#playground">
 <img src="https://github.com/liontariai/samarium/raw/main/docs/images/playground.png" alt="Samarium Online Playground" style="width: 830px;"/>
 </a>
-
-## Features
-
-Implemented GraphQL features:
-
-| Feature             | Supported | Description                                                                                                                                                                                                                                 |
-| ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Queries             | ✅        | Queries are fully typed functions.                                                                                                                                                                                                          |
-| Mutations           | ✅        | All mutations are fully typed functions just like queries.                                                                                                                                                                                  |
-| Variables           | ✅        | All arguments used in queries and mutations are collected and hoisted to the top level as variables.                                                                                                                                        |
-| Aliases             | ✅        | Aliases are supported for all fields.                                                                                                                                                                                                       |
-| Multiple operations | ✅        | Multiple operations in a single query are supported. You can even mix queries and mutations. Just make sure to name them. They are sent in the order they are defined.                                                                      |
-| ... on Type         | ✅        | Inline fragments on Union types. (see https://github.com/liontariai/samarium/pull/5 for an example)                                                                                                                                         |
-| Fragments           | ✅        | Fragments are supported. As implicit and explicit fragments, also parameterized fragments (see https://github.com/graphql/graphql-spec/issues/204) are supported. ( see https://github.com/liontariai/samarium/pull/6 for more information) |
-| Directives          | ✅        | (Client) Directives are supported. Use the `$directives` helper functions and wrap your selected field.                                                                                                                                     |
-
-Not yet implemented GraphQL features:
-
-| Feature       | Supported | Description                                                                                                                                                                                                                                                                |
-| ------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Subscriptions | ❌        | Subscriptions are not supported right now, because no websocket client has been chosen yet. The query text itself could be generated, but executing it would require a websocket client and a nice way to execute it. If you are interested in this, please open an issue. |
-
-### Utility features:
-
-| Feature                  | Supported | Description                                                                                                                                                                                                                        |
-| ------------------------ | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication           | ✅        | Provide a way to authenticate the requests.                                                                                                                                                                                        |
-| Custom scalar types      | ✅        | Support for custom scalar types, like Date, so that these scalars are deserialized upon using them in the code. (see https://github.com/liontariai/samarium/pull/3 for more info)                                                  |
-| Lazy Queries             | ✅        | Queries can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10   |
-| Lazy Mutations           | ✅        | Mutations can be lazified into async functions, so that they are only executed when awaited. Just use the `.$lazy` property. Also, you can pass arguments to the lazy function. See https://github.com/liontariai/samarium/pull/10 |
-| Shortcuts for selections | ✅        | Provide helper functions to select all or specific fields of a type without writing them all out in the selection.                                                                                                                 |
 
 ## Support the project
 
