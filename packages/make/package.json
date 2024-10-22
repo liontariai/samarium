@@ -1,0 +1,65 @@
+{
+    "name": "@samarium.sdk/make",
+    "version": "0.15.0-beta.1",
+    "exports": "./src/index.ts",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/liontariai/samarium",
+        "directory": "packages/make"
+    },
+    "keywords": [
+        "graphql",
+        "typescript",
+        "compiler",
+        "api",
+        "sdk",
+        "openapi",
+        "oas3",
+        "oas3.1",
+        "swagger",
+        "graphql-sdk",
+        "graphql-codegen"
+    ],
+    "homepage": "https://github.com/liontariai/samarium",
+    "publishConfig": {
+        "access": "public",
+        "main": "dist/cjs/index.js",
+        "module": "dist/esm/index.js",
+        "types": "src/index.ts",
+        "exports": {
+            ".": {
+                "import": "./dist/esm/index.js",
+                "require": "./dist/cjs/index.js",
+                "types": "./dist/types/src/index.d.ts"
+            },
+            "package.json": "./package.json"
+        }
+    },
+    "files": [
+        "dist/**/*",
+        "!dist/**/__tests__/*",
+        "README.md",
+        "package.json"
+    ],
+    "scripts": {
+        "prettier": "prettier --write .",
+        "build": "bun bundle.js && tsc",
+        "prepublishOnly": "bun run build",
+        "test": "bun test"
+    },
+    "prettier": {
+        "tabWidth": 4
+    },
+    "devDependencies": {
+        "bun-types": "^1.1.31"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "graphql": "^16.9.0",
+        "graphql-request": "^7.1.0",
+        "openapi-typescript": "^7.4.1"
+    }
+}

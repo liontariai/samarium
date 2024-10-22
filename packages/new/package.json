@@ -1,12 +1,12 @@
 {
-    "name": "@liontari.ai/samarium",
-    "version": "0.14.0",
+    "name": "@samarium.sdk/new",
+    "version": "0.15.0-beta.1",
     "main": "bin/samarium",
     "type": "module",
     "repository": {
         "type": "git",
         "url": "https://github.com/liontariai/samarium",
-        "directory": "."
+        "directory": "packages/new"
     },
     "keywords": [
         "graphql",
@@ -28,18 +28,31 @@
     "publishConfig": {
         "access": "public"
     },
+    "files": [
+        "bin/**/*",
+        "README.md",
+        "package.json"
+    ],
     "scripts": {
         "prettier": "prettier --write .",
+        "bundle": "bun bundle.js",
+        "prepublishOnly": "bun run bundle",
         "test": "bun test"
-    },
-    "dependencies": {
-        "@inquirer/prompts": "^5.0.5"
     },
     "prettier": {
         "tabWidth": 4
     },
-    "workspaces": [
-        "examples/frontend/react/remix-todo-app",
-        "packages/**/*"
-    ]
+    "devDependencies": {
+        "bun-types": "^1.1.29",
+        "@samarium.sdk/make": "workspace:*"
+    },
+    "peerDependencies": {
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@inquirer/prompts": "^5.0.5",
+        "commander": "^11.1.0",
+        "detect-indent": "^7.0.1",
+        "prettier": "^3.2.5"
+    }
 }
