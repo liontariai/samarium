@@ -1,6 +1,6 @@
 {
     "name": "@liontari.ai/samarium",
-    "version": "0.14.0",
+    "version": "0.15.0",
     "main": "bin/samarium",
     "type": "module",
     "repository": {
@@ -27,13 +27,6 @@
     },
     "publishConfig": {
         "access": "public"
-    },
-    "scripts": {
-        "prettier": "prettier --write .",
-        "test": "bun test"
-    },
-    "dependencies": {
-        "@inquirer/prompts": "^5.0.5"
     },
     "prettier": {
         "tabWidth": 4
