@@ -35,7 +35,7 @@
     ],
     "scripts": {
         "prettier": "prettier --write .",
-        "bundle": "bun bundle.js && chmod +x ./bin/index.js",
+        "bundle": "bun bundle.js",
         "prepublishOnly": "bun run bundle",
         "test": "bun test",
         "release": "cross-env RELEASE_MODE=true np"
