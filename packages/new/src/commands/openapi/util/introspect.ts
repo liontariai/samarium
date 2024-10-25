@@ -1,4 +1,5 @@
 import { type OpenAPI3 } from "openapi-typescript";
+import yaml from "yaml";
 
 /**
  * Introspects an OpenAPI schema from a given endpoint and returns an OpenAPI3 object.
@@ -15,6 +16,12 @@ export async function introspectOpenAPISchema(
             (header) => header.split("=") as [string, string],
         ),
     });
-    const schema = await response.json();
-    return schema;
+    const body = await response.text();
+    try {
+        const schema = JSON.parse(body) as OpenAPI3;
+        return schema;
+    } catch (e) {
+        const schema = yaml.parse(body) as OpenAPI3;
+        return schema;
+    }
 }
