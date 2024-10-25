@@ -139,6 +139,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             t,
                         ] as const,
                 )
+                .filter(
+                    ([k, _], i, arr) => arr.map(([k2]) => k2).indexOf(k) === i,
+                )
                 .map(
                     ([k, t]) =>
                         `"${k}": ${k}${t.isList && !t.isInput ? "Array" : ""};`,
@@ -527,8 +530,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         //     conflictName = [enumTypeName, i - 1].join("_");
         // }
 
-        const conformEnumName = (str: string) =>
-            str.replace(/[^a-zA-Z0-9_]/g, "_").replace(/^[0-9]/, "_$&");
+        const conformEnumName = (str: string) => {
+            if (!isNaN(Number(str))) {
+                const n = Number(str);
+                if (n < 0) {
+                    return `minus_${str.slice(1)}`;
+                }
+                return `_${str}`;
+            }
+
+            return str.replace(/[^a-zA-Z0-9_]/g, "_").replace(/^[0-9]/, "_$&");
+        };
 
         const enumTypeBody =
             this.typeMeta.enumValues.length === 0

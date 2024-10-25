@@ -42,7 +42,7 @@ const camelCaps = (arr: string[]) => {
     for (let str of arr.filter(Boolean)) {
         result += str.charAt(0).toUpperCase() + str.slice(1) + "$";
     }
-    return result.slice(0, -1);
+    return result.slice(0, -1).replaceAll("-", "_");
 };
 
 /**
@@ -148,7 +148,7 @@ const makeIdentifyingTypeName = (
     const isInput = override?.isInput ?? meta.isInput;
     const isNonNull = override?.isNonNull ?? meta.isNonNull;
     const identifyingTypeName = `${meta.name.slice(0, isInput && isNonNull ? -1 : undefined)}${isInput ? `${isNonNull ? "Input!" : "Input"}` : ""}`;
-    return identifyingTypeName;
+    return identifyingTypeName.replaceAll("-", "_");
 };
 
 const turnObjectIntoInput = (
@@ -842,7 +842,7 @@ export const gatherMetaForPathOperation = (
     }
 
     const operationName =
-        operation.operationId ??
+        operation.operationId?.replaceAll("-", "_") ??
         // TODO: the following fallback is bad, needs more logic
         camelCaps([
             methodToVerbs[method],
