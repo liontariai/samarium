@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/new",
-    "version": "0.15.1",
+    "version": "0.15.2",
     "main": "bin/samarium",
     "type": "module",
     "repository": {
