@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.15.0-beta.1",
+    "version": "0.15.1",
     "exports": "./src/index.ts",
     "type": "module",
     "repository": {
