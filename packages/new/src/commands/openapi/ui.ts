@@ -20,7 +20,7 @@ export const ui = async () => {
     printLogo("OpenAPI");
 
     const url = await requestUrlFromUser(
-        "Enter the url to the OpenAPI schema json file:",
+        "Enter the url to the OpenAPI schema json or yaml file:",
     );
 
     let schema: OpenAPI3 | undefined;
