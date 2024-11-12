@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.15.2",
+    "version": "0.15.3",
     "exports": {
         ".": {
             "import": "./dist/esm/index.js",
@@ -61,10 +61,10 @@
         "bun-types": "^1.1.31"
     },
     "peerDependencies": {
+        "graphql": "^16.9.0",
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "graphql": "^16.9.0",
         "graphql-request": "^7.1.0",
         "openapi-typescript": "^7.4.1"
     }
