@@ -1,7 +1,13 @@
 {
     "name": "@samarium.sdk/make",
     "version": "0.15.1",
-    "exports": "./src/index.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/esm/index.js",
+            "require": "./dist/cjs/index.js",
+            "types": "./dist/types/src/index.d.ts"
+        }
+    },
     "type": "module",
     "repository": {
         "type": "git",
