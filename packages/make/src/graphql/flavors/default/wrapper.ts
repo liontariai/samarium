@@ -521,7 +521,7 @@ export class SelectionWrapperImpl<
         ) => {
             const argToVarMap: Record<string, string> = {};
             let argsString = "(";
-            const argsStringParts = [];
+            const argsStringParts: string[] = [];
             for (const key of Object.keys(args)) {
                 let varName = key;
                 if (opVars[key] !== undefined) {
