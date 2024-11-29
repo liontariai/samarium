@@ -114,6 +114,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         .replaceAll("]", "")
                         .replaceAll("!", ""),
                 )
+                .filter((k, i, arr) => arr.indexOf(k) === i)
                 .map((k) => `"${k}": ${k},`)
                 .join("\n")}
         };`;
