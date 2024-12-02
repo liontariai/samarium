@@ -1,0 +1,2970 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Reelgood.ExternalApi",
+        "version": "1.0"
+    },
+    "paths": {
+        "/v1.0/external/url": {
+            "post": {
+                "tags": ["External"],
+                "summary": "Returns a url to a reelgood detail page for the supplied external ids, always returns a json object containing a \"url\"",
+                "requestBody": {
+                    "content": {
+                        "application/json-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TypedExternalContentIds"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TypedExternalContentIds"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TypedExternalContentIds"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TypedExternalContentIds"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/v1.0/content/movie/{id}": {
+            "get": {
+                "tags": ["Movies"],
+                "summary": "Get movie details",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The movie id.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "service",
+                        "in": "query",
+                        "description": "Specify services to restrict the availability services that are returned.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MovieResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MovieResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MovieResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/movie/{id}/mapping/{mappingType}": {
+            "get": {
+                "tags": ["Movies"],
+                "summary": "Returns the mapping id for a third party.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "movie id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "mappingType",
+                        "in": "path",
+                        "description": "Third party type. E.g. IMDB",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ExternalDataProvider"
+                        }
+                    }
+                ],
+                "responses": {
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/show/{id}": {
+            "get": {
+                "tags": ["Shows"],
+                "summary": "Get show details",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The show id.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ShowResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ShowResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ShowResult"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/show/{id}/mapping/{mappingType}": {
+            "get": {
+                "tags": ["Shows"],
+                "summary": "Returns the mapping id for a third party.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "show id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "mappingType",
+                        "in": "path",
+                        "description": "Third party type. E.g. IMDB",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ExternalDataProvider"
+                        }
+                    }
+                ],
+                "responses": {
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/show/{id}/season/{number}": {
+            "get": {
+                "tags": ["Shows"],
+                "summary": "Get season episodes.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The show id.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "number",
+                        "in": "path",
+                        "description": "The season number.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "service",
+                        "in": "query",
+                        "description": "Specify services to restrict the availability services that are returned.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EpisodeResult"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EpisodeResult"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EpisodeResult"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/episode/{id}/mapping/{mappingType}": {
+            "get": {
+                "tags": ["Shows"],
+                "summary": "Returns the mapping id for a third party.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "episode id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "mappingType",
+                        "in": "path",
+                        "description": "Third party type. E.g. IMDB",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ExternalDataProvider"
+                        }
+                    }
+                ],
+                "responses": {
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/lookup/movie": {
+            "get": {
+                "tags": ["Content"],
+                "summary": "Finds a movie by external id.",
+                "description": "Supported id types: slug, imdb.",
+                "parameters": [
+                    {
+                        "name": "id_type",
+                        "in": "query",
+                        "description": "the type of id being searched on.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "the value of the id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentKey"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentKey"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentKey"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/content/lookup/show": {
+            "get": {
+                "tags": ["Content"],
+                "summary": "Finds a show by external id.",
+                "description": "Supported id types: slug, imdb.",
+                "parameters": [
+                    {
+                        "name": "id_type",
+                        "in": "query",
+                        "description": "the type of id being searched on.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "the value of the id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentKey"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentKey"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentKey"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/content/search": {
+            "get": {
+                "tags": ["Content"],
+                "summary": "Retrieve search results for movies and shows based on title matching.",
+                "description": "Performs a typo-tolerant fuzzy search by title, with ordering weighted by popularity.\r\nIf <em>all_services</em> is <em>true</em>, no service restriction will be applied, Otherwise filters via calling applications' configured services.\r\nAdditional service filtering via <em>service</em> query string params can further restrict content.\r\nA maximum of 75 results will be returned.",
+                "parameters": [
+                    {
+                        "name": "service",
+                        "in": "query",
+                        "description": "Service Group Identifiers to filter by",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "description": "Region id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "in": "query",
+                        "description": "The term to search for.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "all_services",
+                        "in": "query",
+                        "description": "When true, query is not bound by application's available service groups.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "content_type",
+                        "in": "query",
+                        "description": "Filter by content_type",
+                        "schema": {
+                            "$ref": "#/components/schemas/ContentKind"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContentPartialResult"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContentPartialResult"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContentPartialResult"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/browse/{contentType}": {
+            "get": {
+                "tags": ["Content"],
+                "summary": "Retrieve browse pages of: movies, or shows, or both.",
+                "description": "Returns content filtered by type.\r\nIf <em>all_services</em> is <em>true</em>, no service restriction will be applied, Otherwise filters via calling applications' configured services.\r\n            \r\nAdditional service filtering via <em>service</em> query string params can further restrict content.\r\n            \r\nDoes not allow fetching beyond the 500th item via <em>skip</em>/<em>take</em>.\r\n            \r\nOrdering is controlled by order_by parameter. Allowed values are <em>popular</em> and <em>trending</em>.",
+                "parameters": [
+                    {
+                        "name": "contentType",
+                        "in": "path",
+                        "description": "The content type.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/ContentKind"
+                        }
+                    },
+                    {
+                        "name": "skip",
+                        "in": "query",
+                        "description": "The number of items to skip.",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "take",
+                        "in": "query",
+                        "description": "The number of items to take.",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "description": "Indicates how browsing will be ordered",
+                        "schema": {
+                            "$ref": "#/components/schemas/OrderType"
+                        }
+                    },
+                    {
+                        "name": "all_services",
+                        "in": "query",
+                        "description": "When true, query is not bound by application's available service groups.",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "service",
+                        "in": "query",
+                        "description": "Service Group Identifiers to filter by.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "genre",
+                        "in": "query",
+                        "description": "The genre identifiers to filter by.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "tag",
+                        "in": "query",
+                        "description": "The tag identifiers to filter by",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "genre_match",
+                        "in": "query",
+                        "description": "Controls if all the genres provided must exist on the content or if any of them is enough.\r\n(Default: `PermitAny`)",
+                        "schema": {
+                            "$ref": "#/components/schemas/FilterMatchStrategy"
+                        }
+                    },
+                    {
+                        "name": "tag_match",
+                        "in": "query",
+                        "description": "Controls if all the tags provided must exist on the content or if any of them is enough.\r\n(Default: `PermitAny`)",
+                        "schema": {
+                            "$ref": "#/components/schemas/FilterMatchStrategy"
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContentPartialResult"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContentPartialResult"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ContentPartialResult"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/content/promotional-streaming-planner": {
+            "get": {
+                "tags": ["Content"],
+                "summary": "Returns the content that is changing by specifying the desired\r\navailability kind to return.",
+                "parameters": [
+                    {
+                        "name": "services",
+                        "in": "query",
+                        "description": "Service Group Identifiers to filter by.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentAvailabilityChangesResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentAvailabilityChangesResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContentAvailabilityChangesResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/content/promotional-streaming-planner/leaving-soon": {
+            "get": {
+                "tags": ["Content"],
+                "summary": "Returns the content that is about the leave the services.",
+                "parameters": [
+                    {
+                        "name": "services",
+                        "in": "query",
+                        "description": "Service Group Identifiers to filter by.",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer",
+                                "format": "int32"
+                            }
+                        }
+                    },
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ChangingContentResult"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ChangingContentResult"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ChangingContentResult"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/deeplink/tv/services/{serviceId}/platforms/{platformId}/movie/{movieId}": {
+            "get": {
+                "tags": ["Deeplink"],
+                "summary": "Gets the intent and/or deeplink for the requested movie",
+                "description": "Gets the TV deeplink and/or the user intent for the requested movie on the specified service, TV platform, and region.",
+                "parameters": [
+                    {
+                        "name": "serviceId",
+                        "in": "path",
+                        "description": "The service id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "platformId",
+                        "in": "path",
+                        "description": "The platform id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "movieId",
+                        "in": "path",
+                        "description": "The movie id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "region_id",
+                        "in": "query",
+                        "description": "OPTIONAL: The region id. Supported values: <em>us</em>",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeeplinkResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeeplinkResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeeplinkResult"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/deeplink/tv/services/{serviceId}/platforms/{platformId}/episode/{episodeId}": {
+            "get": {
+                "tags": ["Deeplink"],
+                "summary": "Gets the intent and/or deeplink for the requested episode",
+                "description": "Gets the TV deeplink and/or the user intent for the requested episode on the specified service, TV platform, and region.",
+                "parameters": [
+                    {
+                        "name": "serviceId",
+                        "in": "path",
+                        "description": "The service id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "platformId",
+                        "in": "path",
+                        "description": "The platform id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    },
+                    {
+                        "name": "episodeId",
+                        "in": "path",
+                        "description": "The episode id",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "region_id",
+                        "in": "query",
+                        "description": "OPTIONAL: The region id. Supported values: <em>us</em>",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeeplinkResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeeplinkResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DeeplinkResult"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/meta/services": {
+            "get": {
+                "tags": ["Meta"],
+                "summary": "Returns the list of services that the application has access to.",
+                "parameters": [
+                    {
+                        "name": "region",
+                        "in": "query",
+                        "description": "",
+                        "schema": {
+                            "type": "string",
+                            "default": "us"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServiceGroupResult"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServiceGroupResult"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServiceGroupResult"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/meta/genres": {
+            "get": {
+                "tags": ["Meta"],
+                "summary": "Returns the genre mappings.",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Genre"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Genre"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Genre"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/meta/tags": {
+            "get": {
+                "tags": ["Meta"],
+                "summary": "Returns the tags mappings.",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Tag"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Tag"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Tag"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/meta/deeplinks/tv": {
+            "get": {
+                "tags": ["Meta"],
+                "summary": "Returns the list of service-TV platform combinations that the application has access to.",
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServicesPlatformResult"
+                                    }
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServicesPlatformResult"
+                                    }
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ServicesPlatformResult"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/usage": {
+            "get": {
+                "tags": ["Usage"],
+                "summary": "Fetch usage information for an application.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "description": "Offset from the current billing period, i.e. Last month: 1.",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsageInfo"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsageInfo"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UsageInfo"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1.0/widget/lookup/movie": {
+            "get": {
+                "tags": ["Widget"],
+                "summary": "Finds a movie by external id.",
+                "description": "Supported id types: slug, imdb.",
+                "parameters": [
+                    {
+                        "name": "id_type",
+                        "in": "query",
+                        "description": "the type of id being searched on.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "the value of the id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetMovieResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetMovieResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetMovieResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/widget/lookup/show": {
+            "get": {
+                "tags": ["Widget"],
+                "summary": "Finds a show by external id.",
+                "description": "Supported id types: slug, imdb, tmdb, tvdb, trakt.",
+                "parameters": [
+                    {
+                        "name": "id_type",
+                        "in": "query",
+                        "description": "the type of id being searched on.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "description": "the value of the id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetShowResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetShowResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetShowResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/widget/movie/{id}": {
+            "get": {
+                "tags": ["Widget"],
+                "summary": "Returns movie data for on-page and \"popup\" usage.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The movie id.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetMovieResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetMovieResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetMovieResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/widget/show/{id}": {
+            "get": {
+                "tags": ["Widget"],
+                "summary": "Returns show data for on-page usage.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The show id.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetShowResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetShowResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WidgetShowResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/widget/show/{id}/popup": {
+            "get": {
+                "tags": ["Widget"],
+                "summary": "Returns show data for \"popup\" usage.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The show id.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PopupShowResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PopupShowResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PopupShowResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1.0/widget/show/{showId}/popup/season/{seasonId}": {
+            "get": {
+                "tags": ["Widget"],
+                "summary": "Returns season-level data for \"popup\" usage.",
+                "parameters": [
+                    {
+                        "name": "showId",
+                        "in": "path",
+                        "description": "The id of the show.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "seasonId",
+                        "in": "path",
+                        "description": "The id of the season.",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PopupSeasonResult"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PopupSeasonResult"
+                                }
+                            },
+                            "text/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PopupSeasonResult"
+                                }
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AvailabilityResult": {
+                "type": "object",
+                "properties": {
+                    "serviceId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "serviceGroupId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "links": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "nullable": true
+                    },
+                    "purchaseCostHd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "purchaseCostSd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rentalCostHd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rentalCostSd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "accessType": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ChangingContentResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "contentType": {
+                        "$ref": "#/components/schemas/ContentKind"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "releasedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "comingOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "leavingOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "serviceGroupChanging": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ContentAvailabilityChangesResult": {
+                "type": "object",
+                "properties": {
+                    "coming": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChangingContentResult"
+                        },
+                        "nullable": true
+                    },
+                    "leaving": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChangingContentResult"
+                        },
+                        "nullable": true
+                    },
+                    "new": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChangingContentResult"
+                        },
+                        "nullable": true
+                    },
+                    "left": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChangingContentResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ContentKey": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/MediaKind"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ContentKind": {
+                "enum": ["Both", "Show", "Movie"],
+                "type": "string",
+                "format": "",
+                "x-enumNames": ["Both", "Show", "Movie"],
+                "x-enum-varnames": ["Both", "Show", "Movie"]
+            },
+            "ContentPartialResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "contentType": {
+                        "$ref": "#/components/schemas/ContentKind"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "releasedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "posterUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "serviceGroups": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "DateCalls": {
+                "type": "object",
+                "properties": {
+                    "dayOfBillingPeriod": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "full-date",
+                        "example": "2019-12-10"
+                    },
+                    "calls": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "DeeplinkResult": {
+                "type": "object",
+                "properties": {
+                    "deeplink": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "intent": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/JToken"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "DevicePlatform": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "supportsDeeplinks": {
+                        "type": "boolean"
+                    },
+                    "supportsIntents": {
+                        "type": "boolean"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "DisplayTag": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "EpisodeResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "number": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "releasedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "overview": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "screenshotUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "availability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AvailabilityResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ErrorResult": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "message": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ExternalDataProvider": {
+                "enum": ["IMDB"],
+                "type": "string",
+                "format": "",
+                "x-enumNames": ["IMDB"],
+                "x-enum-varnames": ["IMDB"]
+            },
+            "FilterMatchStrategy": {
+                "enum": ["PermitAny", "RequireAll"],
+                "type": "string",
+                "description": "Determines how multiple item filters are combined.",
+                "format": "",
+                "x-enumNames": ["PermitAny", "RequireAll"],
+                "x-enum-varnames": ["PermitAny", "RequireAll"]
+            },
+            "Genre": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "concreteThreshold": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true,
+                        "deprecated": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "JToken": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/components/schemas/JToken"
+                }
+            },
+            "MediaKind": {
+                "enum": ["Show", "Movie"],
+                "type": "string",
+                "format": "",
+                "x-enumNames": ["Show", "Movie"],
+                "x-enum-varnames": ["Show", "Movie"]
+            },
+            "MovieResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "releasedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "overview": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "classification": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "posterUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "backdropUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "reelgoodPopularity": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "genres": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "nullable": true
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DisplayTag"
+                        },
+                        "nullable": true
+                    },
+                    "talent": {
+                        "$ref": "#/components/schemas/TalentResult"
+                    },
+                    "runtime": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "availability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AvailabilityResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "OrderType": {
+                "enum": ["Popular", "Trending"],
+                "type": "string",
+                "format": "",
+                "x-enumNames": ["Popular", "Trending"],
+                "x-enum-varnames": ["Popular", "Trending"]
+            },
+            "PersonResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "roleType": {
+                        "$ref": "#/components/schemas/RoleType"
+                    },
+                    "role": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "rank": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupAvailabilityCountUngroupedResult": {
+                "type": "object",
+                "properties": {
+                    "service": {
+                        "$ref": "#/components/schemas/ServiceResult"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupAvailabilityGroupedResult": {
+                "type": "object",
+                "properties": {
+                    "serviceGroup": {
+                        "$ref": "#/components/schemas/PopupServiceGroupResult"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupEpisodeResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ungroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WidgetAvailabilityResult"
+                        },
+                        "nullable": true
+                    },
+                    "groupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WidgetGroupedAvailabilityResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupSeasonIdentResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupSeasonResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "episodes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PopupEpisodeResult"
+                        },
+                        "nullable": true
+                    },
+                    "episodeGroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PopupAvailabilityGroupedResult"
+                        },
+                        "nullable": true
+                    },
+                    "episodeUngroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PopupAvailabilityCountUngroupedResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupServiceGroupResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "accessTypes": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "nullable": true
+                    },
+                    "logoSlug": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "PopupShowResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "year": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "seasonGroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PopupAvailabilityGroupedResult"
+                        },
+                        "nullable": true
+                    },
+                    "seasonUngroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PopupAvailabilityCountUngroupedResult"
+                        },
+                        "nullable": true
+                    },
+                    "seasons": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PopupSeasonIdentResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ProblemDetails": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "detail": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "instance": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": {}
+            },
+            "RoleType": {
+                "enum": [
+                    "Director",
+                    "Actor",
+                    "Producer",
+                    "ExecutiveProducer",
+                    "Writer",
+                    "Composer",
+                    "Creator"
+                ],
+                "type": "string",
+                "format": "",
+                "x-enumNames": [
+                    "Director",
+                    "Actor",
+                    "Producer",
+                    "ExecutiveProducer",
+                    "Writer",
+                    "Composer",
+                    "Creator"
+                ],
+                "x-enum-varnames": [
+                    "Director",
+                    "Actor",
+                    "Producer",
+                    "ExecutiveProducer",
+                    "Writer",
+                    "Composer",
+                    "Creator"
+                ]
+            },
+            "ServiceGroupResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "displayIndex": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "priorityIndex": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "logoSlug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "services": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ServiceResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "groupId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "accessType": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "logoSlug": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ServicesPlatformResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "enabledPlatforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DevicePlatform"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "ShowResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "releasedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "overview": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "classification": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "posterUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "backdropUrl": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "reelgoodPopularity": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "genres": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "nullable": true
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DisplayTag"
+                        },
+                        "nullable": true
+                    },
+                    "talent": {
+                        "$ref": "#/components/schemas/TalentResult"
+                    },
+                    "seasonNumbers": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "Tag": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "concreteThreshold": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true,
+                        "deprecated": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TalentResult": {
+                "type": "object",
+                "properties": {
+                    "cast": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PersonResult"
+                        },
+                        "nullable": true
+                    },
+                    "crew": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PersonResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "TypedExternalContentIds": {
+                "type": "object",
+                "properties": {
+                    "imdb": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "gracenoteTms": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "guidebox": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "tmdb": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "tvdb": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "trakt": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "type": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "UsageInfo": {
+                "type": "object",
+                "properties": {
+                    "applicationName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "from": {
+                        "type": "string",
+                        "format": "full-date",
+                        "example": "2019-12-10"
+                    },
+                    "to": {
+                        "type": "string",
+                        "format": "full-date",
+                        "example": "2019-12-10"
+                    },
+                    "finalized": {
+                        "type": "boolean"
+                    },
+                    "totalCalls": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "callsByDay": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DateCalls"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "WidgetAvailabilityResult": {
+                "type": "object",
+                "properties": {
+                    "serviceId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "serviceGroupId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "accessType": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "serviceDisplayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "serviceGroupDisplayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "purchaseCostHd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "purchaseCostSd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rentalCostHd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rentalCostSd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "serviceLogoSlug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "serviceGroupLogoSlug": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "WidgetGroupedAvailabilityResult": {
+                "type": "object",
+                "properties": {
+                    "serviceGroupId": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "accessTypes": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "nullable": true
+                    },
+                    "serviceGroupDisplayName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "purchaseCostHd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "purchaseCostSd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rentalCostHd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rentalCostSd": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "serviceGroupLogoSlug": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "WidgetMovieResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "year": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "ungroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WidgetAvailabilityResult"
+                        },
+                        "nullable": true
+                    },
+                    "groupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/WidgetGroupedAvailabilityResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            },
+            "WidgetShowResult": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "year": {
+                        "type": "integer",
+                        "format": "int32",
+                        "nullable": true
+                    },
+                    "groupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceGroupResult"
+                        },
+                        "nullable": true
+                    },
+                    "ungroupedAvailability": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ServiceResult"
+                        },
+                        "nullable": true
+                    }
+                },
+                "additionalProperties": false
+            }
+        },
+        "securitySchemes": {
+            "apikey": {
+                "type": "apiKey",
+                "name": "x-api-key",
+                "in": "header"
+            }
+        }
+    },
+    "security": [
+        {
+            "apikey": []
+        }
+    ]
+}
