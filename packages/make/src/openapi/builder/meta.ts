@@ -37,12 +37,15 @@ export {
     type OperationMethod,
 };
 
-const camelCaps = (arr: string[]) => {
+const camelCaps = (arr: string[], separator: string = "$") => {
     let result = "";
     for (let str of arr.filter(Boolean)) {
-        result += str.charAt(0).toUpperCase() + str.slice(1) + "$";
+        result += str.charAt(0).toUpperCase() + str.slice(1) + separator;
     }
-    return result.slice(0, -1).replaceAll("-", "_");
+    return result
+        .slice(0, result.length - separator.length)
+        .replaceAll("-", "_")
+        .replaceAll(".", "_");
 };
 
 /**
@@ -96,12 +99,12 @@ export const gatherMeta = (
             }
 
             const operation = gatherMetaForPathOperation(
-                    schema,
-                    key,
-                    method,
-                    methodValue,
-                    options,
-                    collector,
+                schema,
+                key,
+                method,
+                methodValue,
+                options,
+                collector,
             );
             if (!operation) {
                 continue;
@@ -858,17 +861,21 @@ export const gatherMetaForPathOperation = (
     const operationName =
         operation.operationId?.replaceAll("-", "_") ??
         // TODO: the following fallback is bad, needs more logic
-        camelCaps([
-            methodToVerbs[method],
-            ...path
-                .split("/")
-                // remove curly braces and use the param name like 'By{Param}'
-                .flatMap((p) =>
-                    ["By", p.replace(/{([^}]+)}/g, "$1")].filter(
-                        (s) => s.length > 0,
+        camelCaps(
+            [
+                methodToVerbs[method],
+                ...path
+                    .split("/")
+                    // remove curly braces and use the param name like 'By{Param}'
+                    .flatMap((p) =>
+                        [
+                            p.includes("{") ? "By" : "",
+                            p.replace(/{([^}]+)}/g, "$1"),
+                        ].filter((s) => s.length > 0),
                     ),
-                ),
-        ]);
+            ],
+            "",
+        );
 
     const meta: OperationMeta = {
         name: operationName,
