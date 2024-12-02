@@ -663,10 +663,20 @@ export const gatherMetaForType = (
             // will prevent it from being collected in the next step
             // or it will not reflect the final name anyways because we will add the
             // array brackets to the name
-            collector.removeType(identifyingTypeName);
-
+            // however, there are schemas that have direct self-referencing array-types,
+            // so we will need to check if $ref in items is the same as the name of the current type
+            // and if so, we will not remove the type from the collector
             const isRefObject = ("$ref" in
                 (type as ArraySubtype).items!) as unknown as ReferenceObject;
+
+            if (
+                !isRefObject ||
+                ((type as ArraySubtype).items as ReferenceObject).$ref !==
+                    `#/components/${typeType}/${identifyingTypeName}`
+            ) {
+                collector.removeType(identifyingTypeName);
+            }
+
             meta.isList++;
             const arraymeta = gatherMetaForType(
                 schema,
