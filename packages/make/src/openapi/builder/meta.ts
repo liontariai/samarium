@@ -95,16 +95,18 @@ export const gatherMeta = (
                 continue;
             }
 
-            meta.operations.push(
-                gatherMetaForPathOperation(
+            const operation = gatherMetaForPathOperation(
                     schema,
                     key,
                     method,
                     methodValue,
                     options,
                     collector,
-                ),
             );
+            if (!operation) {
+                continue;
+            }
+            meta.operations.push(operation);
         }
     }
 
@@ -828,9 +830,10 @@ export const gatherMetaForPathOperation = (
     operation: OperationObject,
     options: CodegenOptions,
     collector: Collector,
-): OperationMeta => {
+): OperationMeta | undefined => {
     if (!operation.responses) {
-        throw new Error("Operation responses not found");
+        console.warn("Operation has no responses!");
+        return undefined;
     }
 
     const okResponses = Object.entries(operation.responses)
@@ -848,7 +851,8 @@ export const gatherMetaForPathOperation = (
     );
 
     if (!successResponse) {
-        throw new Error("Operation success response not found");
+        console.warn("Operation has no success response!", operation);
+        return undefined;
     }
 
     const operationName =
