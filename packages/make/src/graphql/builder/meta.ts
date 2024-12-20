@@ -162,7 +162,7 @@ export const gatherMetaForRootField = (
 ): RootFieldMeta => {
     const meta: RootFieldMeta = {
         name: rootField.name,
-        description: rootField.description,
+        description: rootField.description ?? undefined,
         operation,
         args: [],
         type: gatherMetaForType(schema, rootField.type, options, collector),
@@ -195,7 +195,7 @@ export const gatherMetaForArgument = (
         // TODO: remove hack
         hasArgs: false,
         args: [],
-        description: arg.description,
+        description: arg.description ?? undefined,
         type: gatherMetaForType(schema, arg.type, options, collector),
     };
 };
@@ -217,7 +217,7 @@ export const gatherMetaForType = (
 
     const meta: TypeMeta = {
         name: type.toString(),
-        description: namedType.description,
+        description: namedType.description ?? undefined,
         isList: type.toString().split("[").length - 1,
         isNonNull: type.toString().endsWith("!"),
         isScalar: namedType instanceof GraphQLScalarType,
@@ -250,7 +250,7 @@ export const gatherMetaForType = (
         for (const enumValue of (namedType as GraphQLEnumType).getValues()) {
             meta.enumValues.push({
                 name: enumValue.name,
-                description: enumValue.description,
+                description: enumValue.description ?? undefined,
             });
         }
     }
@@ -338,7 +338,7 @@ export const gatherMetaForField = (
 ): FieldMeta => {
     const meta: FieldMeta = {
         name: field.name,
-        description: field.description,
+        description: field.description ?? undefined,
         hasArgs: Object.keys(field.args).length > 0,
         args: [],
         type: gatherMetaForType(schema, field.type, options, collector),
@@ -368,7 +368,7 @@ export const gatherMetaForDirective = (
 ): DirectiveMeta => {
     const meta: DirectiveMeta = {
         name: directive.name,
-        description: directive.description,
+        description: directive.description ?? undefined,
         locations: directive.locations as DirectiveLocation[],
         args: [],
     };
@@ -381,7 +381,7 @@ export const gatherMetaForDirective = (
 
     collector.addType({
         name: `Directive_${directive.name}`,
-        description: directive.description,
+        description: directive.description ?? undefined,
         isList: 0,
         isNonNull: false,
         isScalar: false,
