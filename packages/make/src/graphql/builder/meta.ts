@@ -51,7 +51,7 @@ export {
 export const gatherMeta = (
     schema: GraphQLSchema,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
@@ -158,7 +158,7 @@ export const gatherMetaForRootField = (
     rootField: GraphQLField<any, any>,
     operation: Operation,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): RootFieldMeta => {
     const meta: RootFieldMeta = {
         name: rootField.name,
@@ -188,7 +188,7 @@ export const gatherMetaForArgument = (
     schema: GraphQLSchema,
     arg: GraphQLArgument,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): ArgumentMeta => {
     return {
         name: arg.name,
@@ -211,7 +211,7 @@ export const gatherMetaForType = (
     schema: GraphQLSchema,
     type: GraphQLType,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): TypeMeta => {
     const namedType = getNamedType(type);
 
@@ -236,10 +236,10 @@ export const gatherMetaForType = (
     };
 
     // Handle already processed types
-    if (collector?.hasType(meta.name)) {
+    if (collector.hasType(meta.name)) {
         return collector.getType(meta.name);
     } else {
-        collector?.addType(meta);
+        collector.addType(meta);
     }
 
     meta.ofType = meta;
@@ -318,9 +318,7 @@ export const gatherMetaForType = (
         }
     }
 
-    if (collector) {
-        collector.addType(meta);
-    }
+    collector.addType(meta);
 
     return meta;
 };
@@ -336,7 +334,7 @@ export const gatherMetaForField = (
     schema: GraphQLSchema,
     field: GraphQLField<any, any>,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): FieldMeta => {
     const meta: FieldMeta = {
         name: field.name,
@@ -366,7 +364,7 @@ export const gatherMetaForDirective = (
     schema: GraphQLSchema,
     directive: GraphQLDirective,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): DirectiveMeta => {
     const meta: DirectiveMeta = {
         name: directive.name,
@@ -381,29 +379,27 @@ export const gatherMetaForDirective = (
         meta.args.push(gatherMetaForArgument(schema, arg, options, collector));
     }
 
-    if (collector) {
-        collector.addType({
-            name: `Directive_${directive.name}`,
-            description: directive.description,
-            isList: 0,
-            isNonNull: false,
-            isScalar: false,
-            isEnum: false,
-            isInput: false,
-            isInterface: false,
-            isObject: false,
-            isUnion: false,
-            isQuery: false,
-            isMutation: false,
-            isSubscription: false,
-            fields: [],
-            possibleTypes: [],
-            enumValues: [],
-            inputFields: [],
+    collector.addType({
+        name: `Directive_${directive.name}`,
+        description: directive.description,
+        isList: 0,
+        isNonNull: false,
+        isScalar: false,
+        isEnum: false,
+        isInput: false,
+        isInterface: false,
+        isObject: false,
+        isUnion: false,
+        isQuery: false,
+        isMutation: false,
+        isSubscription: false,
+        fields: [],
+        possibleTypes: [],
+        enumValues: [],
+        inputFields: [],
 
-            isDirective: meta,
-        });
-    }
+        isDirective: meta,
+    });
 
     return meta;
 };
