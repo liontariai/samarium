@@ -1,6 +1,5 @@
 import type { DirectiveLocation } from "graphql";
 
-export type Maybe<T> = null | undefined | T;
 export enum Operation {
     Query = "query",
     Mutation = "mutation",
@@ -22,7 +21,7 @@ export interface CodegenOptions {
 }
 export interface RootFieldMeta {
     name: string;
-    description: Maybe<string>;
+    description?: string;
     operation: Operation;
     args: ArgumentMeta[];
     type: TypeMeta;
@@ -38,7 +37,7 @@ export interface SchemaMeta {
 
 export interface FieldMeta {
     name: string;
-    description: Maybe<string>;
+    description?: string;
     hasArgs: boolean;
     args: ArgumentMeta[];
     type: TypeMeta;
@@ -48,16 +47,16 @@ export interface ArgumentMeta extends FieldMeta {
     // TOOO: remove hack
     hasArgs: false;
     args: [];
-    description: Maybe<string>;
+    description?: string;
     type: TypeMeta;
 }
 export interface EnumValueMeta {
     name: string;
-    description: Maybe<string>;
+    description?: string;
 }
 export interface TypeMeta {
     name: string;
-    description: Maybe<string>;
+    description?: string;
     isList: number;
     isNonNull: boolean;
     isScalar: boolean;
@@ -80,7 +79,7 @@ export interface TypeMeta {
 
 export interface DirectiveMeta {
     name: string;
-    description: Maybe<string>;
+    description?: string;
     locations: DirectiveLocation[];
     args: ArgumentMeta[];
 }
