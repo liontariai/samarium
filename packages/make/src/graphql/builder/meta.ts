@@ -103,7 +103,7 @@ export const gatherMeta = (
         subscription: [],
     };
 
-    // Gather meta for each type
+    // Gather meta for custom scalars first
     for (const typeName in schema.getTypeMap()) {
         if (!options.includeSchemaDefinition) {
             if (
