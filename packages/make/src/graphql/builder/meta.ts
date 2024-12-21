@@ -148,6 +148,7 @@ export const gatherMeta = (
             );
         }
     }
+    const hasCollectedCustomScalars = collector.customScalars.size > 0;
 
     const queryType = schema.getQueryType();
     if (queryType) {
@@ -217,7 +218,7 @@ export const gatherMeta = (
         const type = schema.getTypeMap()[typeName];
         if (
             isObjectType(type) ||
-            isInputObjectType(type) ||
+            (hasCollectedCustomScalars && isInputObjectType(type)) ||
             isInterfaceType(type)
         ) {
             meta.types.push(
