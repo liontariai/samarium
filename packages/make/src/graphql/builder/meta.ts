@@ -48,11 +48,16 @@ const createACustomScalarType = (
     scalarTSType: string,
     collector: Collector<any, any, any>,
 ): TypeMeta => {
+    const descriptionIncludesTypedef = description?.includes("@typedef");
+    const typeFromTypedef = descriptionIncludesTypedef
+        ? description?.match(/@typedef\s*{(.*)}/)?.[1]
+        : undefined;
+
     const meta: TypeMeta = {
         name,
         description,
         isScalar: true,
-        scalarTSType,
+        scalarTSType: typeFromTypedef ?? scalarTSType,
         isEnum: false,
         isObject: false,
         isUnion: false,
