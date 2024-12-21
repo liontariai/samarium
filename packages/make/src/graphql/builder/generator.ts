@@ -85,7 +85,9 @@ export class Generator {
 
         const code = [
             this.Codegen.FieldValueWrapperType,
-            this.Codegen.HelperTypes,
+            this.Codegen.HelperTypes(
+                Array.from(collector.customScalars.values()),
+            ),
             this.Codegen.HelperFunctions,
             ...[...collector.enumsTypes.entries()]
                 .map(([_, code]) => code)

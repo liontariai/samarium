@@ -41,6 +41,26 @@ export class Collector<
     }
 
     /**
+     * The collected custom scalars.
+     */
+    private _customScalars: Map<string, TypeMeta> = new Map();
+    get customScalars(): Map<string, TypeMeta> {
+        return this._customScalars;
+    }
+    public addCustomScalar(type: TypeMeta): void {
+        this._customScalars.set(type.name, type);
+    }
+    public hasCustomScalar(typeName: string): boolean {
+        return this._customScalars.has(typeName);
+    }
+    public getCustomScalar(typeName: string): TypeMeta {
+        return this._customScalars.get(typeName)!;
+    }
+    public removeCustomScalar(typeName: string): void {
+        this._customScalars.delete(typeName);
+    }
+
+    /**
      * Collect generated code for a given type.
      * In this case, the generated Enum types.
      */
