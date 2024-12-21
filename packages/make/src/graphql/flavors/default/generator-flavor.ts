@@ -560,7 +560,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ? this.originalTypeNameToTypescriptTypeNameWithoutModifiers(
                   this.originalFullTypeName,
               )
-            : `${this.typeName}SelectionFields`;
+            : this.typeName;
 
         if (this.collector.hasSelectionType(this.typeMeta)) {
             return selectionTypeName;
@@ -570,9 +570,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
         if (this.typeMeta.isUnion) {
             const types = this.typeMeta.possibleTypes
-                .map(
-                    (t) =>
-                        `${this.originalTypeNameToTypescriptFriendlyName(t.name)}SelectionFields`,
+                .map((t) =>
+                    this.originalTypeNameToTypescriptFriendlyName(t.name),
                 )
                 .join(" | ");
 
