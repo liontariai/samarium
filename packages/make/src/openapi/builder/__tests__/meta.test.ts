@@ -16,13 +16,10 @@ describe.only("gatherMetaForType", () => {
         const collector = new Collector();
         const schemaMeta = gatherMeta(schema, {}, collector);
 
-        fs.writeFileSync(
-            "./schemaMeta.ts",
-            `export default ${inspect(schemaMeta, { depth: 10 })
-                .replace(/\.\.\. .* more items/gm, "")
-                .replace(/<ref .*>/g, "")
-                .replace(/\[Circular .*\]/g, '"Circular"')
-                .replace(/\n/g, "")}`,
-        );
+        const str = `export default ${inspect(schemaMeta, { depth: 10 })
+            .replace(/\.\.\. .* more items/gm, "")
+            .replace(/<ref .*>/g, "")
+            .replace(/\[Circular .*\]/g, '"Circular"')
+            .replace(/\n/g, "")}`;
     });
 });

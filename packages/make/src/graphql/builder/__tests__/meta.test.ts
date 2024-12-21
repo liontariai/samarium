@@ -1,5 +1,5 @@
 import { expect, describe, it } from "bun:test";
-import { gatherMeta, gatherMetaForType } from "./meta";
+import { gatherMeta, gatherMetaForType } from "../meta";
 import {
     GraphQLSchema,
     GraphQLObjectType,
@@ -7,21 +7,18 @@ import {
     GraphQLNonNull,
     GraphQLString,
 } from "graphql";
-import { Collector } from "./collector";
-// import { introspectGraphQLSchema } from "@/commands/util/introspect";
+import { Collector } from "../collector";
+import { introspectGraphQLSchema } from "./util";
 
 describe("gatherMetaForType", () => {
     // it("should gather meta for a whole schema", async () => {
     //     // Arrange
     //     const schema = await introspectGraphQLSchema(
-    //         "https://spacex-production.up.railway.app/graphql",
+    //         "http://localhost:4000/graphql",
     //     );
+    //     const collector = new Collector("Query", "Mutation", "Subscription");
     //     // Act
-    //     const meta = gatherMeta(
-    //         schema,
-    //         {},
-    //         new Collector("Query", "Mutation", "Subscription"),
-    //     );
+    //     const meta = gatherMeta(schema, {}, collector);
 
     //     console.log(meta);
     // });
@@ -44,11 +41,12 @@ describe("gatherMetaForType", () => {
                 },
             }),
         });
+        const collector = new Collector("Query", "Mutation", "Subscription");
 
         const type = schema.getType("User");
 
         // Act
-        const meta = gatherMetaForType(schema, type!, {});
+        const meta = gatherMetaForType(schema, type!, {}, collector);
 
         // Assert
         expect(meta.isObject).toBe(true);
@@ -77,11 +75,12 @@ describe("gatherMetaForType", () => {
                 },
             }),
         });
+        const collector = new Collector("Query", "Mutation", "Subscription");
 
         const type = schema.getType("User");
 
         // Act
-        const meta = gatherMetaForType(schema, type!, {});
+        const meta = gatherMetaForType(schema, type!, {}, collector);
 
         // Assert
         expect(meta.isInterface).toBe(true);
