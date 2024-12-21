@@ -367,7 +367,7 @@ export class OperationSelectionCollector {
                 depth,
                 RootOperation[OPTIONS].scalars[
                     type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]
-                ],
+                ] ?? ((value: string) => JSON.parse(value)),
             ) as T;
         }
 
