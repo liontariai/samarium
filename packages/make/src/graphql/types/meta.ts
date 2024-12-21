@@ -60,6 +60,7 @@ export interface TypeMeta {
     isList: number;
     isNonNull: boolean;
     isScalar: boolean;
+    scalarTSType?: string;
     isEnum: boolean;
     isInput: boolean;
     isInterface: boolean;

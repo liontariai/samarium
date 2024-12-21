@@ -42,6 +42,41 @@ export {
     type CodegenOptions,
 };
 
+const createACustomScalarType = (
+    name: string,
+    description: string | undefined,
+    scalarTSType: string,
+    collector: Collector<any, any, any>,
+): TypeMeta => {
+    const meta: TypeMeta = {
+        name,
+        description,
+        isScalar: true,
+        scalarTSType,
+        isEnum: false,
+        isObject: false,
+        isUnion: false,
+        isList: 0,
+        isNonNull: false,
+        fields: [],
+        possibleTypes: [],
+        inputFields: [],
+        isInput: false,
+        enumValues: [],
+
+        isInterface: false,
+        isQuery: false,
+        isMutation: false,
+        isSubscription: false,
+    };
+    meta.ofType = meta;
+
+    collector.addType(meta);
+    collector.addCustomScalar(meta);
+
+    return meta;
+};
+
 /**
  * Gather metadata about the schema.
  * @param schema GraphQL schema
@@ -61,6 +96,52 @@ export const gatherMeta = (
         mutation: [],
         subscription: [],
     };
+
+    // Gather meta for each type
+    for (const typeName in schema.getTypeMap()) {
+        if (!options.includeSchemaDefinition) {
+            if (
+                [
+                    "__Schema",
+                    "__Type",
+                    "__TypeKind",
+                    "__Field",
+                    "__InputValue",
+                    "__EnumValue",
+                    "__Directive",
+                ].includes(typeName)
+            ) {
+                continue;
+            }
+        }
+        const type = schema.getTypeMap()[typeName];
+        if (type instanceof GraphQLScalarType) {
+            if (
+                [
+                    "String",
+                    "Int",
+                    "Float",
+                    "Boolean",
+                    "ID",
+                    "Date",
+                    "DateTime",
+                    "DateTimeISO",
+                    "Time",
+                    "JSON",
+                ].includes(typeName)
+            ) {
+                continue;
+            }
+            meta.types.push(
+                createACustomScalarType(
+                    typeName,
+                    type.description ?? undefined,
+                    "any",
+                    collector,
+                ),
+            );
+        }
+    }
 
     const queryType = schema.getQueryType();
     if (queryType) {

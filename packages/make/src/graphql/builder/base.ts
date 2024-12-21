@@ -24,7 +24,7 @@ export abstract class GeneratorSelectionTypeFlavor {
      * The code for the helper types.
      * The helper types are types that are used by the selection type flavor.
      */
-    public static readonly HelperTypes: string;
+    public static readonly HelperTypes: (customScalars: TypeMeta[]) => string;
 
     /**
      * The code for the helper functions.
