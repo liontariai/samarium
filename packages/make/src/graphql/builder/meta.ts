@@ -19,6 +19,7 @@ import {
     isInterfaceType,
     type GraphQLDirective,
     type DirectiveLocation,
+    isInputObjectType,
 } from "graphql";
 import { Collector } from "./collector";
 
@@ -214,7 +215,11 @@ export const gatherMeta = (
         }
 
         const type = schema.getTypeMap()[typeName];
-        if (isObjectType(type) || isInterfaceType(type)) {
+        if (
+            isObjectType(type) ||
+            isInputObjectType(type) ||
+            isInterfaceType(type)
+        ) {
             meta.types.push(
                 gatherMetaForType(schema, type, options, collector),
             );
