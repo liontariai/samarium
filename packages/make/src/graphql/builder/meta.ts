@@ -19,6 +19,7 @@ import {
     isInterfaceType,
     type GraphQLDirective,
     type DirectiveLocation,
+    isInputObjectType,
 } from "graphql";
 import { Collector } from "./collector";
 
@@ -42,6 +43,46 @@ export {
     type CodegenOptions,
 };
 
+const createACustomScalarType = (
+    name: string,
+    description: string | undefined,
+    scalarTSType: string,
+    collector: Collector<any, any, any>,
+): TypeMeta => {
+    const descriptionIncludesTypedef = description?.includes("@typedef");
+    const typeFromTypedef = descriptionIncludesTypedef
+        ? description?.match(/@typedef\s*{(.*)}/)?.[1]
+        : undefined;
+
+    const meta: TypeMeta = {
+        name,
+        description,
+        isScalar: true,
+        scalarTSType: typeFromTypedef ?? scalarTSType,
+        isEnum: false,
+        isObject: false,
+        isUnion: false,
+        isList: 0,
+        isNonNull: false,
+        fields: [],
+        possibleTypes: [],
+        inputFields: [],
+        isInput: false,
+        enumValues: [],
+
+        isInterface: false,
+        isQuery: false,
+        isMutation: false,
+        isSubscription: false,
+    };
+    meta.ofType = meta;
+
+    collector.addType(meta);
+    collector.addCustomScalar(meta);
+
+    return meta;
+};
+
 /**
  * Gather metadata about the schema.
  * @param schema GraphQL schema
@@ -51,7 +92,7 @@ export {
 export const gatherMeta = (
     schema: GraphQLSchema,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
@@ -61,6 +102,53 @@ export const gatherMeta = (
         mutation: [],
         subscription: [],
     };
+
+    // Gather meta for custom scalars first
+    for (const typeName in schema.getTypeMap()) {
+        if (!options.includeSchemaDefinition) {
+            if (
+                [
+                    "__Schema",
+                    "__Type",
+                    "__TypeKind",
+                    "__Field",
+                    "__InputValue",
+                    "__EnumValue",
+                    "__Directive",
+                ].includes(typeName)
+            ) {
+                continue;
+            }
+        }
+        const type = schema.getTypeMap()[typeName];
+        if (type instanceof GraphQLScalarType) {
+            if (
+                [
+                    "String",
+                    "Int",
+                    "Float",
+                    "Boolean",
+                    "ID",
+                    "Date",
+                    "DateTime",
+                    "DateTimeISO",
+                    "Time",
+                    "JSON",
+                ].includes(typeName)
+            ) {
+                continue;
+            }
+            meta.types.push(
+                createACustomScalarType(
+                    typeName,
+                    type.description ?? undefined,
+                    "any",
+                    collector,
+                ),
+            );
+        }
+    }
+    const hasCollectedCustomScalars = collector.customScalars.size > 0;
 
     const queryType = schema.getQueryType();
     if (queryType) {
@@ -128,7 +216,11 @@ export const gatherMeta = (
         }
 
         const type = schema.getTypeMap()[typeName];
-        if (isObjectType(type) || isInterfaceType(type)) {
+        if (
+            isObjectType(type) ||
+            (hasCollectedCustomScalars && isInputObjectType(type)) ||
+            isInterfaceType(type)
+        ) {
             meta.types.push(
                 gatherMetaForType(schema, type, options, collector),
             );
@@ -158,11 +250,11 @@ export const gatherMetaForRootField = (
     rootField: GraphQLField<any, any>,
     operation: Operation,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): RootFieldMeta => {
     const meta: RootFieldMeta = {
         name: rootField.name,
-        description: rootField.description,
+        description: rootField.description ?? undefined,
         operation,
         args: [],
         type: gatherMetaForType(schema, rootField.type, options, collector),
@@ -188,14 +280,14 @@ export const gatherMetaForArgument = (
     schema: GraphQLSchema,
     arg: GraphQLArgument,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): ArgumentMeta => {
     return {
         name: arg.name,
         // TODO: remove hack
         hasArgs: false,
         args: [],
-        description: arg.description,
+        description: arg.description ?? undefined,
         type: gatherMetaForType(schema, arg.type, options, collector),
     };
 };
@@ -211,13 +303,13 @@ export const gatherMetaForType = (
     schema: GraphQLSchema,
     type: GraphQLType,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): TypeMeta => {
     const namedType = getNamedType(type);
 
     const meta: TypeMeta = {
         name: type.toString(),
-        description: namedType.description,
+        description: namedType.description ?? undefined,
         isList: type.toString().split("[").length - 1,
         isNonNull: type.toString().endsWith("!"),
         isScalar: namedType instanceof GraphQLScalarType,
@@ -236,10 +328,10 @@ export const gatherMetaForType = (
     };
 
     // Handle already processed types
-    if (collector?.hasType(meta.name)) {
+    if (collector.hasType(meta.name)) {
         return collector.getType(meta.name);
     } else {
-        collector?.addType(meta);
+        collector.addType(meta);
     }
 
     meta.ofType = meta;
@@ -250,7 +342,7 @@ export const gatherMetaForType = (
         for (const enumValue of (namedType as GraphQLEnumType).getValues()) {
             meta.enumValues.push({
                 name: enumValue.name,
-                description: enumValue.description,
+                description: enumValue.description ?? undefined,
             });
         }
     }
@@ -318,9 +410,7 @@ export const gatherMetaForType = (
         }
     }
 
-    if (collector) {
-        collector.addType(meta);
-    }
+    collector.addType(meta);
 
     return meta;
 };
@@ -336,11 +426,11 @@ export const gatherMetaForField = (
     schema: GraphQLSchema,
     field: GraphQLField<any, any>,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): FieldMeta => {
     const meta: FieldMeta = {
         name: field.name,
-        description: field.description,
+        description: field.description ?? undefined,
         hasArgs: Object.keys(field.args).length > 0,
         args: [],
         type: gatherMetaForType(schema, field.type, options, collector),
@@ -366,11 +456,11 @@ export const gatherMetaForDirective = (
     schema: GraphQLSchema,
     directive: GraphQLDirective,
     options: CodegenOptions,
-    collector?: Collector,
+    collector: Collector,
 ): DirectiveMeta => {
     const meta: DirectiveMeta = {
         name: directive.name,
-        description: directive.description,
+        description: directive.description ?? undefined,
         locations: directive.locations as DirectiveLocation[],
         args: [],
     };
@@ -381,29 +471,27 @@ export const gatherMetaForDirective = (
         meta.args.push(gatherMetaForArgument(schema, arg, options, collector));
     }
 
-    if (collector) {
-        collector.addType({
-            name: `Directive_${directive.name}`,
-            description: directive.description,
-            isList: 0,
-            isNonNull: false,
-            isScalar: false,
-            isEnum: false,
-            isInput: false,
-            isInterface: false,
-            isObject: false,
-            isUnion: false,
-            isQuery: false,
-            isMutation: false,
-            isSubscription: false,
-            fields: [],
-            possibleTypes: [],
-            enumValues: [],
-            inputFields: [],
+    collector.addType({
+        name: `Directive_${directive.name}`,
+        description: directive.description ?? undefined,
+        isList: 0,
+        isNonNull: false,
+        isScalar: false,
+        isEnum: false,
+        isInput: false,
+        isInterface: false,
+        isObject: false,
+        isUnion: false,
+        isQuery: false,
+        isMutation: false,
+        isSubscription: false,
+        fields: [],
+        possibleTypes: [],
+        enumValues: [],
+        inputFields: [],
 
-            isDirective: meta,
-        });
-    }
+        isDirective: meta,
+    });
 
     return meta;
 };

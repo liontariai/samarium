@@ -100,8 +100,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ["Time", "Date"],
         ["JSON", "Record<string, any>"],
     ]);
-    public ScalarTypeMap: Map<string, string> =
-        GeneratorSelectionTypeFlavorDefault.ScalarTypeMap;
+    public ScalarTypeMap: () => Map<string, string> = () =>
+        new Map([
+            ...[...GeneratorSelectionTypeFlavorDefault.ScalarTypeMap.entries()],
+            // ...[...this.collector.customScalars.values()].map(
+            //     (cs) => [cs.name, cs.scalarTSType!] as const,
+            // ),
+        ]);
 
     public static readonly FieldValueWrapperType = wrapperCode;
 
@@ -120,8 +125,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         };`;
     };
 
-    public static readonly HelperTypes = `
-    export interface ScalarTypeMapWithCustom {};
+    public static readonly HelperTypes = (customScalars: TypeMeta[]) => `
+    export interface ScalarTypeMapWithCustom {
+        ${customScalars.map((cs) => `"${cs.name}": ${cs.scalarTSType};`).join("\n")}
+    }
     export interface ScalarTypeMapDefault {
         ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
             .map(([k, v]) => `"${k}": ${v};`)
@@ -388,13 +395,28 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         fieldName: string,
         fieldMeta: TypeMeta,
     ): string {
-        const type =
-            this.ScalarTypeMap.get(
-                fieldMeta.name
-                    .replaceAll("!", "")
-                    .replaceAll("[", "")
-                    .replaceAll("]", ""),
-            ) ?? "any";
+        let type = "";
+
+        if (fieldMeta.isEnum) {
+            type = fieldMeta
+                .ofType!.name.replaceAll("!", "")
+                .replaceAll("[", "")
+                .replaceAll("]", "");
+        } else {
+            type =
+                this.ScalarTypeMap().get(
+                    fieldMeta.name
+                        .replaceAll("!", "")
+                        .replaceAll("[", "")
+                        .replaceAll("]", ""),
+                ) ??
+                (fieldMeta.scalarTSType
+                    ? `ScalarTypeMapWithCustom["${fieldMeta.name
+                          .replaceAll("!", "")
+                          .replaceAll("[", "")
+                          .replaceAll("]", "")}"]`
+                    : "any");
+        }
 
         if (fieldMeta.isList) {
             return `${Array.from({ length: fieldMeta.isList })
@@ -419,6 +441,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const argsTypeName = `${parents.join()}${field.name
                 .slice(0, 1)
                 .toUpperCase()}${field.name.slice(1)}Args`;
+
             if (!this.collector.hasArgumentType(argsTypeName)) {
                 const argsTypeBody = field.args
                     .map((arg) => {
@@ -431,10 +454,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                         let argType = "any";
                         if (isScalar) {
-                            argType =
-                                this.ScalarTypeMap.get(
-                                    arg.type.name.replaceAll("!", ""),
-                                ) ?? "any";
+                            argType = arg.type.scalarTSType
+                                ? `ScalarTypeMapWithCustom["${arg.type.name
+                                      .replaceAll("!", "")
+                                      .replaceAll("[", "")
+                                      .replaceAll("]", "")}"]`
+                                : this.ScalarTypeMap().get(
+                                      arg.type.name
+                                          .replaceAll("!", "")
+                                          .replaceAll("[", "")
+                                          .replaceAll("]", ""),
+                                  ) ?? "any";
                         } else if (isInput || isEnum) {
                             argType = this.originalTypeNameToTypescriptTypeName(
                                 arg.type.name,
@@ -530,7 +560,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ? this.originalTypeNameToTypescriptTypeNameWithoutModifiers(
                   this.originalFullTypeName,
               )
-            : `${this.typeName}SelectionFields`;
+            : this.typeName;
 
         if (this.collector.hasSelectionType(this.typeMeta)) {
             return selectionTypeName;
@@ -540,9 +570,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
         if (this.typeMeta.isUnion) {
             const types = this.typeMeta.possibleTypes
-                .map(
-                    (t) =>
-                        `${this.originalTypeNameToTypescriptFriendlyName(t.name)}SelectionFields`,
+                .map((t) =>
+                    this.originalTypeNameToTypescriptFriendlyName(t.name),
                 )
                 .join(" | ");
 
@@ -676,10 +705,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                     let argType = "any";
                     if (isScalar) {
-                        argType =
-                            this.ScalarTypeMap.get(
-                                arg.type.name.replaceAll("!", ""),
-                            ) ?? "any";
+                        argType = arg.type.scalarTSType
+                            ? `ScalarTypeMapWithCustom["${arg.type.name
+                                  .replaceAll("!", "")
+                                  .replaceAll("[", "")
+                                  .replaceAll("]", "")}"]`
+                            : this.ScalarTypeMap().get(
+                                  arg.type.name
+                                      .replaceAll("!", "")
+                                      .replaceAll("[", "")
+                                      .replaceAll("]", ""),
+                              ) ?? "any";
                     } else if (isInput || isEnum) {
                         argType = this.originalTypeNameToTypescriptTypeName(
                             arg.type.name,

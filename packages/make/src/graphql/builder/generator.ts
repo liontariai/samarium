@@ -85,7 +85,9 @@ export class Generator {
 
         const code = [
             this.Codegen.FieldValueWrapperType,
-            this.Codegen.HelperTypes,
+            this.Codegen.HelperTypes(
+                Array.from(collector.customScalars.values()),
+            ),
             this.Codegen.HelperFunctions,
             ...[...collector.enumsTypes.entries()]
                 .map(([_, code]) => code)
@@ -97,7 +99,11 @@ export class Generator {
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             ...[...collector.selectionTypes.entries()]
-                .filter(([type]) => type.isInput)
+                .filter(
+                    ([type]) =>
+                        type.isInput ||
+                        (collector.customScalars.size > 0 && type.isObject),
+                )
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             this.Codegen.EnumTypesMapped(collector),
