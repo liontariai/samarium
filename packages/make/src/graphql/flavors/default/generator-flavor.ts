@@ -1357,13 +1357,35 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             // access the keys of the proxy object, to register operations
                             (rootSlw as any)[field as any];
 
-                            return new Promise((resolve, reject) => {
-                                root.execute({})
-                                    .then(() => {
-                                        resolve((rootSlw as any)[field]);
-                                    })
-                                    .catch(reject);
-                            });
+                            return new Proxy(
+                                {},
+                                {
+                                    get(_t, _prop) {
+                                        if (String(_prop) === "$lazy") {
+                                            return (fieldSlw as any)[_prop].bind({
+                                                parentSlw: opSlw,
+                                                key: field,
+                                            });
+                                        } else {
+                                            const result = new Promise(
+                                                (resolve, reject) => {
+                                                    root.execute({})
+                                                        .then(() => {
+                                                            resolve(
+                                                                (rootSlw as any)[field],
+                                                            );
+                                                        })
+                                                        .catch(reject);
+                                                },
+                                            );
+                                            if (String(_prop) === "then") {
+                                                return result.then.bind(result);
+                                            }
+                                            return result;
+                                        }
+                                    },
+                                },
+                            );
                         };
 
                     // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
@@ -1405,13 +1427,35 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     // access the keys of the proxy object, to register operations
                     (rootSlw as any)[field as any];
 
-                    return new Promise((resolve, reject) => {
-                        root.execute({})
-                            .then(() => {
-                                resolve((rootSlw as any)[field]);
-                            })
-                            .catch(reject);
-                    });
+                    return new Proxy(
+                        {},
+                        {
+                            get(_t, _prop) {
+                                if (String(_prop) === "$lazy") {
+                                    return (fieldSlw as any)[_prop].bind({
+                                        parentSlw: opSlw,
+                                        key: field,
+                                    });
+                                } else {
+                                    const result = new Promise(
+                                        (resolve, reject) => {
+                                            root.execute({})
+                                                .then(() => {
+                                                    resolve(
+                                                        (rootSlw as any)[field],
+                                                    );
+                                                })
+                                                .catch(reject);
+                                        },
+                                    );
+                                    if (String(_prop) === "then") {
+                                        return result.then.bind(result);
+                                    }
+                                    return result;
+                                }
+                            },
+                        },
+                    );
                 }
             };
 
