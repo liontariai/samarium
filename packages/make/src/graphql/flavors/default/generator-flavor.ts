@@ -1491,7 +1491,23 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ${availOperations
                     .map(
                         (op) =>
-                            `${op?.toLowerCase()}: ReturnType<typeof make${op}SelectionInput>;`,
+                            `${op?.toLowerCase()}: {
+                                [field in keyof ReturnType<typeof make${op}SelectionInput>]: ReturnType<
+                                    typeof make${op}SelectionInput
+                                >[field] extends SelectionWrapperImpl<
+                                    infer FN,
+                                    infer TTNP,
+                                    infer TTAD,
+                                    infer VT,
+                                    infer AT
+                                >
+                                    ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD> & {
+                                        $lazy: () => Promise<
+                                            ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                        >;
+                                    }
+                                    : ReturnType<typeof make${op}SelectionInput>[field];
+                            };`,
                     )
                     .join("\n")}
             }
