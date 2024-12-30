@@ -444,7 +444,7 @@ export class SelectionWrapperImpl<
 
     readonly [SLW_UID] = this.generateUniqueId();
     [ROOT_OP_COLLECTOR]?: OperationSelectionCollectorRef;
-    readonly [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
+    [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
     readonly [SLW_COLLECTOR]?: OperationSelectionCollector;
 
     [SLW_FIELD_NAME]?: fieldName;
