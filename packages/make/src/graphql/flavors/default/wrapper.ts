@@ -444,7 +444,7 @@ export class SelectionWrapperImpl<
 
     readonly [SLW_UID] = this.generateUniqueId();
     [ROOT_OP_COLLECTOR]?: OperationSelectionCollectorRef;
-    readonly [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
+    [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
     readonly [SLW_COLLECTOR]?: OperationSelectionCollector;
 
     [SLW_FIELD_NAME]?: fieldName;
@@ -684,7 +684,7 @@ export class SelectionWrapper<
                             const r =
                                 that[SLW_RECREATE_VALUE_CALLBACK]?.bind(
                                     newThisCollector,
-                                )();
+                                )?.() ?? {};
 
                             const newThat = new SelectionWrapper(
                                 that[SLW_FIELD_NAME],
@@ -692,7 +692,12 @@ export class SelectionWrapper<
                                 that[SLW_FIELD_ARR_DEPTH],
                                 r,
                                 newThisCollector,
-                                newRootOpCollectorRef,
+                                // only set parent collector, if 'that' had one,
+                                // the absence indicates, that 'that' is a scalar field
+                                // without a subselection!
+                                that[SLW_PARENT_COLLECTOR]
+                                    ? newRootOpCollectorRef
+                                    : undefined,
                                 that[SLW_ARGS],
                                 that[SLW_ARGS_META],
                             );
