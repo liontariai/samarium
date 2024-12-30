@@ -194,6 +194,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     type ToTArrayWithDepth<T, D extends number> = D extends 0
         ? T
         : ToTArrayWithDepth<T[], Prev[D]>;
+    type ConvertToPromise<T, skip = 1> = skip extends 0 ? T : Promise<T>;
 
     export type SLFN<
         T extends object,
@@ -203,6 +204,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         TAD extends number,
         E extends { [key: string | number | symbol]: any } = {},
         REP extends string | number | symbol = never,
+        AS_PROMISE = 0,
     > = (
         makeSLFNInput: () => F,
         SLFN_name: N,
@@ -211,19 +213,22 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     ) => <TT = T, FF = F, EE = E>(
         this: any,
         s: (selection: FF) => TT,
-    ) => ToTArrayWithDepth<
-        {
-            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                infer FN,
-                infer TTNP,
-                infer TTAD,
-                infer VT,
-                infer AT
-            >
-                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                : TT[K];
-        },
-        TAD
+    ) => ConvertToPromise<
+        ToTArrayWithDepth<
+            {
+                [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                    infer FN,
+                    infer TTNP,
+                    infer TTAD,
+                    infer VT,
+                    infer AT
+                >
+                    ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                    : TT[K];
+            },
+            TAD
+        >,
+        AS_PROMISE
     > & {
         [k in keyof EE]: k extends REP
             ? EE[k] extends (...args: any) => any
@@ -836,7 +841,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         }
         const makeSelectionFunctionInputReturnTypeParts = new Map<
             string,
-            string
+            [argsPart: string, retPart: string]
         >();
 
         const selectionFunction = `
@@ -858,24 +863,26 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         .map(([field, fieldSlfn]) => {
                             makeSelectionFunctionInputReturnTypeParts.set(
                                 field.name,
-                                `${
-                                    field.hasArgs
-                                        ? `(
+                                [
+                                    `${
+                                        field.hasArgs
+                                            ? `(
                                         args: ${this.typeName}${field.name
                                             .slice(0, 1)
                                             .toUpperCase()}${field.name.slice(1)}Args
                                     ) =>`
-                                        : ""
-                                } ${
-                                    field.type.isScalar || field.type.isEnum
-                                        ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
-                                              field.hasArgs
-                                                  ? `${this.typeName}${field.name
-                                                        .slice(0, 1)
-                                                        .toUpperCase()}${field.name.slice(1)}Args`
-                                                  : "undefined"
-                                          }>`
-                                        : `ReturnType<
+                                            : ""
+                                    }`,
+                                    `${
+                                        field.type.isScalar || field.type.isEnum
+                                            ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
+                                                  field.hasArgs
+                                                      ? `${this.typeName}${field.name
+                                                            .slice(0, 1)
+                                                            .toUpperCase()}${field.name.slice(1)}Args`
+                                                      : "undefined"
+                                              }>`
+                                            : `ReturnType<
                                             SLFN<
                                                 {},
                                                 ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
@@ -903,13 +910,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                         }
                                                     ) => Promise<"T">
                                                 },
-                                                "$lazy"
+                                                "$lazy",
+                                                AS_PROMISE
                                                 `
                                                         : ""
                                                 }
                                             >
                                         >`
-                                }`,
+                                    }`,
+                                ],
                             );
                             return `${fieldSlfn},`;
                         })
@@ -928,9 +937,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const selectionFunctionReturnType = this.typeMeta.isUnion
             ? ""
             : `
+        type ReturnTypeFrom${selectionFunctionName}RetTypes<AS_PROMISE = 0> = {
+        ${Array.from(makeSelectionFunctionInputReturnTypeParts)
+            .map(([k, [argsPart, retPart]]) => `${k}: ${retPart}`)
+            .join("\n")}
+        }
         type ReturnTypeFrom${selectionFunctionName} = {
             ${Array.from(makeSelectionFunctionInputReturnTypeParts)
-                .map(([k, v]) => `${k}: ${v}`)
+                .map(
+                    ([k, [argsPart, retPart]]) =>
+                        `${k}: ${argsPart} ReturnTypeFrom${selectionFunctionName}RetTypes["${k}"]`,
+                )
                 .join("\n")}
         } & {
             $fragment: <F extends (this: any, ...args: any[]) => any>(
@@ -1492,7 +1509,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     .map(
                         (op) =>
                             `${op?.toLowerCase()}: {
-                                [field in keyof ReturnType<typeof make${op}SelectionInput>]: ReturnType<
+                                [field in Exclude<
+                                    keyof ReturnType<typeof make${op}SelectionInput>,
+                                    "$fragment" | "$scalars"
+                                >]: ReturnType<
                                     typeof make${op}SelectionInput
                                 >[field] extends SelectionWrapperImpl<
                                     infer FN,
@@ -1506,7 +1526,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
                                         >;
                                     }
-                                    : ReturnType<typeof make${op}SelectionInput>[field];
+                                    : ReturnType<typeof make${op}SelectionInput>[field]extends (
+                                            args: infer A,
+                                        ) => (selection: any) => any
+                                    ? (args: A) => ReturnTypeFrom${op}SelectionRetTypes<1>[field]
+                                    : ReturnTypeFrom${op}SelectionRetTypes<1>[field];
                             };`,
                     )
                     .join("\n")}
