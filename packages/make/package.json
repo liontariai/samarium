@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.16.0",
+    "version": "0.17.0",
     "exports": {
         ".": {
             "import": "./dist/esm/index.js",
@@ -27,7 +27,7 @@
         "graphql-sdk",
         "graphql-codegen"
     ],
-    "homepage": "https://github.com/liontariai/samarium",
+    "homepage": "https://liontari.ai",
     "publishConfig": {
         "access": "public",
         "main": "dist/cjs/index.js",
