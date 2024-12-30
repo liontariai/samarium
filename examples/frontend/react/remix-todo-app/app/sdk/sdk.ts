@@ -367,7 +367,7 @@ export class OperationSelectionCollector {
                 depth,
                 RootOperation[OPTIONS].scalars[
                     type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]
-                ],
+                ] ?? ((value: string) => JSON.parse(value)),
             ) as T;
         }
 
@@ -444,7 +444,7 @@ export class SelectionWrapperImpl<
 
     readonly [SLW_UID] = this.generateUniqueId();
     [ROOT_OP_COLLECTOR]?: OperationSelectionCollectorRef;
-    readonly [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
+    [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
     readonly [SLW_COLLECTOR]?: OperationSelectionCollector;
 
     [SLW_FIELD_NAME]?: fieldName;
@@ -521,7 +521,7 @@ export class SelectionWrapperImpl<
         ) => {
             const argToVarMap: Record<string, string> = {};
             let argsString = "(";
-            const argsStringParts = [];
+            const argsStringParts: string[] = [];
             for (const key of Object.keys(args)) {
                 let varName = key;
                 if (opVars[key] !== undefined) {
@@ -684,7 +684,7 @@ export class SelectionWrapper<
                             const r =
                                 that[SLW_RECREATE_VALUE_CALLBACK]?.bind(
                                     newThisCollector,
-                                )();
+                                )?.() ?? {};
 
                             const newThat = new SelectionWrapper(
                                 that[SLW_FIELD_NAME],
@@ -692,7 +692,12 @@ export class SelectionWrapper<
                                 that[SLW_FIELD_ARR_DEPTH],
                                 r,
                                 newThisCollector,
-                                newRootOpCollectorRef,
+                                // only set parent collector, if 'that' had one,
+                                // the absence indicates, that 'that' is a scalar field
+                                // without a subselection!
+                                that[SLW_PARENT_COLLECTOR]
+                                    ? newRootOpCollectorRef
+                                    : undefined,
                                 that[SLW_ARGS],
                                 that[SLW_ARGS_META],
                             );
@@ -987,11 +992,14 @@ type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
     ? ScalarTypeMapWithCustom[TNP]
     : TNP extends keyof ScalarTypeMapDefault
       ? ScalarTypeMapDefault[TNP]
-      : never;
+      : TNP extends keyof EnumTypesMapped
+        ? EnumTypesMapped[TNP]
+        : never;
 type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
 type ToTArrayWithDepth<T, D extends number> = D extends 0
     ? T
     : ToTArrayWithDepth<T[], Prev[D]>;
+type ConvertToPromise<T, skip = 1> = skip extends 0 ? T : Promise<T>;
 
 export type SLFN<
     T extends object,
@@ -1001,6 +1009,7 @@ export type SLFN<
     TAD extends number,
     E extends { [key: string | number | symbol]: any } = {},
     REP extends string | number | symbol = never,
+    AS_PROMISE = 0,
 > = (
     makeSLFNInput: () => F,
     SLFN_name: N,
@@ -1009,19 +1018,22 @@ export type SLFN<
 ) => <TT = T, FF = F, EE = E>(
     this: any,
     s: (selection: FF) => TT,
-) => ToTArrayWithDepth<
-    {
-        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-            infer FN,
-            infer TTNP,
-            infer TTAD,
-            infer VT,
-            infer AT
-        >
-            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-            : TT[K];
-    },
-    TAD
+) => ConvertToPromise<
+    ToTArrayWithDepth<
+        {
+            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                infer FN,
+                infer TTNP,
+                infer TTAD,
+                infer VT,
+                infer AT
+            >
+                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                : TT[K];
+        },
+        TAD
+    >,
+    AS_PROMISE
 > & {
     [k in keyof EE]: k extends REP
         ? EE[k] extends (...args: any) => any
@@ -1366,10 +1378,10 @@ export type NestedDateTimeFilter = {
 };
 
 export type TodoOrderByWithRelationInput = {
-    id?: any;
-    text?: any;
-    completed?: any;
-    createdAt?: any;
+    id?: SortOrder;
+    text?: SortOrder;
+    completed?: SortOrder;
+    createdAt?: SortOrder;
 };
 
 export type TodoWhereUniqueInput = {
@@ -1383,34 +1395,34 @@ export type TodoWhereUniqueInput = {
 };
 
 export type TodoOrderByWithAggregationInput = {
-    id?: any;
-    text?: any;
-    completed?: any;
-    createdAt?: any;
+    id?: SortOrder;
+    text?: SortOrder;
+    completed?: SortOrder;
+    createdAt?: SortOrder;
     _count?: TodoCountOrderByAggregateInput;
     _max?: TodoMaxOrderByAggregateInput;
     _min?: TodoMinOrderByAggregateInput;
 };
 
 export type TodoCountOrderByAggregateInput = {
-    id?: any;
-    text?: any;
-    completed?: any;
-    createdAt?: any;
+    id?: SortOrder;
+    text?: SortOrder;
+    completed?: SortOrder;
+    createdAt?: SortOrder;
 };
 
 export type TodoMaxOrderByAggregateInput = {
-    id?: any;
-    text?: any;
-    completed?: any;
-    createdAt?: any;
+    id?: SortOrder;
+    text?: SortOrder;
+    completed?: SortOrder;
+    createdAt?: SortOrder;
 };
 
 export type TodoMinOrderByAggregateInput = {
-    id?: any;
-    text?: any;
-    completed?: any;
-    createdAt?: any;
+    id?: SortOrder;
+    text?: SortOrder;
+    completed?: SortOrder;
+    createdAt?: SortOrder;
 };
 
 export type TodoScalarWhereWithAggregatesInput = {
@@ -1552,12 +1564,24 @@ export type TodoUpdateInput = {
     createdAt?: DateTimeFieldUpdateOperationsInput;
 };
 
-type ReturnTypeFromTodoCountAggregateSelection = {
+export interface EnumTypesMapped {
+    SortOrder: SortOrder;
+    TodoScalarFieldEnum: TodoScalarFieldEnum;
+}
+
+type ReturnTypeFromTodoCountAggregateSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "Int", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "Int", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Int", 0, {}, undefined>;
     createdAt: SelectionWrapperImpl<"createdAt", "Int", 0, {}, undefined>;
     _all: SelectionWrapperImpl<"_all", "Int", 0, {}, undefined>;
+};
+type ReturnTypeFromTodoCountAggregateSelection = {
+    id: ReturnTypeFromTodoCountAggregateSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoCountAggregateSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoCountAggregateSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoCountAggregateSelectionRetTypes["createdAt"];
+    _all: ReturnTypeFromTodoCountAggregateSelectionRetTypes["_all"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1616,7 +1640,7 @@ export const TodoCountAggregateSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromTodoMinAggregateSelection = {
+type ReturnTypeFromTodoMinAggregateSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -1627,6 +1651,12 @@ type ReturnTypeFromTodoMinAggregateSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromTodoMinAggregateSelection = {
+    id: ReturnTypeFromTodoMinAggregateSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoMinAggregateSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoMinAggregateSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoMinAggregateSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1684,7 +1714,7 @@ export const TodoMinAggregateSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromTodoMaxAggregateSelection = {
+type ReturnTypeFromTodoMaxAggregateSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -1695,6 +1725,12 @@ type ReturnTypeFromTodoMaxAggregateSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromTodoMaxAggregateSelection = {
+    id: ReturnTypeFromTodoMaxAggregateSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoMaxAggregateSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoMaxAggregateSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoMaxAggregateSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1752,7 +1788,7 @@ export const TodoMaxAggregateSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromAggregateTodoNotNullSelection = {
+type ReturnTypeFromAggregateTodoNotNullSelectionRetTypes<AS_PROMISE = 0> = {
     _count: ReturnType<
         SLFN<
             {},
@@ -1780,6 +1816,11 @@ type ReturnTypeFromAggregateTodoNotNullSelection = {
             0
         >
     >;
+};
+type ReturnTypeFromAggregateTodoNotNullSelection = {
+    _count: ReturnTypeFromAggregateTodoNotNullSelectionRetTypes["_count"];
+    _min: ReturnTypeFromAggregateTodoNotNullSelectionRetTypes["_min"];
+    _max: ReturnTypeFromAggregateTodoNotNullSelectionRetTypes["_max"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1820,7 +1861,7 @@ export const AggregateTodoNotNullSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromTodoSelection = {
+type ReturnTypeFromTodoSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -1831,6 +1872,12 @@ type ReturnTypeFromTodoSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromTodoSelection = {
+    id: ReturnTypeFromTodoSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1884,7 +1931,7 @@ export const TodoSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromTodoNotNullArrayNotNullSelection = {
+type ReturnTypeFromTodoNotNullArrayNotNullSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -1895,6 +1942,12 @@ type ReturnTypeFromTodoNotNullArrayNotNullSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromTodoNotNullArrayNotNullSelection = {
+    id: ReturnTypeFromTodoNotNullArrayNotNullSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoNotNullArrayNotNullSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoNotNullArrayNotNullSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoNotNullArrayNotNullSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1952,7 +2005,9 @@ export const TodoNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection = {
+type ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes<
+    AS_PROMISE = 0,
+> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -1990,6 +2045,15 @@ type ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection = {
             0
         >
     >;
+};
+type ReturnTypeFromTodoGroupByNotNullArrayNotNullSelection = {
+    id: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["createdAt"];
+    _count: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["_count"];
+    _min: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["_min"];
+    _max: ReturnTypeFromTodoGroupByNotNullArrayNotNullSelectionRetTypes["_max"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2061,8 +2125,12 @@ export const TodoGroupByNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
+type ReturnTypeFromAffectedRowsOutputNotNullSelectionRetTypes<AS_PROMISE = 0> =
+    {
+        count: SelectionWrapperImpl<"count", "Int", 0, {}, undefined>;
+    };
 type ReturnTypeFromAffectedRowsOutputNotNullSelection = {
-    count: SelectionWrapperImpl<"count", "Int", 0, {}, undefined>;
+    count: ReturnTypeFromAffectedRowsOutputNotNullSelectionRetTypes["count"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2103,7 +2171,9 @@ export const AffectedRowsOutputNotNullSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection = {
+type ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelectionRetTypes<
+    AS_PROMISE = 0,
+> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -2114,6 +2184,12 @@ type ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelection = {
+    id: ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelectionRetTypes["id"];
+    text: ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelectionRetTypes["text"];
+    completed: ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromCreateManyAndReturnTodoNotNullArrayNotNullSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2177,7 +2253,7 @@ export const CreateManyAndReturnTodoNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromTodoNotNullSelection = {
+type ReturnTypeFromTodoNotNullSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -2188,6 +2264,12 @@ type ReturnTypeFromTodoNotNullSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromTodoNotNullSelection = {
+    id: ReturnTypeFromTodoNotNullSelectionRetTypes["id"];
+    text: ReturnTypeFromTodoNotNullSelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoNotNullSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoNotNullSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2245,8 +2327,8 @@ export const TodoNotNullSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromQuerySelection = {
-    aggregateTodo: (args: QueryAggregateTodoArgs) => ReturnType<
+type ReturnTypeFromQuerySelectionRetTypes<AS_PROMISE = 0> = {
+    aggregateTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeAggregateTodoNotNullSelectionInput>,
@@ -2256,10 +2338,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryAggregateTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    findFirstTodo: (args: QueryFindFirstTodoArgs) => ReturnType<
+    findFirstTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoSelectionInput>,
@@ -2269,10 +2352,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryFindFirstTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    findFirstTodoOrThrow: (args: QueryFindFirstTodoOrThrowArgs) => ReturnType<
+    findFirstTodoOrThrow: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoSelectionInput>,
@@ -2282,10 +2366,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryFindFirstTodoOrThrowArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    todos: (args: QueryTodosArgs) => ReturnType<
+    todos: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoNotNullArrayNotNullSelectionInput>,
@@ -2295,10 +2380,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryTodosArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    todo: (args: QueryTodoArgs) => ReturnType<
+    todo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoSelectionInput>,
@@ -2308,10 +2394,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    getTodo: (args: QueryGetTodoArgs) => ReturnType<
+    getTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoSelectionInput>,
@@ -2321,10 +2408,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryGetTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    groupByTodo: (args: QueryGroupByTodoArgs) => ReturnType<
+    groupByTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoGroupByNotNullArrayNotNullSelectionInput>,
@@ -2334,9 +2422,31 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryGroupByTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
+};
+type ReturnTypeFromQuerySelection = {
+    aggregateTodo: (
+        args: QueryAggregateTodoArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["aggregateTodo"];
+    findFirstTodo: (
+        args: QueryFindFirstTodoArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["findFirstTodo"];
+    findFirstTodoOrThrow: (
+        args: QueryFindFirstTodoOrThrowArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["findFirstTodoOrThrow"];
+    todos: (
+        args: QueryTodosArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["todos"];
+    todo: (args: QueryTodoArgs) => ReturnTypeFromQuerySelectionRetTypes["todo"];
+    getTodo: (
+        args: QueryGetTodoArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["getTodo"];
+    groupByTodo: (
+        args: QueryGroupByTodoArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["groupByTodo"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2414,7 +2524,7 @@ export const QuerySelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromAggregateTodoSelection = {
+type ReturnTypeFromAggregateTodoSelectionRetTypes<AS_PROMISE = 0> = {
     _count: ReturnType<
         SLFN<
             {},
@@ -2442,6 +2552,11 @@ type ReturnTypeFromAggregateTodoSelection = {
             0
         >
     >;
+};
+type ReturnTypeFromAggregateTodoSelection = {
+    _count: ReturnTypeFromAggregateTodoSelectionRetTypes["_count"];
+    _min: ReturnTypeFromAggregateTodoSelectionRetTypes["_min"];
+    _max: ReturnTypeFromAggregateTodoSelectionRetTypes["_max"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2482,7 +2597,7 @@ export const AggregateTodoSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromTodoGroupBySelection = {
+type ReturnTypeFromTodoGroupBySelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -2520,6 +2635,15 @@ type ReturnTypeFromTodoGroupBySelection = {
             0
         >
     >;
+};
+type ReturnTypeFromTodoGroupBySelection = {
+    id: ReturnTypeFromTodoGroupBySelectionRetTypes["id"];
+    text: ReturnTypeFromTodoGroupBySelectionRetTypes["text"];
+    completed: ReturnTypeFromTodoGroupBySelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromTodoGroupBySelectionRetTypes["createdAt"];
+    _count: ReturnTypeFromTodoGroupBySelectionRetTypes["_count"];
+    _min: ReturnTypeFromTodoGroupBySelectionRetTypes["_min"];
+    _max: ReturnTypeFromTodoGroupBySelectionRetTypes["_max"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2589,8 +2713,8 @@ export const TodoGroupBySelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromMutationSelection = {
-    createManyTodo: (args: MutationCreateManyTodoArgs) => ReturnType<
+type ReturnTypeFromMutationSelectionRetTypes<AS_PROMISE = 0> = {
+    createManyTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
@@ -2600,12 +2724,11 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationCreateManyTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    createManyAndReturnTodo: (
-        args: MutationCreateManyAndReturnTodoArgs,
-    ) => ReturnType<
+    createManyAndReturnTodo: ReturnType<
         SLFN<
             {},
             ReturnType<
@@ -2619,10 +2742,11 @@ type ReturnTypeFromMutationSelection = {
                     args: MutationCreateManyAndReturnTodoArgs,
                 ) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    createOneTodo: (args: MutationCreateOneTodoArgs) => ReturnType<
+    createOneTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoNotNullSelectionInput>,
@@ -2632,10 +2756,11 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationCreateOneTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    deleteManyTodo: (args: MutationDeleteManyTodoArgs) => ReturnType<
+    deleteManyTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
@@ -2645,10 +2770,11 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationDeleteManyTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    deleteOneTodo: (args: MutationDeleteOneTodoArgs) => ReturnType<
+    deleteOneTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoSelectionInput>,
@@ -2658,10 +2784,11 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationDeleteOneTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    updateManyTodo: (args: MutationUpdateManyTodoArgs) => ReturnType<
+    updateManyTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeAffectedRowsOutputNotNullSelectionInput>,
@@ -2671,10 +2798,11 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationUpdateManyTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    updateOneTodo: (args: MutationUpdateOneTodoArgs) => ReturnType<
+    updateOneTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoSelectionInput>,
@@ -2684,10 +2812,11 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationUpdateOneTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    upsertOneTodo: (args: MutationUpsertOneTodoArgs) => ReturnType<
+    upsertOneTodo: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeTodoNotNullSelectionInput>,
@@ -2697,9 +2826,36 @@ type ReturnTypeFromMutationSelection = {
             {
                 $lazy: (args: MutationUpsertOneTodoArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
+};
+type ReturnTypeFromMutationSelection = {
+    createManyTodo: (
+        args: MutationCreateManyTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["createManyTodo"];
+    createManyAndReturnTodo: (
+        args: MutationCreateManyAndReturnTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["createManyAndReturnTodo"];
+    createOneTodo: (
+        args: MutationCreateOneTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["createOneTodo"];
+    deleteManyTodo: (
+        args: MutationDeleteManyTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["deleteManyTodo"];
+    deleteOneTodo: (
+        args: MutationDeleteOneTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["deleteOneTodo"];
+    updateManyTodo: (
+        args: MutationUpdateManyTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["updateManyTodo"];
+    updateOneTodo: (
+        args: MutationUpdateOneTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["updateOneTodo"];
+    upsertOneTodo: (
+        args: MutationUpsertOneTodoArgs,
+    ) => ReturnTypeFromMutationSelectionRetTypes["upsertOneTodo"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2784,8 +2940,11 @@ export const MutationSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromAffectedRowsOutputSelection = {
+type ReturnTypeFromAffectedRowsOutputSelectionRetTypes<AS_PROMISE = 0> = {
     count: SelectionWrapperImpl<"count", "Int", 0, {}, undefined>;
+};
+type ReturnTypeFromAffectedRowsOutputSelection = {
+    count: ReturnTypeFromAffectedRowsOutputSelectionRetTypes["count"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2826,7 +2985,7 @@ export const AffectedRowsOutputSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromCreateManyAndReturnTodoSelection = {
+type ReturnTypeFromCreateManyAndReturnTodoSelectionRetTypes<AS_PROMISE = 0> = {
     id: SelectionWrapperImpl<"id", "String", 0, {}, undefined>;
     text: SelectionWrapperImpl<"text", "String", 0, {}, undefined>;
     completed: SelectionWrapperImpl<"completed", "Boolean", 0, {}, undefined>;
@@ -2837,6 +2996,12 @@ type ReturnTypeFromCreateManyAndReturnTodoSelection = {
         {},
         undefined
     >;
+};
+type ReturnTypeFromCreateManyAndReturnTodoSelection = {
+    id: ReturnTypeFromCreateManyAndReturnTodoSelectionRetTypes["id"];
+    text: ReturnTypeFromCreateManyAndReturnTodoSelectionRetTypes["text"];
+    completed: ReturnTypeFromCreateManyAndReturnTodoSelectionRetTypes["completed"];
+    createdAt: ReturnTypeFromCreateManyAndReturnTodoSelectionRetTypes["createdAt"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -3107,6 +3272,291 @@ Object.defineProperty(__client__, "init", {
     value: __init__,
 });
 
+const _makeOperationShortcut = <O extends "Query" | "Mutation">(
+    operation: O,
+    field: Exclude<
+        typeof operation extends "Query"
+            ? keyof ReturnTypeFromQuerySelection
+            : keyof ReturnTypeFromMutationSelection,
+        "$fragment" | "$scalars"
+    >,
+) => {
+    const root = new OperationSelectionCollector(
+        undefined,
+        undefined,
+        new RootOperation(),
+    );
+    const rootRef = { ref: root };
+
+    let fieldFn:
+        | ReturnTypeFromQuerySelection[Exclude<
+              keyof ReturnTypeFromQuerySelection,
+              "$fragment" | "$scalars"
+          >]
+        | ReturnTypeFromMutationSelection[Exclude<
+              keyof ReturnTypeFromMutationSelection,
+              "$fragment" | "$scalars"
+          >];
+
+    if (operation === "Query") {
+        fieldFn =
+            makeQuerySelectionInput.bind(rootRef)()[
+                field as Exclude<
+                    keyof ReturnTypeFromQuerySelection,
+                    "$fragment" | "$scalars"
+                >
+            ];
+    } else {
+        fieldFn =
+            makeMutationSelectionInput.bind(rootRef)()[
+                field as Exclude<
+                    keyof ReturnTypeFromMutationSelection,
+                    "$fragment" | "$scalars"
+                >
+            ];
+    }
+
+    if (typeof fieldFn === "function") {
+        const makeSubSelectionFn =
+            (
+                opFnArgs?: Exclude<
+                    Parameters<typeof fieldFn>[0],
+                    (args: any) => any
+                >,
+            ) =>
+            (opFnSelectionCb: (selection: unknown) => unknown) => {
+                const fieldSLFN =
+                    opFnArgs === undefined
+                        ? fieldFn
+                        : (
+                              fieldFn as (
+                                  args: typeof opFnArgs,
+                              ) => (s: typeof opFnSelectionCb) => unknown
+                          )(opFnArgs);
+
+                const fieldSlw = fieldSLFN(
+                    opFnSelectionCb,
+                ) as unknown as SelectionWrapperImpl<
+                    typeof field,
+                    string,
+                    number,
+                    any,
+                    typeof opFnArgs
+                >;
+                const opSlw = new SelectionWrapper(
+                    undefined,
+                    undefined,
+                    undefined,
+                    { [field]: fieldSlw },
+                    new OperationSelectionCollector(
+                        operation + "Selection",
+                        root,
+                    ),
+                    root,
+                );
+                fieldSlw[SLW_PARENT_SLW] = opSlw;
+                opSlw[SLW_IS_ROOT_TYPE] = operation;
+                opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
+                // access the keys of the proxy object, to register operations
+                (opSlw as any)[field as any];
+                const rootSlw = new SelectionWrapper(
+                    undefined,
+                    undefined,
+                    undefined,
+                    opSlw,
+                    root,
+                );
+                opSlw[ROOT_OP_COLLECTOR] = rootRef;
+                // access the keys of the proxy object, to register operations
+                (rootSlw as any)[field as any];
+
+                return new Proxy(
+                    {},
+                    {
+                        get(_t, _prop) {
+                            if (String(_prop) === "$lazy") {
+                                return (fieldSlw as any)[_prop].bind({
+                                    parentSlw: opSlw,
+                                    key: field,
+                                });
+                            } else {
+                                const result = new Promise(
+                                    (resolve, reject) => {
+                                        root.execute({})
+                                            .then(() => {
+                                                resolve(
+                                                    (rootSlw as any)[field],
+                                                );
+                                            })
+                                            .catch(reject);
+                                    },
+                                );
+                                if (String(_prop) === "then") {
+                                    return result.then.bind(result);
+                                }
+                                return result;
+                            }
+                        },
+                    },
+                );
+            };
+
+        // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
+        if (fieldFn.name === "bound _SLFN") {
+            return makeSubSelectionFn();
+        }
+        return (
+            opFnArgs: Exclude<
+                Parameters<typeof fieldFn>[0],
+                (args: any) => any
+            >,
+        ) => {
+            return makeSubSelectionFn(opFnArgs);
+        };
+    } else {
+        const fieldSlw = fieldFn as SelectionWrapperImpl<any, any, any>;
+        const opSlw = new SelectionWrapper(
+            undefined,
+            undefined,
+            undefined,
+            { [field]: fieldSlw },
+            new OperationSelectionCollector(operation + "Selection", root),
+            root,
+        );
+        fieldSlw[ROOT_OP_COLLECTOR] = rootRef;
+        opSlw[SLW_IS_ROOT_TYPE] = operation;
+        opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
+        opSlw[SLW_PARENT_SLW] = opSlw;
+        // access the keys of the proxy object, to register operations
+        (opSlw as any)[field as any];
+        const rootSlw = new SelectionWrapper(
+            undefined,
+            undefined,
+            undefined,
+            opSlw,
+            root,
+        );
+        opSlw[ROOT_OP_COLLECTOR] = rootRef;
+        // access the keys of the proxy object, to register operations
+        (rootSlw as any)[field as any];
+
+        return new Proxy(
+            {},
+            {
+                get(_t, _prop) {
+                    if (String(_prop) === "$lazy") {
+                        return (fieldSlw as any)[_prop].bind({
+                            parentSlw: opSlw,
+                            key: field,
+                        });
+                    } else {
+                        const result = new Promise((resolve, reject) => {
+                            root.execute({})
+                                .then(() => {
+                                    resolve((rootSlw as any)[field]);
+                                })
+                                .catch(reject);
+                        });
+                        if (String(_prop) === "then") {
+                            return result.then.bind(result);
+                        }
+                        return result;
+                    }
+                },
+            },
+        );
+    }
+};
+
+Object.defineProperty(__client__, "query", {
+    enumerable: false,
+    get() {
+        return new Proxy(
+            {},
+            {
+                get(
+                    target,
+                    op: Exclude<
+                        keyof ReturnTypeFromQuerySelection,
+                        "$fragment" | "$scalars"
+                    >,
+                ) {
+                    return _makeOperationShortcut("Query", op);
+                },
+            },
+        );
+    },
+});
+
+Object.defineProperty(__client__, "mutation", {
+    enumerable: false,
+    get() {
+        return new Proxy(
+            {},
+            {
+                get(
+                    target,
+                    op: Exclude<
+                        keyof ReturnTypeFromMutationSelection,
+                        "$fragment" | "$scalars"
+                    >,
+                ) {
+                    return _makeOperationShortcut("Mutation", op);
+                },
+            },
+        );
+    },
+});
+
 export default __client__ as typeof __client__ & {
     init: typeof __init__;
+} & {
+    query: {
+        [field in Exclude<
+            keyof ReturnType<typeof makeQuerySelectionInput>,
+            "$fragment" | "$scalars"
+        >]: ReturnType<
+            typeof makeQuerySelectionInput
+        >[field] extends SelectionWrapperImpl<
+            infer FN,
+            infer TTNP,
+            infer TTAD,
+            infer VT,
+            infer AT
+        >
+            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD> & {
+                  $lazy: () => Promise<
+                      ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                  >;
+              }
+            : ReturnType<typeof makeQuerySelectionInput>[field] extends (
+                    args: infer A,
+                ) => (selection: any) => any
+              ? (args: A) => ReturnTypeFromQuerySelectionRetTypes<1>[field]
+              : ReturnTypeFromQuerySelectionRetTypes<1>[field];
+    };
+    mutation: {
+        [field in Exclude<
+            keyof ReturnType<typeof makeMutationSelectionInput>,
+            "$fragment" | "$scalars"
+        >]: ReturnType<
+            typeof makeMutationSelectionInput
+        >[field] extends SelectionWrapperImpl<
+            infer FN,
+            infer TTNP,
+            infer TTAD,
+            infer VT,
+            infer AT
+        >
+            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD> & {
+                  $lazy: () => Promise<
+                      ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                  >;
+              }
+            : ReturnType<typeof makeMutationSelectionInput>[field] extends (
+                    args: infer A,
+                ) => (selection: any) => any
+              ? (args: A) => ReturnTypeFromMutationSelectionRetTypes<1>[field]
+              : ReturnTypeFromMutationSelectionRetTypes<1>[field];
+    };
 };
