@@ -1530,6 +1530,25 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             args: infer A,
                                         ) => (selection: any) => any
                                     ? (args: A) => ReturnTypeFrom${op}SelectionRetTypes<1>[field]
+                                    : ReturnType<typeof make${op}SelectionInput>[field] extends (
+                                        args: infer _A,
+                                    ) => SelectionWrapperImpl<
+                                        infer _FN,
+                                        infer _TTNP,
+                                        infer _TTAD,
+                                        infer _VT,
+                                        infer _AT
+                                    >
+                                    ? (args: _A) => ToTArrayWithDepth<
+                                        SLW_TPN_ToType<_TTNP>,
+                                        _TTAD
+                                    > & {
+                                        $lazy: (
+                                            args: _A,
+                                        ) => Promise<
+                                            ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                                        >;
+                                    }
                                     : ReturnTypeFrom${op}SelectionRetTypes<1>[field];
                             };`,
                     )
