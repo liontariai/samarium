@@ -18,13 +18,13 @@ It's done in 10s and you'll never bother with GraphQL or clumsy OpenAPI fetch wr
 <span> · </span>
 <a href="https://github.com/liontariai/samarium">GitHub</a> 
 <span> · </span>
-<a href="https://npmjs.com/package/@liontari.ai/samarium">NPM</a>
+<a href="https://npmjs.com/package/@samarium.sdk/make">NPM</a>
 <br />
 <br />
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/liontariai/samarium)](https://github.com/liontariai/samarium/commits/main/)
-[![NPM Version](https://img.shields.io/npm/v/%40liontari.ai%2Fsamarium)](https://www.npmjs.com/package/@liontari.ai/samarium)
-[![NPM Downloads](https://img.shields.io/npm/dm/%40liontari.ai%2Fsamarium)](https://www.npmjs.com/package/@liontari.ai/samarium)
+[![NPM Version](https://img.shields.io/npm/v/%40samarium.sdk%2Fmake)](https://www.npmjs.com/package/@samarium.sdk/make)
+[![NPM Downloads](https://img.shields.io/npm/dm/%40samarium.sdk%2Fmake)](https://www.npmjs.com/package/@samarium.sdk/make)
 
 <hr/>
 </div>
@@ -43,57 +43,59 @@ that it would be absolute dreamland if we could just use all APIs in the same wa
 <br/>
 Well, welcome to dreamland. Introducing: <strong>The universal API to Typescript compiler, Samarium</strong>.
 
-## Quickstart
+## Using the Samarium Compiler programatically
 
-#### 1. Compile the API to Typescript
+#### 1. Install the compiler package
 
 ```bash
-npx @samarium.sdk/new # this will start the assistant ui
+bun install @samarium.sdk/make
 ```
 
-#### 2. Import the API as Typescript SDK
+#### 2. Import the compiler
 
 ```typescript
-import sdk from "./spacex"; // the file you created in the previous step
+import {
+    GraphQLGenerator,
+    OpenAPIGenerator,
+    Flavors,
+} from "@samarium.sdk/make";
 ```
 
-#### 3. Use the SDK
+#### 3. Use the compiler
+
+#### GraphQL
 
 ```typescript
-const { first10Launches } = await sdk((op) =>
-    op.query((q) => ({
-        first10Launches: q.launches({ limit: 10 })(({ id }) => ({ id })),
-    })),
+const sdk = await new GraphQLGenerator.Generator(
+    Flavors.GraphQL.default,
+).generate({
+    schema: gqlSchema,
+    options: {},
+});
+
+// write the sdk to a file and set the endpoint (manual step right now)
+Bun.write(
+    Bun.file("sdk.ts"),
+    sdk.replace("[ENDPOINT]", "http://localhost:4000"),
 );
 ```
 
-## Documentation & Examples
+#### OpenAPI
 
-**Documentation is available [here](https://github.com/liontariai/samarium/blob/main/docs/readme.md).**
-<br/>
-Additonally, you can take a look at the **examples in the [examples folder](https://github.com/liontariai/samarium/blob/main/examples)**.
+```typescript
+const sdk = await new OpenAPIGenerator.Generator(
+    Flavors.OpenAPI.default,
+).generate({
+    schema: schema, // the openapi json schema
+    options: {},
+});
 
-If you are interested in the technical details, you can take a look at the [tests](https://github.com/liontariai/samarium/blob/main/src/lib/codegen/flavors/default/__tests__/features.test.ts).
-<br/>
-They are commented and cover all the features.
-
-Also, feel free to open an issue if you need more examples or have questions.
-
-## Try it in the browser
-
-In the playground you can compile your own GraphQL API by providing the introspection endpoint.
-It will fetch the schema, generate the sdk and load an editor with typescript.
-
-You can execute the code and see console.log outputs, as well as the network requests.
-
-**Note:** Right now the playground does not support authentication or headers.
-The CLI will prompt you for the authentication if needed and allows for more customization.
-
-[Online Playground is available here.](https://liontari.ai/#playground)
-
-<a href="https://liontari.ai/#playground">
-<img src="https://github.com/liontariai/samarium/raw/main/docs/images/playground.png" alt="Samarium Online Playground" style="width: 830px;"/>
-</a>
+// write the sdk to a file and set the endpoint (manual step right now)
+Bun.write(
+    Bun.file("sdk.ts"),
+    sdk.replace("[ENDPOINT]", "http://localhost:4000"),
+);
+```
 
 ## Support the project
 
