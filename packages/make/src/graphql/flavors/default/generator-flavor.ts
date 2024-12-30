@@ -966,6 +966,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const QueryTypeName = collector.QueryTypeName;
         const MutationTypeName = collector.MutationTypeName;
         const SubscriptionTypeName = collector.SubscriptionTypeName;
+        const availOperations = [
+            QueryTypeName,
+            MutationTypeName,
+            SubscriptionTypeName,
+        ].filter(Boolean) as string[];
 
         const directives = [...collector.types.values()]
             .filter((t) =>
@@ -1234,9 +1239,218 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 value: __init__,
             });
 
+            const _makeOperationShortcut = <O extends ${availOperations.map((op) => `"${op}"`).join(" | ")}>(
+                operation: O,
+                field: Exclude<
+                    typeof operation extends "${availOperations[0]}"
+                        ? keyof ReturnTypeFrom${availOperations[0]}Selection
+                        ${
+                            availOperations.length > 2
+                                ? `
+                            typeof operation extends "${availOperations[1]}"
+                            ? keyof ReturnTypeFrom${availOperations[1]}Selection
+                            : keyof ReturnTypeFrom${availOperations[2]}Selection`
+                                : `: keyof ReturnTypeFrom${availOperations[1]}Selection,`
+                        }
+                    "$fragment" | "$scalars"
+                >,
+            ) => {
+                const root = new OperationSelectionCollector(
+                    undefined,
+                    undefined,
+                    new RootOperation(),
+                );
+                const rootRef = { ref: root };
+
+                let fieldFn: ${availOperations
+                    .map(
+                        (opType) => `
+                    ReturnTypeFrom${opType}Selection[Exclude<
+                        keyof ReturnTypeFrom${opType}Selection,
+                        "$fragment" | "$scalars"
+                    >]`,
+                    )
+                    .join(" | ")};
+                
+                if (operation === "${availOperations[0]}") {
+                    fieldFn =
+                        make${availOperations[0]}SelectionInput.bind(rootRef)()[
+                            field as Exclude<
+                                keyof ReturnTypeFrom${availOperations[0]}Selection,
+                                "$fragment" | "$scalars"
+                            >
+                        ];
+                } else ${availOperations.length > 2 ? `if (operation === "${availOperations[1]})"` : ""}{
+                    fieldFn =
+                        make${availOperations[1]}SelectionInput.bind(rootRef)()[
+                            field as Exclude<
+                                keyof ReturnTypeFrom${availOperations[1]}Selection,
+                                "$fragment" | "$scalars"
+                            >
+                        ];
+                }
+                ${
+                    availOperations.length > 2
+                        ? `else {
+                    fieldFn =
+                        make${availOperations[2]}SelectionInput.bind(rootRef)()[
+                            field as Exclude<
+                                keyof ReturnTypeFrom${availOperations[2]}Selection,
+                                "$fragment" | "$scalars"
+                            >
+                        ];
+                }`
+                        : ""
+                }
+
+                if (typeof fieldFn === "function") {
+                    const makeSubSelectionFn =
+                        (
+                            opFnArgs?: Exclude<
+                                Parameters<typeof fieldFn>[0],
+                                (args: any) => any
+                            >,
+                        ) =>
+                        (opFnSelectionCb: (selection: unknown) => unknown) => {
+                            const fieldSLFN =
+                                opFnArgs === undefined
+                                    ? fieldFn
+                                    : (
+                                        fieldFn as (
+                                            args: typeof opFnArgs,
+                                        ) => (s: typeof opFnSelectionCb) => unknown
+                                    )(opFnArgs);
+
+                            const fieldSlw = fieldSLFN(
+                                opFnSelectionCb,
+                            ) as unknown as SelectionWrapperImpl<
+                                typeof field,
+                                string,
+                                number,
+                                any,
+                                typeof opFnArgs
+                            >;
+                            const opSlw = new SelectionWrapper(
+                                undefined,
+                                undefined,
+                                undefined,
+                                { [field]: fieldSlw },
+                                new OperationSelectionCollector(
+                                    operation + "Selection",
+                                    root,
+                                ),
+                                root,
+                            );
+                            fieldSlw[SLW_PARENT_SLW] = opSlw;
+                            opSlw[SLW_IS_ROOT_TYPE] = operation;
+                            opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
+                            // access the keys of the proxy object, to register operations
+                            (opSlw as any)[field as any];
+                            const rootSlw = new SelectionWrapper(
+                                undefined,
+                                undefined,
+                                undefined,
+                                opSlw,
+                                root,
+                            );
+                            opSlw[ROOT_OP_COLLECTOR] = rootRef;
+                            // access the keys of the proxy object, to register operations
+                            (rootSlw as any)[field as any];
+
+                            return new Promise((resolve, reject) => {
+                                root.execute({})
+                                    .then(() => {
+                                        resolve((rootSlw as any)[field]);
+                                    })
+                                    .catch(reject);
+                            });
+                        };
+
+                    // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
+                    if (fieldFn.name === "bound _SLFN") {
+                        return makeSubSelectionFn();
+                    }
+                    return (
+                        opFnArgs: Exclude<
+                            Parameters<typeof fieldFn>[0],
+                            (args: any) => any
+                        >,
+                    ) => {
+                        return makeSubSelectionFn(opFnArgs);
+                    };
+                } else {
+                    const fieldSlw = fieldFn as SelectionWrapperImpl<any, any, any>;
+                    const opSlw = new SelectionWrapper(
+                        undefined,
+                        undefined,
+                        undefined,
+                        { [field]: fieldSlw },
+                        new OperationSelectionCollector(operation + "Selection", root),
+                        root,
+                    );
+                    fieldSlw[ROOT_OP_COLLECTOR] = rootRef;
+                    opSlw[SLW_IS_ROOT_TYPE] = operation;
+                    opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
+                    opSlw[SLW_PARENT_SLW] = opSlw;
+                    // access the keys of the proxy object, to register operations
+                    (opSlw as any)[field as any];
+                    const rootSlw = new SelectionWrapper(
+                        undefined,
+                        undefined,
+                        undefined,
+                        opSlw,
+                        root,
+                    );
+                    opSlw[ROOT_OP_COLLECTOR] = rootRef;
+                    // access the keys of the proxy object, to register operations
+                    (rootSlw as any)[field as any];
+
+                    return new Promise((resolve, reject) => {
+                        root.execute({})
+                            .then(() => {
+                                resolve((rootSlw as any)[field]);
+                            })
+                            .catch(reject);
+                    });
+                }
+            };
+
+            ${availOperations
+                .map(
+                    (operation) => `
+                Object.defineProperty(__client__, "${operation.toLowerCase()}", {
+                    enumerable: false,
+                    get() {
+                        return new Proxy(
+                            {},
+                            {
+                                get(
+                                    target,
+                                    op: Exclude<
+                                        keyof ReturnTypeFrom${operation}Selection,
+                                        "$fragment" | "$scalars"
+                                    >,
+                                ) {
+                                    return _makeOperationShortcut("${operation}", op);
+                                },
+                            },
+                        );
+                    },
+                });
+            `,
+                )
+                .join("\n")}
+
             export default __client__ as typeof __client__ & {
                 init: typeof __init__;
-            };
+            } & {
+                ${availOperations
+                    .map(
+                        (op) =>
+                            `${op?.toLowerCase()}: ReturnType<typeof make${op}SelectionInput>;`,
+                    )
+                    .join("\n")}
+            }
         `;
 
         return rootOperationFunction;
