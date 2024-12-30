@@ -18,13 +18,13 @@ It's done in 10s and you'll never bother with GraphQL or clumsy OpenAPI fetch wr
 <span> · </span>
 <a href="https://github.com/liontariai/samarium">GitHub</a> 
 <span> · </span>
-<a href="https://npmjs.com/package/@liontari.ai/samarium">NPM</a>
+<a href="https://npmjs.com/package/@samarium.sdk/new">NPM</a>
 <br />
 <br />
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/liontariai/samarium)](https://github.com/liontariai/samarium/commits/main/)
-[![NPM Version](https://img.shields.io/npm/v/%40liontari.ai%2Fsamarium)](https://www.npmjs.com/package/@liontari.ai/samarium)
-[![NPM Downloads](https://img.shields.io/npm/dm/%40liontari.ai%2Fsamarium)](https://www.npmjs.com/package/@liontari.ai/samarium)
+[![NPM Version](https://img.shields.io/npm/v/%40samarium.sdk%2Fnew)](https://www.npmjs.com/package/@samarium.sdk/new)
+[![NPM Downloads](https://img.shields.io/npm/dm/%40samarium.sdk%2Fnew)](https://www.npmjs.com/package/@samarium.sdk/new)
 
 <hr/>
 </div>
