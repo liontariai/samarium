@@ -1261,13 +1261,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 field: Exclude<
                     typeof operation extends "${availOperations[0]}"
                         ? keyof ReturnTypeFrom${availOperations[0]}Selection
-                        ${
+                        : ${
                             availOperations.length > 2
                                 ? `
                             typeof operation extends "${availOperations[1]}"
                             ? keyof ReturnTypeFrom${availOperations[1]}Selection
-                            : keyof ReturnTypeFrom${availOperations[2]}Selection`
-                                : `: keyof ReturnTypeFrom${availOperations[1]}Selection,`
+                            : keyof ReturnTypeFrom${availOperations[2]}Selection,`
+                                : `keyof ReturnTypeFrom${availOperations[1]}Selection,`
                         }
                     "$fragment" | "$scalars"
                 >,
@@ -1297,7 +1297,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 "$fragment" | "$scalars"
                             >
                         ];
-                } else ${availOperations.length > 2 ? `if (operation === "${availOperations[1]})"` : ""}{
+                } else ${availOperations.length > 2 ? `if (operation === "${availOperations[1]}")` : ""}{
                     fieldFn =
                         make${availOperations[1]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
@@ -1339,7 +1339,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     )(opFnArgs);
 
                             const fieldSlw = fieldSLFN(
-                                opFnSelectionCb,
+                                opFnSelectionCb as any,
                             ) as unknown as SelectionWrapperImpl<
                                 typeof field,
                                 string,
