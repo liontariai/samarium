@@ -53,6 +53,9 @@ export abstract class GeneratorSelectionTypeFlavor {
         typeName: string,
         protected readonly collector: Collector,
         protected readonly options: CodegenOptions,
+        protected readonly authConfig?: {
+            headerName: string;
+        },
     ) {
         // Get the metadata for the GraphQL type using the collector and the full name of the GraphQL type.
         this.typeMeta = collector.getType(typeName);

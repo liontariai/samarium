@@ -341,8 +341,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         typeName: string,
         protected readonly collector: Collector,
         protected readonly options: CodegenOptions,
+        protected readonly authConfig?: {
+            headerName: string;
+        },
     ) {
-        super(typeName, collector, options);
+        super(typeName, collector, options, authConfig);
     }
 
     public makeEnumType(): string {
