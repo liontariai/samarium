@@ -178,11 +178,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? A
         : never;
 
-    type ReplaceReturnType<T, R> = T extends (...a: any) => any
-    ? (
-          ...a: Parameters<T>
-      ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
-    : never;
+    type ReplaceReturnType<T, R, E = unknown> = T extends (
+        ...a: any
+    ) => (...a: any) => any
+        ? (
+            ...a: Parameters<T>
+        ) => ReturnType<ReturnType<T>> extends Promise<any>
+            ? Promise<R> & E
+            : R & E
+        : T extends (...a: any) => any
+        ? (
+                ...a: Parameters<T>
+            ) => ReturnType<T> extends Promise<any> ? Promise<R> & E : R & E
+        : never;
     type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
         ? ScalarTypeMapWithCustom[TNP]
         : TNP extends keyof ScalarTypeMapDefault
@@ -195,6 +203,25 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? T
         : ToTArrayWithDepth<T[], Prev[D]>;
     type ConvertToPromise<T, skip = 1> = skip extends 0 ? T : Promise<T>;
+    type ReplacePlaceHoldersWithTNested<
+        inferedResult,
+        EE,
+        REP extends string | number | symbol,
+    > = {
+        [k in keyof EE]: k extends REP
+            ? EE[k] extends (...args: any) => infer R
+                ? ReplaceReturnType<
+                    EE[k],
+                    inferedResult,
+                    {
+                        [kk in Exclude<REP, k>]: kk extends keyof R
+                            ? ReplaceReturnType<R[kk], inferedResult>
+                            : never;
+                    }
+                >
+                : inferedResult
+            : EE[k];
+    };
 
     export type SLFN<
         T extends object,
@@ -210,61 +237,30 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         SLFN_name: N,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
-    ) => <TT = T, FF = F, EE = E>(
+    ) => <
+        TT = T,
+        FF = F,
+        EE = E,
+        inferedResult = {
+            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                infer FN,
+                infer TTNP,
+                infer TTAD,
+                infer VT,
+                infer AT
+            >
+                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                : TT[K];
+        },
+    >(
         this: any,
         s: (selection: FF) => TT,
-    ) => ConvertToPromise<
-        ToTArrayWithDepth<
-            {
-                [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                    infer FN,
-                    infer TTNP,
-                    infer TTAD,
-                    infer VT,
-                    infer AT
-                >
-                    ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                    : TT[K];
-            },
-            TAD
-        >,
-        AS_PROMISE
-    > & {
-        [k in keyof EE]: k extends REP
-            ? EE[k] extends (...args: any) => any
-                ? ReplaceReturnType<
-                    EE[k],
-                    ToTArrayWithDepth<
-                        {
-                            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                                infer FN,
-                                infer TTNP,
-                                infer TTAD,
-                                infer VT,
-                                infer AT
-                            >
-                                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                                : TT[K];
-                        },
-                        TAD
-                    >
-                >
-                : ToTArrayWithDepth<
-                    {
-                        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                            infer FN,
-                            infer TTNP,
-                            infer TTAD,
-                            infer VT,
-                            infer AT
-                        >
-                            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                            : TT[K];
-                    },
-                    TAD
-                >
-            : EE[k];
-    };
+    ) => ConvertToPromise<ToTArrayWithDepth<inferedResult, TAD>, AS_PROMISE> &
+        ReplacePlaceHoldersWithTNested<
+            ToTArrayWithDepth<inferedResult, TAD>,
+            EE,
+            REP
+        >;
     `;
     public static readonly HelperFunctions = `
     const selectScalars = <S>(selection: Record<string, any>) =>
