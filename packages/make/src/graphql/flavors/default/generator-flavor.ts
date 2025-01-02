@@ -907,9 +907,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                                       .toUpperCase()}${field.name.slice(1)}Args`
                                                                 : ""
                                                         }
-                                                    ) => Promise<"T">
+                                                    ) => Promise<"T"> ${
+                                                        this.authConfig
+                                                            ? `& {
+                                                        auth: (token: __AuthenticationArg__) => Promise<"T">;
+                                                    }`
+                                                            : ""
+                                                    }
                                                 },
-                                                "$lazy",
+                                                "$lazy" ${this.authConfig ? `| "auth"` : ""},
                                                 AS_PROMISE
                                                 `
                                                         : ""
