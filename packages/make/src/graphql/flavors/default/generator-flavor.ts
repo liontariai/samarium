@@ -860,6 +860,16 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 ] as const,
                         )
                         .map(([field, fieldSlfn]) => {
+                            const lazyModiferType = `
+                            $lazy: (
+                                ${
+                                    field.hasArgs
+                                        ? `args: ${this.typeName}${field.name
+                                              .slice(0, 1)
+                                              .toUpperCase()}${field.name.slice(1)}Args`
+                                        : ""
+                                }
+                            ) => Promise<"T">`;
                             makeSelectionFunctionInputReturnTypeParts.set(
                                 field.name,
                                 [
@@ -896,24 +906,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     isRootType
                                                         ? `,
                                                 { 
-                                                    $lazy: (
-                                                        ${
-                                                            field.hasArgs
-                                                                ? `args: ${this.typeName}${field.name
-                                                                      .slice(
-                                                                          0,
-                                                                          1,
-                                                                      )
-                                                                      .toUpperCase()}${field.name.slice(1)}Args`
-                                                                : ""
-                                                        }
-                                                    ) => Promise<"T"> ${
+                                                    ${lazyModiferType} ${
                                                         this.authConfig
                                                             ? `& {
-                                                        auth: (token: __AuthenticationArg__) => Promise<"T">;
+                                                        auth: (auth: FnOrPromisOrPrimitive) => Promise<"T">;
                                                     }`
                                                             : ""
-                                                    }
+                                                    };
+                                                    ${this.authConfig ? `auth: (auth: FnOrPromisOrPrimitive) => Promise<"T"> & {${lazyModiferType}}` : ""}
                                                 },
                                                 "$lazy" ${this.authConfig ? `| "auth"` : ""},
                                                 AS_PROMISE
@@ -1058,15 +1058,6 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 } as const;
             };
 
-            ${
-                authConfig
-                    ? `type __AuthenticationArg__ =
-            | string
-            | { [key: string]: string }
-            | (() => string | { [key: string]: string })
-            | (() => Promise<string | { [key: string]: string }>);`
-                    : ""
-            }
             function __client__ <
                 T extends object,
                 F extends ReturnType<typeof _makeRootOperationInput>>(
@@ -1111,110 +1102,55 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? _TR
                         : Promise<_TR>;
 
-                let headers: Record<string, string> | undefined = undefined;
-                let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
-                
-                if (Object.values(result).some((v) => typeof v !== "function")) {
-                    returnValue = new Promise((resolve, reject) => {
-                            ${
-                                authConfig
-                                    ? `
-                                const doExecute = () => {
-                                    root.execute(headers)
-                                        .then(() => {
-                                            resolve(result);
-                                        })
-                                        .catch(reject);
-                                }
-                                if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
-                                    const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
-                                    if (tokenOrPromise instanceof Promise) {
-                                        tokenOrPromise.then((t) => {
-                                            if (typeof t === "string")
-                                                headers = { "${authConfig.headerName}": t };
-                                            else headers = t;
-        
-                                            doExecute();
-                                        });
-                                    }
-                                    else if (typeof tokenOrPromise === "string") {
-                                        headers = { "${authConfig.headerName}": tokenOrPromise };
-
-                                        doExecute();
-                                    } else {
-                                        headers = tokenOrPromise;
-
-                                        doExecute();
-                                    }
-                                }
-                                else {
-                                    doExecute();
-                                }
-                            `
-                                    : `
-                                root.execute(headers)
-                                .then(() => {
-                                    resolve(result);
-                                })
-                                .catch(reject);
-                            `
+                const resultProxy = new Proxy(
+                    {},
+                    {
+                        get(_t, _prop) {
+                            const rAtProp = result[_prop as keyof T];
+                            if (typeof rAtProp === "function") {
+                                return rAtProp;
                             }
-                        }) as finalReturnTypeBasedOnIfHasLazyPromises;
-                }
-                else {
-                    returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
-                }
-                
-                ${
-                    authConfig
-                        ? `
-                Object.defineProperty(returnValue, "auth", {
-                    enumerable: false,
-                    get: function () {
-                        return function (
-                            auth: __AuthenticationArg__,
-                        ) {
-                            if (typeof auth === "string") {
-                                headers = { "${authConfig.headerName}": auth };
-                            } else if (typeof auth === "function") {
-                                const tokenOrPromise = auth();
-                                if (tokenOrPromise instanceof Promise) {
-                                    return tokenOrPromise.then((t) => {
-                                        if (typeof t === "string")
-                                            headers = { "${authConfig.headerName}": t };
-                                        else headers = t;
-
-                                        return returnValue;
+                            const promise = new Promise((resolve, reject) => {
+                                root.execute()
+                                    .catch(reject)
+                                    .then(() => {
+                                        resolve(rAtProp);
                                     });
-                                }
-                                if (typeof tokenOrPromise === "string") {
-                                    headers = { "${authConfig.headerName}": tokenOrPromise };
-                                } else {
-                                    headers = tokenOrPromise;
-                                }
-                            } else {
-                                headers = auth;
+                            });
+                            if (String(_prop) === "then") {
+                                return promise.then.bind(promise);
                             }
-
-                            return returnValue;
-                        };
+                            return promise;
+                        },
                     },
-                });
+                ) as any;
 
-                return returnValue as finalReturnTypeBasedOnIfHasLazyPromises & {
+                return ${
+                    authConfig
+                        ? `new Proxy(
+                    {},
+                    {
+                        get(_t, _prop) {
+                            if (String(_prop) === "auth") {
+                                return (auth: FnOrPromisOrPrimitive) => {
+                                    root.op!.setAuth(auth);
+                                    return resultProxy;
+                                };
+                            }
+                            return resultProxy[_prop];
+                        },
+                    },
+                )`
+                        : `resultProxy`
+                } as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
-                        auth: __AuthenticationArg__,
+                        auth: FnOrPromisOrPrimitive,
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
                 };
-                `
-                        : `
-                return returnValue;
-                `
-                }
             };
 
             const __init__ = (options: {
-                ${authConfig ? `auth?: __AuthenticationArg__;` : ""}
+                ${authConfig ? `auth?: FnOrPromisOrPrimitive;` : ""}
                 headers?: { [key: string]: string };
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
@@ -1378,28 +1314,24 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             opSlw[ROOT_OP_COLLECTOR] = rootRef;
                             // access the keys of the proxy object, to register operations
                             (rootSlw as any)[field as any];
-
-                            return new Proxy(
+                                
+                            const resultProxy = new Proxy(
                                 {},
                                 {
                                     get(_t, _prop) {
                                         if (String(_prop) === "$lazy") {
-                                            return (fieldSlw as any)[_prop].bind({
+                                            return (fieldSlw as any)["$lazy"].bind({
                                                 parentSlw: opSlw,
                                                 key: field,
                                             });
                                         } else {
-                                            const result = new Promise(
-                                                (resolve, reject) => {
-                                                    root.execute({})
-                                                        .then(() => {
-                                                            resolve(
-                                                                (rootSlw as any)[field],
-                                                            );
-                                                        })
-                                                        .catch(reject);
-                                                },
-                                            );
+                                            const result = new Promise((resolve, reject) => {
+                                                root.execute()
+                                                    .catch(reject)
+                                                    .then(() => {
+                                                        resolve((rootSlw as any)[field]);
+                                                    });
+                                            });
                                             if (String(_prop) === "then") {
                                                 return result.then.bind(result);
                                             }
@@ -1407,7 +1339,26 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         }
                                     },
                                 },
-                            );
+                            ) as any;
+
+                            return ${
+                                authConfig
+                                    ? `new Proxy(
+                                {},
+                                {
+                                    get(_t, _prop) {
+                                        if (String(_prop) === "auth") {
+                                            return (auth: FnOrPromisOrPrimitive) => {
+                                                root.op!.setAuth(auth);
+                                                return resultProxy;
+                                            };
+                                        }
+                                        return resultProxy[_prop];
+                                    },
+                                },
+                            )`
+                                    : `resultProxy`
+                            };
                         };
 
                     // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
@@ -1449,27 +1400,23 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     // access the keys of the proxy object, to register operations
                     (rootSlw as any)[field as any];
 
-                    return new Proxy(
+                    const resultProxy = new Proxy(
                         {},
                         {
                             get(_t, _prop) {
                                 if (String(_prop) === "$lazy") {
-                                    return (fieldSlw as any)[_prop].bind({
+                                    return (fieldSlw as any)["$lazy"].bind({
                                         parentSlw: opSlw,
                                         key: field,
                                     });
                                 } else {
-                                    const result = new Promise(
-                                        (resolve, reject) => {
-                                            root.execute({})
-                                                .then(() => {
-                                                    resolve(
-                                                        (rootSlw as any)[field],
-                                                    );
-                                                })
-                                                .catch(reject);
-                                        },
-                                    );
+                                    const result = new Promise((resolve, reject) => {
+                                        root.execute()
+                                            .catch(reject)
+                                            .then(() => {
+                                                resolve((rootSlw as any)[field]);
+                                            });
+                                    });
                                     if (String(_prop) === "then") {
                                         return result.then.bind(result);
                                     }
@@ -1477,7 +1424,26 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 }
                             },
                         },
-                    );
+                    ) as any;
+
+                    return ${
+                        authConfig
+                            ? `new Proxy(
+                        {},
+                        {
+                            get(_t, _prop) {
+                                if (String(_prop) === "auth") {
+                                    return (auth: FnOrPromisOrPrimitive) => {
+                                        root.op!.setAuth(auth);
+                                        return resultProxy;
+                                    };
+                                }
+                                return resultProxy[_prop];
+                            },
+                        },
+                    )`
+                            : `resultProxy`
+                    };
                 }
             };
 
@@ -1529,7 +1495,27 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD> & {
                                         $lazy: () => Promise<
                                             ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                                        >;
+                                        > ${
+                                            authConfig
+                                                ? `& {
+                                                    auth: (
+                                                        auth: FnOrPromisOrPrimitive,
+                                                    ) => Promise<
+                                                        ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                                    >
+                                                }
+                                            `
+                                                : ""
+                                        };
+                                        ${
+                                            authConfig
+                                                ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                                            $lazy: () => Promise<
+                                                ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                            >;
+                                        };`
+                                                : ""
+                                        }
                                     }
                                     : ReturnType<typeof make${op}SelectionInput>[field]extends (
                                             args: infer A,
@@ -1548,11 +1534,29 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         SLW_TPN_ToType<_TTNP>,
                                         _TTAD
                                     > & {
-                                        $lazy: (
-                                            args: _A,
-                                        ) => Promise<
+                                        $lazy: (args: _A) => Promise<
                                             ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
-                                        >;
+                                        > ${
+                                            authConfig
+                                                ? `& {
+                                                    auth: (
+                                                        auth: FnOrPromisOrPrimitive,
+                                                    ) => Promise<
+                                                        ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                                                    >;
+                                                }
+                                            `
+                                                : ""
+                                        };
+                                        ${
+                                            authConfig
+                                                ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                                            $lazy: () => Promise<
+                                                ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                                            >;
+                                        };`
+                                                : ""
+                                        }
                                     }
                                     : ReturnTypeFrom${op}SelectionRetTypes<1>[field];
                             };`,
