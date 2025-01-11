@@ -44,12 +44,22 @@ export class Generator {
         // Generate & collect Enum first, so that they can be used in the selection types
         for (const [typeName, typeMeta] of collector.types.entries()) {
             if (!typeMeta.isEnum) continue;
-            new this.Codegen(typeName, collector, options).makeEnumType();
+            new this.Codegen(
+                typeName,
+                collector,
+                options,
+                authConfig,
+            ).makeEnumType();
         }
         // Generate & collect Input first, so that they can be used in the selection types
         for (const [typeName, typeMeta] of collector.types.entries()) {
             if (!typeMeta.isInput) continue;
-            new this.Codegen(typeName, collector, options).makeSelectionType();
+            new this.Codegen(
+                typeName,
+                collector,
+                options,
+                authConfig,
+            ).makeSelectionType();
         }
         // Generate directives
         for (const [typeName, typeMeta] of collector.types.entries()) {
@@ -63,7 +73,12 @@ export class Generator {
                 )
             )
                 continue;
-            new this.Codegen(typeName, collector, options).makeDirective();
+            new this.Codegen(
+                typeName,
+                collector,
+                options,
+                authConfig,
+            ).makeDirective();
         }
 
         // Generate selection types for all types
@@ -75,11 +90,17 @@ export class Generator {
                 typeMeta.isDirective
             )
                 continue;
-            new this.Codegen(typeName, collector, options).makeSelectionType();
             new this.Codegen(
                 typeName,
                 collector,
                 options,
+                authConfig,
+            ).makeSelectionType();
+            new this.Codegen(
+                typeName,
+                collector,
+                options,
+                authConfig,
             ).makeSelectionFunction();
         }
 

@@ -92,6 +92,11 @@ export const generate = async (
 
     fs.writeFileSync(
         output,
-        code.replace("[ENDPOINT]", options.endpoint ?? remote.url),
+        code
+            .replace(
+                "[AUTH_HEADER_NAME]",
+                options.authHeaderName ?? "Authorization",
+            )
+            .replace("[ENDPOINT]", options.endpoint ?? remote.url),
     );
 };
