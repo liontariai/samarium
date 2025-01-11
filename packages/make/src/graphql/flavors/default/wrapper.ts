@@ -1,9 +1,58 @@
 const Proxy = global.Proxy;
 Proxy.prototype = {};
 
+type FnOrPromisOrPrimitive =
+    | (() => string | { [key: string]: string })
+    | (() => Promise<string | { [key: string]: string }>)
+    | string
+    | { [key: string]: string };
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 export class RootOperation {
+    public static authHeaderName = "[AUTH_HEADER_NAME]";
+    private resolveFnOrPromisOrPrimitiveHeaders = (
+        arg?: FnOrPromisOrPrimitive,
+    ) => {
+        if (!arg) return undefined;
+        let headers: Record<string, string> | undefined = undefined;
+        if (typeof arg === "string") {
+            headers = { [RootOperation.authHeaderName]: arg };
+        } else if (typeof arg === "function") {
+            const tokenOrPromise = arg();
+            if (tokenOrPromise instanceof Promise) {
+                return tokenOrPromise.then((t) => {
+                    if (typeof t === "string")
+                        headers = { [RootOperation.authHeaderName]: t };
+                    else headers = t;
+
+                    return headers;
+                });
+            }
+            if (typeof tokenOrPromise === "string") {
+                headers = { [RootOperation.authHeaderName]: tokenOrPromise };
+            } else {
+                headers = tokenOrPromise;
+            }
+        } else {
+            headers = arg;
+        }
+
+        return headers;
+    };
+
+    constructor(
+        public authArg?: FnOrPromisOrPrimitive,
+        public headers?: FnOrPromisOrPrimitive,
+    ) {}
+    public setAuth(auth: FnOrPromisOrPrimitive) {
+        this.authArg = auth;
+        return this;
+    }
+    public setHeaders(headers: FnOrPromisOrPrimitive) {
+        this.headers = headers;
+        return this;
+    }
+
     public static [OPTIONS] = {
         headers: {},
         _auth_fn: undefined as
@@ -30,9 +79,26 @@ export class RootOperation {
         this.rootCollector = collector;
     }
     public async execute(headers: Record<string, string> = {}) {
-        if (!this.rootCollector) {
+        if (!this.rootCollector?.op) {
             throw new Error("RootOperation has no registered collector");
         }
+
+        const authHeaders =
+            await this.rootCollector.op!.resolveFnOrPromisOrPrimitiveHeaders(
+                this.rootCollector.op!.authArg ??
+                    RootOperation[OPTIONS]._auth_fn,
+            );
+        const headersHeaders =
+            await this.rootCollector.op!.resolveFnOrPromisOrPrimitiveHeaders(
+                this.rootCollector.op!.headers ??
+                    RootOperation[OPTIONS].headers,
+            );
+
+        headers = {
+            ...authHeaders,
+            ...headersHeaders,
+            ...headers,
+        };
 
         type selection = ReturnType<
             typeof OperationSelectionCollector.prototype.renderSelections
@@ -162,9 +228,7 @@ export class OperationSelectionCollector {
 
     private executed = false;
     private operationResult: any | undefined = undefined;
-    public async execute(
-        headers: Record<string, string> = RootOperation[OPTIONS].headers,
-    ) {
+    public async execute(headers?: Record<string, string>) {
         if (!this.op) {
             throw new Error(
                 "OperationSelectionCollector is not registered to a root operation",
@@ -672,7 +736,14 @@ export class SelectionWrapper<
                                 ref: new OperationSelectionCollector(
                                     undefined,
                                     undefined,
-                                    new RootOperation(),
+                                    new RootOperation(
+                                        that[
+                                            ROOT_OP_COLLECTOR
+                                        ]!.ref.op!.authArg,
+                                        that[
+                                            ROOT_OP_COLLECTOR
+                                        ]!.ref.op!.headers,
+                                    ),
                                 ),
                             };
 
@@ -728,14 +799,46 @@ export class SelectionWrapper<
                                 newThat,
                             );
 
-                            return new Promise((resolve, reject) => {
-                                newRootOpCollectorRef.ref
-                                    .execute()
-                                    .catch(reject)
-                                    .then(() => {
-                                        resolve(newThat);
-                                    });
-                            });
+                            const resultProxy = new Proxy(
+                                {},
+                                {
+                                    get(_t, _prop) {
+                                        const result = new Promise(
+                                            (resolve, reject) => {
+                                                newRootOpCollectorRef.ref
+                                                    .execute()
+                                                    .catch(reject)
+                                                    .then(() => {
+                                                        resolve(newThat);
+                                                    });
+                                            },
+                                        );
+                                        if (String(_prop) === "then") {
+                                            return result.then.bind(result);
+                                        }
+                                        return result;
+                                    },
+                                },
+                            ) as any;
+
+                            return new Proxy(
+                                {},
+                                {
+                                    get(_t, _prop) {
+                                        if (String(_prop) === "auth") {
+                                            return (
+                                                auth: FnOrPromisOrPrimitive,
+                                            ) => {
+                                                newRootOpCollectorRef.ref.op!.setAuth(
+                                                    auth,
+                                                );
+                                                return resultProxy;
+                                            };
+                                        }
+                                        return resultProxy[_prop];
+                                    },
+                                },
+                            );
                         }
                         target[SLW_LAZY_FLAG] = true;
                         lazy[SLW_LAZY_FLAG] = true;
