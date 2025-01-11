@@ -1022,32 +1022,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             export function _makeRootOperationInput(this: any) {
                 return {
-                    ${
-                        QueryTypeName && collector.types.has(QueryTypeName)
-                            ? `query: ${QueryTypeName}Selection.bind({
-                        collector: this,
-                        isRootType: "Query",
-                    }),`
-                            : ""
-                    }
-                    ${
-                        MutationTypeName &&
-                        collector.types.has(MutationTypeName)
-                            ? `mutation: ${MutationTypeName}Selection.bind({
-                        collector: this,
-                        isRootType: "Mutation",
-                    }),`
-                            : ""
-                    }
-                    ${
-                        SubscriptionTypeName &&
-                        collector.types.has(SubscriptionTypeName)
-                            ? `subscription: ${SubscriptionTypeName}Selection.bind({
-                        collector: this,
-                        isRootType: "Subscription",
-                    }),`
-                            : ""
-                    }
+                    ${availOperations
+                        .filter((op) => collector.types.has(op))
+                        .map((op) => {
+                            return `${op}: ${op}Selection.bind({
+                                collector: this,
+                                isRootType: "${op}",
+                    }),`;
+                        })
+                        .join("\n")}
 
                     ${
                         directives?.length
@@ -1200,7 +1183,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const _makeOperationShortcut = <O extends ${availOperations.map((op) => `"${op}"`).join(" | ")}>(
                 operation: O,
                 field: Exclude<
-                    typeof operation extends "${availOperations[0]}"
+                    ${
+                        availOperations.length === 1
+                            ? `keyof ReturnTypeFrom${availOperations[0]}Selection,`
+                            : `typeof operation extends "${availOperations[0]}"
                         ? keyof ReturnTypeFrom${availOperations[0]}Selection
                         : ${
                             availOperations.length > 2
@@ -1209,7 +1195,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             ? keyof ReturnTypeFrom${availOperations[1]}Selection
                             : keyof ReturnTypeFrom${availOperations[2]}Selection,`
                                 : `keyof ReturnTypeFrom${availOperations[1]}Selection,`
-                        }
+                        }`
+                    }
                     "$fragment" | "$scalars"
                 >,
             ) => {
@@ -1230,7 +1217,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     )
                     .join(" | ")};
                 
-                if (operation === "${availOperations[0]}") {
+                    ${
+                        availOperations.length > 1
+                            ? `if (operation === "${availOperations[0]}") {`
+                            : ""
+                    }
                     fieldFn =
                         make${availOperations[0]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
@@ -1238,7 +1229,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 "$fragment" | "$scalars"
                             >
                         ];
-                } else ${availOperations.length > 2 ? `if (operation === "${availOperations[1]}")` : ""}{
+                ${
+                    availOperations.length > 1
+                        ? `} else ${
+                              availOperations.length > 2
+                                  ? `if (operation === "${availOperations[1]}")`
+                                  : ""
+                          }`
+                        : ""
+                }${
+                    availOperations.length > 1
+                        ? `{
                     fieldFn =
                         make${availOperations[1]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
@@ -1246,6 +1247,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 "$fragment" | "$scalars"
                             >
                         ];
+                }`
+                        : ""
                 }
                 ${
                     availOperations.length > 2
