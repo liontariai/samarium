@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.17.2",
+    "version": "0.18.0",
     "exports": {
         ".": {
             "import": "./dist/esm/index.js",
@@ -50,8 +50,8 @@
     ],
     "scripts": {
         "prettier": "prettier --write .",
-        "build": "bun bundle.js && tsc",
-        "prepublishOnly": "bun run build",
+        "bundle": "bun bundle.js && tsc && rm -rf `find ./dist/ -type d -name __tests__`",
+        "prepublishOnly": "bun run bundle",
         "test": "bun test"
     },
     "prettier": {
