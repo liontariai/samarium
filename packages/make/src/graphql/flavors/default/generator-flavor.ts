@@ -1135,6 +1135,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const __init__ = (options: {
                 ${authConfig ? `auth?: FnOrPromisOrPrimitive;` : ""}
                 headers?: { [key: string]: string };
+                fetcher?: (request: Request) => Promise<Response>;
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
                         v: string,
@@ -1167,6 +1168,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ...RootOperation[OPTIONS].headers,
                         ...options.headers,
                     };
+                }
+                if (options.fetcher) {
+                    RootOperation[OPTIONS].fetcher = options.fetcher;
                 }
                 if (options.scalars) {
                     RootOperation[OPTIONS].scalars = {
