@@ -55,6 +55,9 @@ export class RootOperation {
 
     public static [OPTIONS] = {
         headers: {},
+        fetcher: undefined as unknown as (
+            request: Request,
+        ) => Promise<Response>,
         _auth_fn: undefined as
             | (() => string | { [key: string]: string })
             | (() => Promise<string | { [key: string]: string }>)
@@ -181,7 +184,7 @@ export class RootOperation {
         },
         headers: Record<string, string> = {},
     ) {
-        const res = await fetch("[ENDPOINT]", {
+        const request = new Request("[ENDPOINT]", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -192,6 +195,9 @@ export class RootOperation {
                 variables: query.variables,
             }),
         });
+        const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(
+            request,
+        );
         const result = (await res.json()) as { data: any; errors: any[] };
 
         const { data, errors } = result ?? {};
@@ -966,10 +972,17 @@ export class SelectionWrapper<
                         }
 
                         let slw = slw_value?.[String(prop)];
-                        const slwOpPathIsIndexAccess = !isNaN(
-                            +target[SLW_OP_PATH]?.split(".").pop()!,
-                        );
-                        if (slwOpPathIsIndexAccess) {
+                        let slwOpPathIsIndexAccessOrInArray = false;
+                        let targetOpPathArr =
+                            target[SLW_OP_PATH]?.split(".") ?? [];
+                        while (targetOpPathArr.length) {
+                            if (!isNaN(+targetOpPathArr.pop()!)) {
+                                slwOpPathIsIndexAccessOrInArray = true;
+                                break;
+                            }
+                        }
+
+                        if (slwOpPathIsIndexAccessOrInArray) {
                             // index access detected, cloning
                             slw = slw[SLW_CLONE]({
                                 SLW_OP_PATH:
