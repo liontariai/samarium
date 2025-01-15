@@ -966,10 +966,17 @@ export class SelectionWrapper<
                         }
 
                         let slw = slw_value?.[String(prop)];
-                        const slwOpPathIsIndexAccess = !isNaN(
-                            +target[SLW_OP_PATH]?.split(".").pop()!,
-                        );
-                        if (slwOpPathIsIndexAccess) {
+                        let slwOpPathIsIndexAccessOrInArray = false;
+                        let targetOpPathArr =
+                            target[SLW_OP_PATH]?.split(".") ?? [];
+                        while (targetOpPathArr.length) {
+                            if (!isNaN(+targetOpPathArr.pop()!)) {
+                                slwOpPathIsIndexAccessOrInArray = true;
+                                break;
+                            }
+                        }
+
+                        if (slwOpPathIsIndexAccessOrInArray) {
                             // index access detected, cloning
                             slw = slw[SLW_CLONE]({
                                 SLW_OP_PATH:
