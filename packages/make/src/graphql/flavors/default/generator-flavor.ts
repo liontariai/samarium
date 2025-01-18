@@ -191,13 +191,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ...a: Parameters<T>
             ) => ReturnType<T> extends Promise<any> ? Promise<R> & E : R & E
         : never;
-    type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
-        ? ScalarTypeMapWithCustom[TNP]
-        : TNP extends keyof ScalarTypeMapDefault
-        ? ScalarTypeMapDefault[TNP]
-        : TNP extends keyof EnumTypesMapped
-        ? EnumTypesMapped[TNP]
-        : never;
+    type SLW_TPN_ToType<
+        TNP extends string,
+        TNP_TYPE = TNP extends \`\${infer _TNP}!\` ? _TNP : TNP,
+        IS_NULLABLE = TNP extends \`\${infer _TNP}!\` ? false : true,
+        RESULT = TNP_TYPE extends keyof ScalarTypeMapWithCustom
+            ? ScalarTypeMapWithCustom[TNP_TYPE]
+            : TNP_TYPE extends keyof ScalarTypeMapDefault
+            ? ScalarTypeMapDefault[TNP_TYPE]
+            : TNP_TYPE extends keyof EnumTypesMapped
+                ? EnumTypesMapped[TNP_TYPE]
+                : never,
+> = IS_NULLABLE extends true ? RESULT | null : RESULT;
     type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
     type ToTArrayWithDepth<T, D extends number> = D extends 0
         ? T
@@ -255,12 +260,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     >(
         this: any,
         s: (selection: FF) => TT,
-    ) => ConvertToPromise<ToTArrayWithDepth<inferedResult, TAD>, AS_PROMISE> &
+    ) => Prettify<ConvertToPromise<ToTArrayWithDepth<inferedResult, TAD>, AS_PROMISE> &
         ReplacePlaceHoldersWithTNested<
             ToTArrayWithDepth<inferedResult, TAD>,
             EE,
             REP
-        >;
+        >>;
     `;
     public static readonly HelperFunctions = `
     const selectScalars = <S>(selection: Record<string, any>) =>
@@ -617,7 +622,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             field.hasArgs ? `(args: ${argsTypeName}) => ` : ""
         }new SelectionWrapper(
             "${field.name}",
-            "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+            "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${field.type.isNonNull ? "!" : ""}",
             ${field.type.isList ?? 0},
             {},
             this,
@@ -774,7 +779,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         if (this.typeMeta.isScalar || this.typeMeta.isEnum) {
             return `new SelectionWrapper(
                 "${this.typeName}",
-                "${this.typeMeta.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}",
+                "${this.typeMeta.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${this.typeMeta.isNonNull ? "!" : ""}",
                 ${this.typeMeta.isList ?? 0},
                 {},
                 this
@@ -884,7 +889,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     }`,
                                     `${
                                         field.type.isScalar || field.type.isEnum
-                                            ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${
+                                            ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${field.type.isNonNull ? "!" : ""}", ${field.type.isList}, {}, ${
                                                   field.hasArgs
                                                       ? `${this.typeName}${field.name
                                                             .slice(0, 1)

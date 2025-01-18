@@ -396,7 +396,7 @@ export class OperationSelectionCollector {
         path.reduce((o, p) => o?.[p], obj);
     public getOperationResultPath<T>(
         path: (string | number)[] = [],
-        type?: string,
+        _type?: string,
     ): T {
         if (!this.op) {
             throw new Error(
@@ -410,6 +410,7 @@ export class OperationSelectionCollector {
 
         result = this.utilGet(result, path) as T;
 
+        const type = _type?.replaceAll("!", "");
         if (type && result && type in RootOperation[OPTIONS].scalars) {
             let depth = 0;
             let finalResult = result instanceof Array ? [...result] : result;
