@@ -536,7 +536,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 if (n < 0) {
                     return `minus_${str.slice(1)}`;
                 }
-                return `_${str}`;
+                return `_${n}`;
             }
 
             return str.replace(/[^a-zA-Z0-9_]/g, "_").replace(/^[0-9]/, "_$&");
@@ -690,7 +690,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 this.options,
             ).makeSelectionType();
 
-            return `${description}${field.name}${
+            return `${description}"${field.name}"${
                 field.type.isNonNull ? "" : "?"
             }: ${this.originalTypeNameToTypescriptTypeName(
                 field.type.ofType.name,
@@ -703,7 +703,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         } else {
             console.error(field.type);
             throw new Error(
-                `Unknown type for field ${field.name}: ${field.type.name}`,
+                `Unknown type for field "${field.name}": ${field.type.name}`,
             );
         }
     }
@@ -809,7 +809,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
             this.collector.addSelectionFunction(fieldType, selectionFunction);
 
-            return `${field.name}: ${selectionFunction}`;
+            return `"${field.name}": ${selectionFunction}`;
         } else if (fieldType.ofType) {
             const selectionFunction = new GeneratorSelectionTypeFlavorDefault(
                 fieldType.ofType.name,
@@ -817,11 +817,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 this.options,
             ).makeSelectionFunction();
 
-            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" })`;
+            return `"${field.name}": ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" })`;
         } else {
             console.error(fieldType);
             throw new Error(
-                `Unknown type for field ${field.name}: ${fieldType.name}`,
+                `Unknown type for field "${field.name}": ${fieldType.name}`,
             );
         }
     }
@@ -864,7 +864,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     .map(
                         (
                             t,
-                        ) => `${t.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}: ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
+                        ) => `"${t.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}": ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
                         collector: this,
                         fieldName: "",
                     }),`,
@@ -953,7 +953,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             : `
         type ReturnTypeFrom${selectionFunctionName} = {
             ${Array.from(makeSelectionFunctionInputReturnTypeParts)
-                .map(([k, v]) => `${k}: ${v}`)
+                .map(([k, v]) => `"${k}": ${v}`)
                 .join("\n")}
         } & {
             ${
@@ -987,7 +987,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const fnsScalarOps: string[] = [];
 
         const conformToTypeKey = (str: string) => {
-            if (str.includes("-") || !isNaN(+str.at(0)!)) {
+            if (str.includes("-") || str.includes("+") || !isNaN(+str.at(0)!)) {
                 return `"${str}"`;
             }
             return str;
@@ -1206,7 +1206,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                       ).makeSelectionFunction();
 
             const operationAsOpNameToFunction = `
-                ${operation.name}: (${argTypes ? `args: ${argTypes.argsTypeName}` : ""}) => 
+                "${operation.name}": (${argTypes ? `args: ${argTypes.argsTypeName}` : ""}) => 
                     ${returnTypeSelectionFunctionNameOrScalarOrEnum}.bind({
                         collector: this,
                         fieldName: "${operation.name}",
@@ -1278,7 +1278,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const rootOperationFunction = `
             export type ReturnTypeFromRootOperationWithoutScalarOps = {
                 ${Array.from(makeSelectionFunctionInputReturnTypeParts)
-                    .map(([k, v]) => `${k}: ${v}`)
+                    .map(([k, v]) => `"${k}": ${v}`)
                     .join("\n")}
             };
             export function _makeRootOperationInput(this: any) {
