@@ -68,9 +68,19 @@ export abstract class GeneratorSelectionTypeFlavor {
         this.typeName = this.originalTypeNameToTypescriptFriendlyName(typeName);
     }
 
+    protected static reservedKeywords = ["import", "const", "export"];
+
     protected static originalTypeNameToTypescriptFriendlyName(
         originalTypeName: string,
     ): string {
+        if (
+            GeneratorSelectionTypeFlavor.reservedKeywords.includes(
+                originalTypeName,
+            )
+        ) {
+            originalTypeName = `_${originalTypeName}`;
+        }
+
         return originalTypeName
             .replaceAll("[", "")
             .replaceAll("]", "Array")
