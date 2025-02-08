@@ -552,7 +552,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             .map(
                 (e) =>
                     `${
-                        e.description ? `/** ${e.description} */\n` : ""
+                        e.description
+                            ? `/** ${e.description.replaceAll("*/", "\\*\\/")} */\n`
+                            : ""
                     }${conformEnumName(e.name)} = "${e.name}",`,
             )
             .join("\n");
@@ -644,7 +646,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         parentIsInput: boolean = false,
     ): string {
         const description = field.description
-            ? `/* ${field.description} */\n`
+            ? `/* ${field.description.replaceAll("*/", "\\*\\/")} */\n`
             : "";
         if (field.type.isScalar || field.type.isEnum) {
             let selectionType =
@@ -1136,7 +1138,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 argKey,
                                             } = makeType(f);
                                             return `
-                                            ${description ? `/** ${description ?? `${argKey}`} */` : ""}
+                                            ${description ? `/** ${description.replaceAll("*/", "\\*\\/") ?? `${argKey}`} */` : ""}
                                             ${argKey}: ${argType};
                                             `;
                                         })
@@ -1150,7 +1152,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         makeType(arg);
 
                                     return `
-                                    ${description ? `/** ${description ?? `${arg.location === "query" ? "$query" : "$body"}`} */` : ""}
+                                    ${description ? `/** ${description.replaceAll("*/", "\\*\\/") ?? `${arg.location === "query" ? "$query" : "$body"}`} */` : ""}
                                     ${arg.location === "query" ? "$query" : "$body"}: ${argType};
                                     `;
                                 }
@@ -1159,7 +1161,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     makeType(arg);
 
                                 return `
-                                ${description ? `/** ${description ?? `${argKey}`} */` : ""}
+                                ${description ? `/** ${description.replaceAll("*/", "\\*\\/") ?? `${argKey}`} */` : ""}
                                 ${argKey}: ${argType};
                                 `;
                             })
