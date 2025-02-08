@@ -82,6 +82,7 @@ export abstract class GeneratorSelectionTypeFlavor {
         }
 
         return originalTypeName
+            .replaceAll("/", "_")
             .replaceAll("[", "")
             .replaceAll("]", "Array")
             .replaceAll("!", "");
@@ -99,6 +100,7 @@ export abstract class GeneratorSelectionTypeFlavor {
         suffix: string = "",
     ): string {
         return `${originalTypeName
+            .replaceAll("/", "_")
             .replaceAll("[", "")
             .replaceAll("]", "")
             .replaceAll("!", "")}${suffix}`;

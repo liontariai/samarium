@@ -44,6 +44,7 @@ const camelCaps = (arr: string[], separator: string = "$") => {
     }
     return result
         .slice(0, result.length - separator.length)
+        .replaceAll("/", "_")
         .replaceAll("-", "_")
         .replaceAll(".", "_");
 };
@@ -859,7 +860,10 @@ export const gatherMetaForPathOperation = (
     }
 
     const operationName =
-        operation.operationId?.replaceAll("-", "_") ??
+        operation.operationId
+            ?.replaceAll(".", "_")
+            .replaceAll("/", "_")
+            .replaceAll("-", "_") ??
         // TODO: the following fallback is bad, needs more logic
         camelCaps(
             [
