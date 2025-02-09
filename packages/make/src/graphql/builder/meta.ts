@@ -54,7 +54,7 @@ const createACustomScalarType = (
         ? description?.match(/@typedef\s*{(.*)}/)?.[1]
         : undefined;
 
-    const meta: TypeMeta = {
+    const metaNullable: TypeMeta = {
         name,
         description,
         isScalar: true,
@@ -75,12 +75,22 @@ const createACustomScalarType = (
         isMutation: false,
         isSubscription: false,
     };
-    meta.ofType = meta;
 
-    collector.addType(meta);
-    collector.addCustomScalar(meta);
+    metaNullable.ofType = metaNullable;
+    collector.addType(metaNullable);
+    collector.addCustomScalar(metaNullable);
 
-    return meta;
+    const metaNonNull = {
+        ...metaNullable,
+        name: `${metaNullable.name}!`,
+        isNonNull: true,
+    };
+
+    metaNonNull.ofType = metaNonNull;
+    collector.addType(metaNonNull);
+    collector.addCustomScalar(metaNonNull);
+
+    return metaNullable;
 };
 
 /**
