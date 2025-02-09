@@ -127,7 +127,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
     public static readonly HelperTypes = (customScalars: TypeMeta[]) => `
     export interface ScalarTypeMapWithCustom {
-        ${customScalars.map((cs) => `"${cs.name}": ${cs.scalarTSType};`).join("\n")}
+        ${customScalars
+            .map(
+                (cs) =>
+                    `"${cs.name.replaceAll("!", "")}": ${cs.scalarTSType?.replaceAll("!", "")};`,
+            )
+            .filter((cs, i, arr) => arr.findIndex((c) => c === cs) === i)
+            .join("\n")}
     }
     export interface ScalarTypeMapDefault {
         ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
