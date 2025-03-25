@@ -56,7 +56,8 @@ export class RootOperation {
     public static [OPTIONS] = {
         headers: {},
         fetcher: undefined as unknown as (
-            request: Request,
+            input: string | URL | globalThis.Request,
+            init?: RequestInit,
         ) => Promise<Response>,
         _auth_fn: undefined as
             | (() => string | { [key: string]: string })
@@ -184,19 +185,19 @@ export class RootOperation {
         },
         headers: Record<string, string> = {},
     ) {
-        const request = new Request("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...headers,
-            },
-            body: JSON.stringify({
-                query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
-                variables: query.variables,
-            }),
-        });
         const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(
-            request,
+            "[ENDPOINT]",
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...headers,
+                },
+                body: JSON.stringify({
+                    query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
+                    variables: query.variables,
+                }),
+            },
         );
         const result = (await res.json()) as { data: any; errors: any[] };
 
