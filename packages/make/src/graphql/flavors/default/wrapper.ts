@@ -203,16 +203,16 @@ export class RootOperation {
 
         const { data, errors } = result ?? {};
         if (errors?.length > 0) {
-            for (const error of errors) {
-                if (error.path) {
-                    this.utilSet(data, error.path, error);
-                }
-            }
             if (!data) {
                 const err = new Error(JSON.stringify(errors), {
                     cause: "Only errors were returned from the server.",
                 });
                 throw err;
+            }
+            for (const error of errors) {
+                if (error.path) {
+                    this.utilSet(data, error.path, error);
+                }
             }
         }
         return data;
