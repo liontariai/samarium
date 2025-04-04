@@ -58,9 +58,11 @@
         "tabWidth": 4
     },
     "devDependencies": {
-        "bun-types": "^1.1.31"
+        "bun-types": "^1.1.31",
+        "fetch-sse": "^1.1.2"
     },
     "peerDependencies": {
+        "fetch-sse": "^1.1.2",
         "graphql": "^16.9.0",
         "typescript": "^5.0.0"
     },
