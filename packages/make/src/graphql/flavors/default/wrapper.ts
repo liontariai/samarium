@@ -59,6 +59,11 @@ export class RootOperation {
             input: string | URL | globalThis.Request,
             init?: RequestInit,
         ) => Promise<Response>,
+        sseFetchTransform: undefined as unknown as (
+            url: string,
+            options?: import("fetch-sse").IFetchOptions,
+        ) => Promise<[string, import("fetch-sse").IFetchOptions]>,
+
         _auth_fn: undefined as
             | (() => string | { [key: string]: string })
             | (() => Promise<string | { [key: string]: string }>)
@@ -142,6 +147,10 @@ export class RootOperation {
             (acc, [opName, { selection, rootSlw }]) => ({
                 ...acc,
                 [opName]: {
+                    opType: rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase() as
+                        | "subscription"
+                        | "query"
+                        | "mutation",
                     query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${
                         selection.variableDefinitions.length
                             ? `(${selection.variableDefinitions.join(", ")}) `
@@ -154,13 +163,13 @@ export class RootOperation {
             {} as Record<
                 string,
                 {
+                    opType: "subscription" | "query" | "mutation";
                     query: string;
                     variables: any;
                     fragments: Map<string, string>;
                 }
             >,
         );
-        // const subscription = `{${subscriptions.join("")}}`;
 
         const results = Object.fromEntries(
             await Promise.all([
@@ -168,7 +177,9 @@ export class RootOperation {
                     async ([opName, op]) =>
                         [
                             opName,
-                            await this.executeOperation(op, headers),
+                            op.opType === "subscription"
+                                ? await this.subscribeOperation(op, headers)
+                                : await this.executeOperation(op, headers),
                         ] as const,
                 ),
             ]),
@@ -177,8 +188,94 @@ export class RootOperation {
         return results;
     }
 
+    private async subscribeOperation(
+        query: {
+            opType: "subscription" | "query" | "mutation";
+            query: string;
+            variables: any;
+            fragments: Map<string, string>;
+        },
+        headers: Record<string, string> = {},
+    ): Promise<AsyncGenerator<any, void, unknown>> {
+        // only import fetchEventData from fetch-sse if we need it
+        return await import("fetch-sse").then(({ fetchEventData }) => {
+            const that = this;
+            const generator = (async function* () {
+                const { readable, writable } = new TransformStream();
+                const writer = writable.getWriter();
+
+                const [url, options] = await (
+                    RootOperation[OPTIONS].sseFetchTransform ??
+                    ((
+                        url: string,
+                        options?: import("fetch-sse").IFetchOptions,
+                    ) => [url, options])
+                )("[ENDPOINT]", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...headers,
+                    },
+                    data: JSON.stringify({
+                        query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
+                        variables: query.variables,
+                    }),
+                });
+
+                await fetchEventData(url, {
+                    ...options,
+                    onMessage: async (event) => {
+                        await writer.write(event);
+                    },
+                    onClose: () => {
+                        writer.close();
+                    },
+                });
+
+                const reader = readable.getReader();
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        const { event, data: rawdata } = value ?? {};
+
+                        if (event === null && rawdata === "") continue;
+                        if (event === "complete" || done) break;
+
+                        const parsed = JSON.parse(rawdata) as {
+                            data: any;
+                            errors: any[];
+                        };
+                        const { data, errors } = parsed ?? {};
+                        if (errors?.length > 0) {
+                            if (!data) {
+                                const err = new Error(JSON.stringify(errors), {
+                                    cause: "Only errors were returned from the server.",
+                                });
+                                throw err;
+                            }
+                            for (const error of errors) {
+                                if (error.path) {
+                                    that.utilSet(data, error.path, error);
+                                }
+                            }
+                        }
+
+                        yield data;
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+                return;
+            })();
+
+            return generator;
+        });
+    }
+
     private async executeOperation(
         query: {
+            opType: "subscription" | "query" | "mutation";
             query: string;
             variables: any;
             fragments: Map<string, string>;
@@ -398,6 +495,7 @@ export class OperationSelectionCollector {
     public getOperationResultPath<T>(
         path: (string | number)[] = [],
         _type?: string,
+        opResultDataOverride?: any,
     ): T {
         if (!this.op) {
             throw new Error(
@@ -405,7 +503,7 @@ export class OperationSelectionCollector {
             );
         }
 
-        let result = this.operationResult;
+        let result = opResultDataOverride ?? this.operationResult;
 
         if (path.length === 0) return result as T;
 
@@ -471,6 +569,10 @@ export const SLW_OP_PATH = Symbol("SLW_OP_PATH");
 export const SLW_REGISTER_PATH = Symbol("SLW_REGISTER_PATH");
 export const SLW_RENDER_WITH_ARGS = Symbol("SLW_RENDER_WITH_ARGS");
 
+export const SLW_OP_RESULT_DATA_OVERRIDE = Symbol(
+    "SLW_OP_RESULT_DATA_OVERRIDE",
+);
+
 export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
     "SLW_RECREATE_VALUE_CALLBACK",
 );
@@ -493,6 +595,7 @@ export class SelectionWrapperImpl<
     [SLW_CLONE](
         overrides: {
             SLW_OP_PATH?: string;
+            OP_RESULT_DATA?: any;
         } = {},
     ) {
         const slw = new SelectionWrapper(
@@ -511,6 +614,11 @@ export class SelectionWrapperImpl<
         slw[SLW_IS_FRAGMENT] = this[SLW_IS_FRAGMENT];
         slw[SLW_PARENT_SLW] = this[SLW_PARENT_SLW];
         slw[SLW_OP_PATH] = overrides.SLW_OP_PATH ?? this[SLW_OP_PATH];
+
+        if (overrides.OP_RESULT_DATA) {
+            slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
+        }
+
         return slw;
     }
 
@@ -538,6 +646,9 @@ export class SelectionWrapperImpl<
     [SLW_LAZY_FLAG]?: boolean;
 
     [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
+
+    [SLW_OP_RESULT_DATA_OVERRIDE]?: any;
+
     constructor(
         fieldName?: fieldName,
         typeNamePure?: typeNamePure,
@@ -875,6 +986,7 @@ export class SelectionWrapper<
                         prop === SLW_REGISTER_PATH ||
                         prop === SLW_RENDER_WITH_ARGS ||
                         prop === SLW_RECREATE_VALUE_CALLBACK ||
+                        prop === SLW_OP_RESULT_DATA_OVERRIDE ||
                         prop === SLW_CLONE
                     ) {
                         return target[
@@ -906,17 +1018,47 @@ export class SelectionWrapper<
                                 valueT,
                                 argsT
                             >,
+                            overrideOpPath?: string,
                         ): valueT | undefined => {
                             const data = t[
                                 ROOT_OP_COLLECTOR
                             ]!.ref.getOperationResultPath<valueT>(
-                                (t[SLW_OP_PATH]?.split(".") ?? []).map((p) =>
-                                    !isNaN(+p) ? +p : p,
-                                ),
+                                (
+                                    (overrideOpPath ?? t[SLW_OP_PATH])?.split(
+                                        ".",
+                                    ) ?? []
+                                ).map((p) => (!isNaN(+p) ? +p : p)),
                                 t[SLW_FIELD_TYPENAME],
+                                t[SLW_OP_RESULT_DATA_OVERRIDE],
                             );
                             return data;
                         };
+
+                        if (prop === Symbol.asyncIterator) {
+                            const asyncGenRootPath =
+                                target[SLW_OP_PATH]?.split(".")?.[0];
+                            const asyncGen = getResultDataForTarget(
+                                target,
+                                asyncGenRootPath,
+                            ) as AsyncGenerator<valueT, any, any>;
+
+                            return function () {
+                                return {
+                                    next() {
+                                        return asyncGen.next().then((val) => {
+                                            return {
+                                                done: val.done,
+                                                value: target[SLW_CLONE]({
+                                                    SLW_OP_PATH:
+                                                        asyncGenRootPath,
+                                                    OP_RESULT_DATA: val.value,
+                                                }),
+                                            };
+                                        });
+                                    },
+                                };
+                            };
+                        }
 
                         if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
                             // check if the selected field is an array
@@ -927,6 +1069,8 @@ export class SelectionWrapper<
                                             target[SLW_OP_PATH] +
                                             "." +
                                             String(prop),
+                                        OP_RESULT_DATA:
+                                            target[SLW_OP_RESULT_DATA_OVERRIDE],
                                     });
                                     return elm;
                                 }
@@ -945,6 +1089,10 @@ export class SelectionWrapper<
                                                 target[SLW_OP_PATH] +
                                                 "." +
                                                 String(i),
+                                            OP_RESULT_DATA:
+                                                target[
+                                                    SLW_OP_RESULT_DATA_OVERRIDE
+                                                ],
                                         }),
                                 );
 
@@ -984,11 +1132,17 @@ export class SelectionWrapper<
                             }
                         }
 
-                        if (slwOpPathIsIndexAccessOrInArray) {
+                        if (
+                            slwOpPathIsIndexAccessOrInArray ||
+                            (target[SLW_OP_RESULT_DATA_OVERRIDE] &&
+                                !slw[SLW_OP_RESULT_DATA_OVERRIDE])
+                        ) {
                             // index access detected, cloning
                             slw = slw[SLW_CLONE]({
                                 SLW_OP_PATH:
                                     target[SLW_OP_PATH] + "." + String(prop),
+                                OP_RESULT_DATA:
+                                    target[SLW_OP_RESULT_DATA_OVERRIDE],
                             });
                         }
 
