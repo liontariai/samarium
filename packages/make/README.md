@@ -76,7 +76,7 @@ const sdk = await new GraphQLGenerator.Generator(
 // write the sdk to a file and set the endpoint (manual step right now)
 Bun.write(
     Bun.file("sdk.ts"),
-    sdk.replace("[ENDPOINT]", "http://localhost:4000"),
+    sdk.replaceAll("[ENDPOINT]", "http://localhost:4000"),
 );
 ```
 
@@ -93,7 +93,7 @@ const sdk = await new OpenAPIGenerator.Generator(
 // write the sdk to a file and set the endpoint (manual step right now)
 Bun.write(
     Bun.file("sdk.ts"),
-    sdk.replace("[ENDPOINT]", "http://localhost:4000"),
+    sdk.replaceAll("[ENDPOINT]", "http://localhost:4000"),
 );
 ```
 
