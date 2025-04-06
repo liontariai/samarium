@@ -60,9 +60,11 @@ export class RootOperation {
             init?: RequestInit,
         ) => Promise<Response>,
         sseFetchTransform: undefined as unknown as (
-            url: string,
-            options?: import("fetch-sse").IFetchOptions,
-        ) => Promise<[string, import("fetch-sse").IFetchOptions]>,
+            input: string | URL | globalThis.Request,
+            init?: RequestInit,
+        ) => Promise<
+            [string | URL | globalThis.Request, RequestInit | undefined]
+        >,
 
         _auth_fn: undefined as
             | (() => string | { [key: string]: string })
@@ -197,49 +199,52 @@ export class RootOperation {
         },
         headers: Record<string, string> = {},
     ): Promise<AsyncGenerator<any, void, unknown>> {
-        // only import fetchEventData from fetch-sse if we need it
-        return await import("fetch-sse").then(({ fetchEventData }) => {
-            const that = this;
-            const generator = (async function* () {
-                const { readable, writable } = new TransformStream();
-                const writer = writable.getWriter();
+        const that = this;
+        const generator = (async function* () {
+            const [url, options] = await (
+                RootOperation[OPTIONS].sseFetchTransform ??
+                ((url: string, options?: RequestInit) => [url, options])
+            )("http://localhost:4000/graphql", {
+                method: "POST",
+                headers: {
+                    ...headers,
+                    "Content-Type": "application/json",
+                    Accept: "text/event-stream",
+                },
+                body: JSON.stringify({
+                    query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
+                    variables: query.variables,
+                }),
+            });
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    ...options?.headers,
+                    "Content-Type": "application/json",
+                    Accept: "text/event-stream",
+                },
+            });
 
-                const [url, options] = await (
-                    RootOperation[OPTIONS].sseFetchTransform ??
-                    ((
-                        url: string,
-                        options?: import("fetch-sse").IFetchOptions,
-                    ) => [url, options])
-                )("[ENDPOINT]", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        ...headers,
-                    },
-                    data: JSON.stringify({
-                        query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
-                        variables: query.variables,
-                    }),
-                });
+            const reader = response.body!.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
 
-                await fetchEventData(url, {
-                    ...options,
-                    onMessage: async (event) => {
-                        await writer.write(event);
-                    },
-                    onClose: () => {
-                        writer.close();
-                    },
-                });
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-                const reader = readable.getReader();
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        const { event, data: rawdata } = value ?? {};
+                buffer += decoder.decode(value, { stream: true });
+                const events = buffer.split("\n\n");
+                buffer = events.pop() || "";
 
-                        if (event === null && rawdata === "") continue;
-                        if (event === "complete" || done) break;
+                for (const event of events) {
+                    if (event.trim()) {
+                        const eventName = event.match(/^event: (.*)$/m)?.[1];
+                        const rawdata = event.match(/^data: (.*)$/m)?.[1];
+
+                        if ((eventName === null && rawdata === "") || !rawdata)
+                            continue;
+                        if (eventName === "complete" || done) break;
 
                         const parsed = JSON.parse(rawdata) as {
                             data: any;
@@ -262,15 +267,13 @@ export class RootOperation {
 
                         yield data;
                     }
-                } finally {
-                    reader.releaseLock();
                 }
+            }
 
-                return;
-            })();
+            return;
+        })();
 
-            return generator;
-        });
+        return generator;
     }
 
     private async executeOperation(
