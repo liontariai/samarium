@@ -1162,9 +1162,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     init?: RequestInit,
                 ) => Promise<Response>;
                 sseFetchTransform?: (
-                    url: string,
-                    options?: import("fetch-sse").IFetchOptions,
-                ) => Promise<[string, import("fetch-sse").IFetchOptions | undefined]>;
+                    input: string | URL | globalThis.Request,
+                    init?: RequestInit,
+                ) => Promise<[string | URL | globalThis.Request, RequestInit | undefined]>;
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
                         v: string,
