@@ -92,7 +92,7 @@ export const generate = async (
 
     fs.writeFileSync(
         output,
-        code.replace(
+        code.replaceAll(
             "[ENDPOINT]",
             options.endpoint ?? schema.servers?.[0]?.url ?? remote.url,
         ),

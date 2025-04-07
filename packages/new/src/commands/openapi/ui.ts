@@ -73,7 +73,7 @@ export const ui = async () => {
 
         fs.writeFileSync(
             outpath,
-            code.replace("[ENDPOINT]", schema.servers?.[0]?.url ?? url),
+            code.replaceAll("[ENDPOINT]", schema.servers?.[0]?.url ?? url),
         );
     } catch (e: any) {
         console.error("Error: ", e.message);
