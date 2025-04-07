@@ -69,7 +69,7 @@ export const ui = async () => {
                 : undefined,
         });
 
-        fs.writeFileSync(outpath, code.replace("[ENDPOINT]", url));
+        fs.writeFileSync(outpath, code.replaceAll("[ENDPOINT]", url));
     } catch (e: any) {
         console.error("Error: ", e.message);
         console.error("Failed to generate code");

@@ -214,6 +214,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         ? T
         : ToTArrayWithDepth<T[], Prev[D]>;
     type ConvertToPromise<T, skip = 1> = skip extends 0 ? T : Promise<T>;
+    type ConvertToAsyncIter<T, skip = 1> = skip extends 0 ? T : AsyncIterable<T>;
     type ReplacePlaceHoldersWithTNested<
         inferedResult,
         EE,
@@ -243,6 +244,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         E extends { [key: string | number | symbol]: any } = {},
         REP extends string | number | symbol = never,
         AS_PROMISE = 0,
+        AS_ASYNC_ITER = 0,
     > = (
         makeSLFNInput: () => F,
         SLFN_name: N,
@@ -266,12 +268,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     >(
         this: any,
         s: (selection: FF) => TT,
-    ) => Prettify<ConvertToPromise<ToTArrayWithDepth<inferedResult, TAD>, AS_PROMISE> &
-        ReplacePlaceHoldersWithTNested<
-            ToTArrayWithDepth<inferedResult, TAD>,
-            EE,
-            REP
-        >>;
+    ) => Prettify<
+            ConvertToPromise<
+                ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>,
+                AS_PROMISE
+            > &
+            ReplacePlaceHoldersWithTNested<
+                ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>,
+                EE,
+                REP
+            >
+        >;
     `;
     public static readonly HelperFunctions = `
     const selectScalars = <S>(selection: Record<string, any>) =>
@@ -811,6 +818,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             this.typeMeta.name === this.collector.MutationTypeName ||
             this.typeMeta.name === this.collector.SubscriptionTypeName;
 
+        const isSubscriptionType =
+            this.typeMeta.name === this.collector.SubscriptionTypeName;
+
         let helperFunctions = "";
         if (this.typeMeta.isUnion) {
             helperFunctions = `
@@ -928,6 +938,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 },
                                                 "$lazy" ${this.authConfig ? `| "auth"` : ""},
                                                 AS_PROMISE
+                                                ${isSubscriptionType ? ", 1" : ""}
                                                 `
                                                         : ""
                                                 }
@@ -1150,6 +1161,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     input: string | URL | globalThis.Request,
                     init?: RequestInit,
                 ) => Promise<Response>;
+                sseFetchTransform?: (
+                    input: string | URL | globalThis.Request,
+                    init?: RequestInit,
+                ) => Promise<[string | URL | globalThis.Request, RequestInit | undefined]>;
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
                         v: string,
@@ -1185,6 +1200,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 }
                 if (options.fetcher) {
                     RootOperation[OPTIONS].fetcher = options.fetcher;
+                }
+                if (options.sseFetchTransform) {
+                    RootOperation[OPTIONS].sseFetchTransform = options.sseFetchTransform;
                 }
                 if (options.scalars) {
                     RootOperation[OPTIONS].scalars = {
@@ -1498,8 +1516,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 init: typeof __init__;
             } & {
                 ${availOperations
+                    .map((op) => ({
+                        op,
+                        wrapForAsyncIter: (str: string) =>
+                            op === SubscriptionTypeName
+                                ? `AsyncIterable<${str}>`
+                                : str,
+                    }))
                     .map(
-                        (op) =>
+                        ({ op, wrapForAsyncIter }) =>
                             `${op?.toLowerCase()}: {
                                 [field in Exclude<
                                     keyof ReturnType<typeof make${op}SelectionInput>,
@@ -1513,16 +1538,16 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     infer VT,
                                     infer AT
                                 >
-                                    ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD> & {
+                                    ? ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")} & {
                                         $lazy: () => Promise<
-                                            ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                            ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                         > ${
                                             authConfig
                                                 ? `& {
                                                     auth: (
                                                         auth: FnOrPromisOrPrimitive,
                                                     ) => Promise<
-                                                        ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                                        ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                                     >
                                                 }
                                             `
@@ -1532,7 +1557,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             authConfig
                                                 ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
                                             $lazy: () => Promise<
-                                                ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                                                ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                             >;
                                         };`
                                                 : ""
@@ -1551,19 +1576,16 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         infer _VT,
                                         infer _AT
                                     >
-                                    ? (args: _A) => ToTArrayWithDepth<
-                                        SLW_TPN_ToType<_TTNP>,
-                                        _TTAD
-                                    > & {
+                                    ? (args: _A) => ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>,_TTAD>")} & {
                                         $lazy: (args: _A) => Promise<
-                                            ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                                            ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                         > ${
                                             authConfig
                                                 ? `& {
                                                     auth: (
                                                         auth: FnOrPromisOrPrimitive,
                                                     ) => Promise<
-                                                        ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                                                        ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                                     >;
                                                 }
                                             `
@@ -1573,7 +1595,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             authConfig
                                                 ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
                                             $lazy: () => Promise<
-                                                ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                                                ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                             >;
                                         };`
                                                 : ""
