@@ -14,7 +14,7 @@ It's done in 10s and you'll never bother with GraphQL or clumsy OpenAPI fetch wr
 </div>
 <br />
 <div align="center">
-<a href="https://liontari.ai/#playground">Online Playground</a> 
+<a href="https://liontari.ai/samarium/#playground">Online Playground</a> 
 <span> · </span>
 <a href="https://github.com/liontariai/samarium">GitHub</a> 
 <span> · </span>
