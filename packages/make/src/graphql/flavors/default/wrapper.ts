@@ -1,4 +1,4 @@
-const Proxy = global.Proxy;
+const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
 
 type FnOrPromisOrPrimitive =
@@ -201,7 +201,7 @@ export class RootOperation {
     ): Promise<AsyncGenerator<any, void, unknown>> {
         const that = this;
         const generator = (async function* () {
-            const [url, options] = await (
+            const [url, options] = (await (
                 RootOperation[OPTIONS].sseFetchTransform ??
                 ((url: string, options?: RequestInit) => [url, options])
             )("http://localhost:4000/graphql", {
@@ -215,7 +215,7 @@ export class RootOperation {
                     query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
                     variables: query.variables,
                 }),
-            });
+            })) as [string | URL | Request, RequestInit];
             const response = await fetch(url, {
                 ...options,
                 headers: {
