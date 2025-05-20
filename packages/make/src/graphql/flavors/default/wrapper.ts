@@ -579,6 +579,7 @@ export const SLW_OP_RESULT_DATA_OVERRIDE = Symbol(
 export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
     "SLW_RECREATE_VALUE_CALLBACK",
 );
+export const SLW_SETTER_DATA_OVERRIDE = Symbol("SLW_SETTER_DATA_OVERRIDE");
 
 export const SLW_CLONE = Symbol("SLW_CLONE");
 
@@ -599,6 +600,7 @@ export class SelectionWrapperImpl<
         overrides: {
             SLW_OP_PATH?: string;
             OP_RESULT_DATA?: any;
+            SLW_SETTER_DATA_OVERRIDE?: any;
         } = {},
     ) {
         const slw = new SelectionWrapper(
@@ -617,6 +619,9 @@ export class SelectionWrapperImpl<
         slw[SLW_IS_FRAGMENT] = this[SLW_IS_FRAGMENT];
         slw[SLW_PARENT_SLW] = this[SLW_PARENT_SLW];
         slw[SLW_OP_PATH] = overrides.SLW_OP_PATH ?? this[SLW_OP_PATH];
+        slw[SLW_SETTER_DATA_OVERRIDE] =
+            overrides.SLW_SETTER_DATA_OVERRIDE ??
+            this[SLW_SETTER_DATA_OVERRIDE];
 
         if (overrides.OP_RESULT_DATA) {
             slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
@@ -651,6 +656,7 @@ export class SelectionWrapperImpl<
     [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
 
     [SLW_OP_RESULT_DATA_OVERRIDE]?: any;
+    [SLW_SETTER_DATA_OVERRIDE]?: any;
 
     constructor(
         fieldName?: fieldName,
@@ -837,7 +843,32 @@ export class SelectionWrapper<
                         return true;
                     return Reflect.has(value ?? {}, prop);
                 },
+                set(target, p, newValue, receiver) {
+                    const pstr = String(p);
+                    if (
+                        typeof p === "symbol" &&
+                        (pstr.startsWith("Symbol(SLW_") ||
+                            pstr == "Symbol(ROOT_OP_COLLECTOR)")
+                    ) {
+                        return Reflect.set(target, p, newValue, receiver);
+                    }
+                    return Reflect.set(
+                        target,
+                        SLW_SETTER_DATA_OVERRIDE,
+                        {
+                            ...(target[SLW_SETTER_DATA_OVERRIDE] ?? {}),
+                            [p]: newValue,
+                        },
+                        receiver,
+                    );
+                },
                 get: (target, prop) => {
+                    if (
+                        target[SLW_SETTER_DATA_OVERRIDE] &&
+                        target[SLW_SETTER_DATA_OVERRIDE][prop]
+                    ) {
+                        return target[SLW_SETTER_DATA_OVERRIDE][prop];
+                    }
                     if (prop === "$lazy") {
                         const that = this;
                         function lazy(
@@ -990,7 +1021,8 @@ export class SelectionWrapper<
                         prop === SLW_RENDER_WITH_ARGS ||
                         prop === SLW_RECREATE_VALUE_CALLBACK ||
                         prop === SLW_OP_RESULT_DATA_OVERRIDE ||
-                        prop === SLW_CLONE
+                        prop === SLW_CLONE ||
+                        prop === SLW_SETTER_DATA_OVERRIDE
                     ) {
                         return target[
                             prop as keyof SelectionWrapperImpl<
