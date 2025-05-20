@@ -155,9 +155,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     type CleanupNever<A> = Omit<A, keyof A> & {
         [K in keyof A as A[K] extends never ? never : K]: A[K];
     };
-    type Prettify<T> = {
-        [K in keyof T]: T[K];
-    } & {};
+    type Prettify<T> = (
+        T extends Array<infer U>
+        ? U[] : {
+            [K in keyof T]: T[K];
+        }
+    ) & {};
 
     type SLWsFromSelection<
         S,
