@@ -120,11 +120,7 @@ export class Generator {
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             ...[...collector.selectionTypes.entries()]
-                .filter(
-                    ([type]) =>
-                        type.isInput ||
-                        (collector.customScalars.size > 0 && type.isObject),
-                )
+                .filter(([type]) => type.isInput || type.isObject)
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             this.Codegen.EnumTypesMapped(collector),

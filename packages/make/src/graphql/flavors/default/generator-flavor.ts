@@ -538,11 +538,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 field.type.isNonNull ? "" : "?"
             }: ${selectionType};`;
         } else if (field.type.ofType) {
-            const selectionType = new GeneratorSelectionTypeFlavorDefault(
-                field.type.ofType.name,
-                this.collector,
-                this.options,
-            ).makeSelectionFunction();
+            const selectionTypeGenerator =
+                new GeneratorSelectionTypeFlavorDefault(
+                    field.type.ofType.name,
+                    this.collector,
+                    this.options,
+                );
+            selectionTypeGenerator.makeSelectionFunction();
+
+            const selectionTypeNameForTypescript =
+                selectionTypeGenerator.originalTypeNameToTypescriptTypeName(
+                    selectionTypeGenerator.originalFullTypeName,
+                );
 
             if (field.hasArgs) {
                 const { argsTypeName, hasAtLeastOneNonNullArg } =
@@ -550,7 +557,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                 return `${description}${field.name}: (args${
                     hasAtLeastOneNonNullArg ? "" : "?"
-                }: ${argsTypeName} ) => typeof ${selectionType};`;
+                }: ${argsTypeName} ) => ${selectionTypeNameForTypescript};`;
             }
 
             if (parentIsInput) {
@@ -561,7 +568,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 )};`;
             }
 
-            return `${description}${field.name}: typeof ${selectionType};`;
+            return `${description}${field.name}: ${selectionTypeNameForTypescript};`;
         } else {
             console.error(field.type);
             throw new Error(
