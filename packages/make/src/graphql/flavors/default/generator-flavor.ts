@@ -284,12 +284,291 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         >;
     `;
     public static readonly HelperFunctions = `
-    const selectScalars = <S>(selection: Record<string, any>) =>
-    Object.fromEntries(
-        Object.entries(selection).filter(
-            ([k, v]) => v instanceof SelectionWrapperImpl,
-        ),
-    ) as S;
+    const selectScalars = (selection: Record<string, any>) =>
+        Object.fromEntries(
+            Object.entries(selection).filter(
+                ([k, v]) => v instanceof SelectionWrapperImpl,
+            ),
+        );
+    
+    type AllNonFuncFieldsFromType<
+        TRaw,
+        T = TRaw extends Array<infer A> ? A : TRaw,
+    > = Pick<
+        T,
+        { [k in keyof T]: T[k] extends (args: any) => any ? never : k }[keyof T]
+    >;
+
+    type SetNestedFieldNever<
+        T,
+        Path extends string,
+    > = Path extends \`$\{infer Key\}.$\{infer Rest\}\`
+        ? Key extends keyof T
+            ? {
+                [K in keyof T]: K extends Key
+                    ? SetNestedFieldNever<T[K], Rest>
+                    : T[K];
+            }
+            : T
+        : { [K in keyof T]: K extends Path ? never : T[K] };
+
+    type primitives =
+        | string
+        | number
+        | boolean
+        | Record<string | number | symbol, unknown>;
+    type isScalar<T> =
+        T extends Exclude<
+            ScalarTypeMapDefault[keyof ScalarTypeMapDefault],
+            primitives
+        >
+            ? true
+            : T extends Exclude<
+                    ScalarTypeMapWithCustom[keyof ScalarTypeMapWithCustom],
+                    primitives
+                >
+            ? true
+            : false;
+
+    // Utility type to get all possible dot-notation paths
+    type Paths<T, Visited = never, Depth extends Prev[number] = 9> =
+        isScalar<T> extends true
+            ? never
+            : Depth extends never
+            ? never
+            : T extends object
+                ? T extends Visited
+                    ? never // Stop recursion if type is cyclic
+                    : {
+                        [K in keyof T]: T[K] extends Array<infer U>
+                            ? K extends string | number
+                                ?
+                                        | \`$\{K\}\`
+                                        | \`$\{K\}.$\{Paths<U, Visited | T, Prev[Depth]>\}\`
+                                : never
+                            : K extends string | number
+                                ? T[K] extends object
+                                    ?
+                                        | \`$\{K\}\`
+                                        | \`$\{K\}.$\{Paths<T[K], Visited | T, Prev[Depth]>\}\`
+                                    : \`$\{K\}\`
+                                : never;
+                    }[keyof T]
+                : never;
+
+    // Utility type to get only cyclic paths
+    type CyclicPaths<
+        T,
+        Visited = never,
+        Depth extends Prev[number] = 9,
+        Prefix extends string = "",
+    > =
+        isScalar<T> extends true
+            ? never
+            : Depth extends never
+            ? never
+            : T extends object
+                ? {
+                    [K in keyof T]: T[K] extends Array<infer U>
+                        ? K extends string | number
+                            ? U extends Visited
+                                ? \`$\{Prefix\}$\{K\}\` // Cyclic path found for array element
+                                : CyclicPaths<
+                                        U,
+                                        Visited | T,
+                                        Prev[Depth],
+                                        \`$\{Prefix\}$\{K\}.\`
+                                    >
+                            : never
+                        : K extends string | number
+                            ? T[K] extends Visited
+                                ? \`$\{Prefix\}$\{K\}\` // Cyclic path found
+                                : T[K] extends object
+                                ? CyclicPaths<
+                                        T[K],
+                                        Visited | T,
+                                        Prev[Depth],
+                                        \`$\{Prefix\}$\{K\}.\`
+                                    >
+                                : never
+                            : never;
+                }[keyof T]
+                : never;
+
+    // Utility type to exclude multiple paths
+    type OmitMultiplePaths<T, Paths extends string> = Paths extends any
+        ? SetNestedFieldNever<T, Paths>
+        : T;
+    type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (
+        x: infer I,
+    ) => void
+        ? I
+        : never;
+    type MergeUnion<T> = UnionToIntersection<T>;
+    type OmitNever<T> =
+        isScalar<T> extends true
+            ? T
+            : T extends object
+            ? {
+                    [K in keyof T as T[K] extends never
+                        ? never
+                        : T[K] extends never[]
+                        ? never
+                        : K]: isScalar<T[K]> extends true
+                        ? T[K]
+                        : T[K] extends object
+                        ? OmitNever<T[K]>
+                        : T[K];
+                }
+            : T;
+
+    const selectCyclicFieldsOptsStr = "select cyclic levels: ";
+    type selectCyclicFieldsOptsStrType = typeof selectCyclicFieldsOptsStr;
+    type cyclicOpts<
+        S,
+        CP = CyclicPaths<S>,
+        kOpts = "exclude" | \`$\{selectCyclicFieldsOptsStrType\}$\{1 | 2 | 3 | 4 | 5\}\`,
+    > = CP extends never
+        ? never
+        : {
+            [k in CP & string]: kOpts;
+        };
+
+    type Next = [1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
+    type StringToNumber<S extends string> = S extends \`$\{infer N extends number\}\`
+        ? N
+        : never;
+
+    type getNumberNestedLevels<str extends string> =
+        str extends \`$\{selectCyclicFieldsOptsStrType\}$\{infer n\}\`
+            ? StringToNumber<n>
+            : never;
+
+    type selectAllOpts<S> = OmitNever<{
+        exclude?: Paths<S>[];
+        cyclic: cyclicOpts<S>;
+    }>;
+    type RepeatString<
+        S extends string,
+        N extends number,
+        Splitter extends string = "",
+        Acc extends string = "",
+        Count extends number = N,
+    > = Count extends 0
+        ? Acc
+        : RepeatString<
+            S,
+            N,
+            Splitter,
+            \`$\{Acc\}$\{Acc extends "" ? "" : Splitter\}$\{S\}\`,
+            Prev[Count]
+        >;
+
+    type GetSuffix<
+        Str extends string,
+        Prefix extends string,
+    > = Str extends \`$\{Prefix\}$\{infer Suffix\}\` ? Suffix : never;
+
+    type selectAllFunc<T, TNP extends string> = <
+        const P = Paths<T>,
+        const CP_WITH_TNP = cyclicOpts<T, \`$\{TNP\}.$\{CyclicPaths<T>\}\`>
+    >(opts: {
+        exclude?: \`$\{TNP\}.$\{P & string\}\`[];
+        cyclic: CP_WITH_TNP;
+    }) => OmitNever<
+        MergeUnion<
+            OmitMultiplePaths<
+                T,
+                | (P & string)
+                | (CP_WITH_TNP extends never
+                    ? never
+                    : Exclude<
+                            {
+                                [k in keyof CP_WITH_TNP]: "exclude" extends CP_WITH_TNP[k]
+                                    ? GetSuffix<k & string, \`$\{TNP\}.\`>
+                                    : RepeatString<
+                                        GetSuffix<k & string, \`$\{TNP\}.\`>,
+                                        Next[getNumberNestedLevels<
+                                            CP_WITH_TNP[k] & string
+                                        >],
+                                        "."
+                                    >;
+                            }[keyof CP_WITH_TNP],
+                            undefined
+                        >)
+            >
+        >
+    >;
+
+    const selectAll = <
+        S,
+        TNP extends string,
+        SUB extends ReturnType<SLFN<{}, unknown, string, string, number>>,
+        V extends
+            | (SelectionWrapperImpl<any, any, any> | SUB)
+            | ((args: any) => SelectionWrapperImpl<any, any, any> | SUB),
+    >(
+        selection: Record<string, V>,
+        typeNamePure: TNP,
+        opts: selectAllOpts<S>,
+        collector?: { parents: string[]; path?: string },
+    ) => {
+        // let's not make the type too complicated, it's basically a
+        // nested map of string to either SLW or again
+        // a map of string to SLW
+        const s: Record<string, any> = {};
+        const entries = Object.entries(selection);
+        for (const [k, v] of entries) {
+            const tk = collector?.path
+                ? \`$\{collector.path\}.$\{k\}\`
+                : \`$\{typeNamePure\}.$\{k\}\`;
+            let excludePaths = opts?.exclude ?? ([] as string[]);
+            if ("cyclic" in opts) {
+                const exclude = Object.entries(
+                    opts.cyclic as Record<string, string>,
+                )
+                    .filter(([k, v]) => v === "exclude")
+                    .map((e) => e[0]);
+                const cyclicLevels = Object.entries(
+                    opts.cyclic as Record<string, string>,
+                )
+                    .filter(([k, v]) => v !== "exclude")
+                    .map((e) => {
+                        const levels = parseInt(
+                            e[1]
+                                .match(new RegExp(\`$\{selectCyclicFieldsOptsStr\}(.*)\`))!
+                                .at(1)![0],
+                        ) + 1;
+                        const pathFragment = e[0].split(".").slice(1).join(".");
+                        return \`$\{e[0].split(".")[0]}.$\{Array.from({ length: levels }).fill(pathFragment).join(".")\}\`;
+                    });
+                excludePaths.push(...exclude, ...cyclicLevels);
+            }
+            if (excludePaths.includes(tk as any)) continue;
+
+            if (typeof v === "function") {
+                if (v.name === "bound _SLFN") {
+                    // if (collector?.parents?.includes(tk)) continue;
+                    const col = {
+                        parents: [...(collector?.parents ?? []), tk],
+                        path: tk,
+                    };
+                    s[k] = v(
+                        (sub_s: { $all: (_opts?: {}, collector?: {}) => any }) => {
+                            return sub_s.$all(opts, col);
+                        },
+                    );
+                } else if (!k.startsWith("$")) {
+                    console.warn(
+                        \`Cannot use $all on fields with args: $\{k\}: $\{v.toString()\}\`,
+                    );
+                }
+            } else {
+                s[k] = v;
+            }
+        }
+        return s;
+    };
 
     const makeSLFN = <
         T extends object,
@@ -831,6 +1110,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const isSubscriptionType =
             this.typeMeta.name === this.collector.SubscriptionTypeName;
 
+        const tsTypeName = this.originalTypeNameToTypescriptTypeName(
+            this.originalFullTypeName,
+        );
+
         let helperFunctions = "";
         if (this.typeMeta.isUnion) {
             helperFunctions = `
@@ -867,7 +1150,15 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     >,
             `
                     : ""
-            }`;
+            }
+            $all: (opts?: any, collector = undefined) =>
+                selectAll(
+                    make${selectionFunctionName}Input.bind(this)() as any,
+                    "${tsTypeName}",
+                    opts as any,
+                    collector
+                ) as any
+            `;
         }
         const makeSelectionFunctionInputReturnTypeParts = new Map<
             string,
@@ -999,6 +1290,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             `
                     : ""
             }
+            $all: selectAllFunc<AllNonFuncFieldsFromType<${tsTypeName}>, "${tsTypeName}">${/*this.typeMeta.isList ? Array.from({ length: this.typeMeta.isList }).fill("[]").join("") : ""*/ ""};
         };`;
         this.collector.addSelectionFunction(
             this.typeMeta,
@@ -1243,7 +1535,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 : `keyof ReturnTypeFrom${availOperations[1]}Selection,`
                         }`
                     }
-                    "$fragment" | "$scalars"
+                    "$fragment" | "$scalars" | "$all"
                 >,
             ) => {
                 const root = new OperationSelectionCollector(
@@ -1258,7 +1550,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         (opType) => `
                     ReturnTypeFrom${opType}Selection[Exclude<
                         keyof ReturnTypeFrom${opType}Selection,
-                        "$fragment" | "$scalars"
+                        "$fragment" | "$scalars" | "$all"
                     >]`,
                     )
                     .join(" | ")};
@@ -1272,7 +1564,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         make${availOperations[0]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
                                 keyof ReturnTypeFrom${availOperations[0]}Selection,
-                                "$fragment" | "$scalars"
+                                "$fragment" | "$scalars" | "$all"
                             >
                         ];
                 ${
@@ -1290,7 +1582,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         make${availOperations[1]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
                                 keyof ReturnTypeFrom${availOperations[1]}Selection,
-                                "$fragment" | "$scalars"
+                                "$fragment" | "$scalars" | "$all"
                             >
                         ];
                 }`
@@ -1303,7 +1595,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         make${availOperations[2]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
                                 keyof ReturnTypeFrom${availOperations[2]}Selection,
-                                "$fragment" | "$scalars"
+                                "$fragment" | "$scalars" | "$all"
                             >
                         ];
                 }`
@@ -1509,7 +1801,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     target,
                                     op: Exclude<
                                         keyof ReturnTypeFrom${operation}Selection,
-                                        "$fragment" | "$scalars"
+                                        "$fragment" | "$scalars" | "$all"
                                     >,
                                 ) {
                                     return _makeOperationShortcut("${operation}", op);
@@ -1538,7 +1830,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             `${op?.toLowerCase()}: {
                                 [field in Exclude<
                                     keyof ReturnType<typeof make${op}SelectionInput>,
-                                    "$fragment" | "$scalars"
+                                    "$fragment" | "$scalars" | "$all"
                                 >]: ReturnType<
                                     typeof make${op}SelectionInput
                                 >[field] extends SelectionWrapperImpl<
