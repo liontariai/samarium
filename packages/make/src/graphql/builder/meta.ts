@@ -152,7 +152,7 @@ export const gatherMeta = (
                 createACustomScalarType(
                     typeName,
                     type.description ?? undefined,
-                    "any",
+                    "Record<string | number | symbol, unknown>",
                     collector,
                 ),
             );
