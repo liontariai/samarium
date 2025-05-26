@@ -1830,7 +1830,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         wrapForAsyncIter: (str: string) =>
                             op === SubscriptionTypeName
                                 ? `AsyncIterable<${str}>`
-                                : str,
+                                : `Promise<${str}>`,
                     }))
                     .map(
                         ({ op, wrapForAsyncIter }) =>
