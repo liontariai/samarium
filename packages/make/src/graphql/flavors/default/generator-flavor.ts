@@ -444,10 +444,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ? StringToNumber<n>
             : never;
 
-    type selectAllOpts<S> = OmitNever<{
-        exclude?: Paths<S>[];
-        cyclic: cyclicOpts<S>;
-    }>;
+    type selectAllOpts<S> =
+        | {
+                exclude?: Paths<S>[];
+        }
+        | {
+                exclude?: Paths<S>[];
+                cyclic: cyclicOpts<S>;
+        };
     type RepeatString<
         S extends string,
         N extends number,
@@ -469,32 +473,33 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         Prefix extends string,
     > = Str extends \`$\{Prefix\}$\{infer Suffix\}\` ? Suffix : never;
 
-    type selectAllFunc<T, TNP extends string> = <
-        const P = Paths<T>,
-        const CP_WITH_TNP = cyclicOpts<T, \`$\{TNP\}.$\{CyclicPaths<T>\}\`>
-    >(opts: {
-        exclude?: \`$\{TNP\}.$\{P & string\}\`[];
-        cyclic: CP_WITH_TNP;
-    }) => OmitNever<
+    type selectAllFunc<T, TNP extends string> = <const P = Paths<T>, const CP_WITH_TNP = cyclicOpts<T, \`$\{TNP\}.$\{CyclicPaths<T>\}\`>>(
+        opts: CyclicPaths<T> extends never
+            ? {
+                    exclude?: \`$\{TNP\}.$\{P & string\}\`[];
+            }
+            : {
+                    exclude?: \`$\{TNP\}.$\{P & string\}\`[];
+                    cyclic: CP_WITH_TNP;
+            }
+    ) => OmitNever<
         MergeUnion<
             OmitMultiplePaths<
                 T,
-                | (P & string)
+                | ("length" extends keyof (typeof opts)["exclude"] ? P & string : never)
                 | (CP_WITH_TNP extends never
-                    ? never
-                    : Exclude<
-                            {
-                                [k in keyof CP_WITH_TNP]: "exclude" extends CP_WITH_TNP[k]
-                                    ? GetSuffix<k & string, \`$\{TNP\}.\`>
-                                    : RepeatString<
-                                        GetSuffix<k & string, \`$\{TNP\}.\`>,
-                                        Next[getNumberNestedLevels<
-                                            CP_WITH_TNP[k] & string
-                                        >],
-                                        "."
-                                    >;
-                            }[keyof CP_WITH_TNP],
-                            undefined
+                        ? never
+                        : Exclude<
+                                {
+                                    [k in keyof CP_WITH_TNP]: "exclude" extends CP_WITH_TNP[k]
+                                        ? GetSuffix<k & string, \`$\{TNP\}.\`>
+                                        : RepeatString<
+                                                GetSuffix<k & string, \`$\{TNP\}.\`>,
+                                                Next[getNumberNestedLevels<CP_WITH_TNP[k] & string>],
+                                                "."
+                                        >;
+                                }[keyof CP_WITH_TNP],
+                                undefined
                         >)
             >
         >
