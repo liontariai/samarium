@@ -665,6 +665,27 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 `Schema contains empty enum: ${this.typeMeta.name}. \n This is not allowed in GraphQL, but it happens. Please check your schema. Code is still generated and will work, but the type is being set to undefined.`,
             );
         }
+
+        const enumMembersTypedefRemapped =
+            this.typeMeta.description
+                ?.split("\n")
+                .filter((l) => l.startsWith("@property"))
+                .reduce(
+                    (acc, line) => {
+                        const matches = line.match(
+                            /@property \{"(.*?)"\} (.*?)$/,
+                        );
+                        const value = matches?.[1];
+                        const keyName = matches?.[2];
+
+                        if (value && keyName) {
+                            acc[value] = keyName;
+                        }
+                        return acc;
+                    },
+                    {} as Record<string, string>,
+                ) ?? {};
+
         const enumType = `
             export type ${enumTypeName} = ${
                 this.typeMeta.enumValues.length === 0
@@ -675,12 +696,12 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             };
             export enum ${enumTypeName}Enum {
                 ${this.typeMeta.enumValues
-                    .map(
-                        (e) =>
-                            `${
-                                e.description ? `/** ${e.description} */\n` : ""
-                            }${e.name} = "${e.name}",`,
-                    )
+                    .map((e) => {
+                        const remappedKey = enumMembersTypedefRemapped[e.name];
+                        return `${
+                            e.description ? `/** ${e.description} */\n` : ""
+                        }${remappedKey ?? e.name} = "${e.name}",`;
+                    })
                     .join("\n")}
             };
         `;
