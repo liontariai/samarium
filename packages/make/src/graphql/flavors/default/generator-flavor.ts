@@ -895,11 +895,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 this.typeMeta,
             );
         }
-        const selectionTypeName = this.typeMeta.isInput
-            ? this.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-                  this.originalFullTypeName,
-              )
-            : this.typeName;
+        const selectionTypeName =
+            this.originalTypeNameToTypescriptTypeNameWithoutModifiers(
+                this.originalFullTypeName,
+            );
+        // : this.typeName;
 
         if (this.collector.hasSelectionType(this.typeMeta)) {
             return selectionTypeName;
