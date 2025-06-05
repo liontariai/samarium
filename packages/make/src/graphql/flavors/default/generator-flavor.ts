@@ -1634,7 +1634,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     const makeSubSelectionFn =
                         (
                             opFnArgs?: Exclude<
-                                Parameters<typeof fieldFn>[0],
+                                Parameters<Extract<typeof fieldFn, (args: any) => any>>[0],
                                 (args: any) => any
                             >,
                         ) =>
@@ -1648,7 +1648,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         ) => (s: typeof opFnSelectionCb) => unknown
                                     )(opFnArgs);
 
-                            const fieldSlw = fieldSLFN(
+                            const fieldSlw = (fieldSLFN as Extract<typeof fieldSLFN, (args: any) => any>)(
                                 opFnSelectionCb as any,
                             ) as unknown as SelectionWrapperImpl<
                                 typeof field,
@@ -1736,7 +1736,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     }
                     return (
                         opFnArgs: Exclude<
-                            Parameters<typeof fieldFn>[0],
+                            Parameters<Extract<typeof fieldFn, (args: any) => any>>[0],
                             (args: any) => any
                         >,
                     ) => {
