@@ -561,9 +561,25 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         path: tk,
                     };
                     s[k] = v(
-                        (sub_s: { $all: (_opts?: {}, collector?: {}) => any }) => {
-                            return sub_s.$all(opts, col);
-                        },
+                        (sub_s: {
+                            $on?: { [k: string]: (utype_sub: (utype_sub_s: { $all: (_opts?: {}, collector?: {}) => any }) => any) => any };
+                            $all?: (_opts?: {}, collector?: {}) => any;
+                        }) => {
+                            if (sub_s.$all) {
+                                return sub_s.$all(opts, col);
+                            }
+                            if (sub_s.$on) {
+                                return Object.values(sub_s.$on).reduce(
+                                    (sel, tselfn) => ({
+                                        ...sel,
+                                        ...tselfn(utype_sub_s => {
+                                            return utype_sub_s.$all(opts, col);
+                                        }),
+                                    }),
+                                    {}
+                                );
+                            }
+                        }
                     );
                 } else if (!k.startsWith("$")) {
                     console.warn(
