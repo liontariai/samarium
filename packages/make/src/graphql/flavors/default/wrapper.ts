@@ -1234,15 +1234,13 @@ export class SelectionWrapper<
                                 (target[SLW_OP_RESULT_DATA_OVERRIDE] &&
                                     !slw[SLW_OP_RESULT_DATA_OVERRIDE])
                             ) {
-                                // index access detected, cloning
-                                slw = slw[SLW_CLONE]({
-                                    SLW_OP_PATH:
-                                        target[SLW_OP_PATH] +
-                                        "." +
-                                        String(prop),
-                                    OP_RESULT_DATA:
-                                        target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                });
+                                // index access detected, setting the op path
+                                // with the index (coming from the slw's parent (target))
+                                // it's in the parent because the parent was cloned before
+                                slw[SLW_OP_PATH] =
+                                    target[SLW_OP_PATH] + "." + String(prop);
+                                slw[SLW_OP_RESULT_DATA_OVERRIDE] =
+                                    target[SLW_OP_RESULT_DATA_OVERRIDE];
                             }
 
                             if (
