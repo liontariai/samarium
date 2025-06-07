@@ -889,12 +889,12 @@ export class SelectionWrapper<
                     has(target, prop) {
                         if (prop === Symbol.for("nodejs.util.inspect.custom"))
                             return true;
-                        if (
-                            prop === Symbol.iterator &&
-                            typeArrDepth &&
-                            Array.isArray(getResultDataForTarget(target))
-                        )
-                            return true;
+                        if (prop === Symbol.iterator && typeArrDepth) {
+                            const dataArr = getResultDataForTarget(target);
+                            if (Array.isArray(dataArr)) return true;
+                            if (dataArr === undefined || dataArr === null)
+                                return false;
+                        }
 
                         return Reflect.has(value ?? {}, prop);
                     },
@@ -1140,7 +1140,7 @@ export class SelectionWrapper<
                                 const path = target[SLW_OP_PATH] ?? "";
 
                                 // check if the selected field is an array
-                                if (typeArrDepth && Array.isArray(_data)) {
+                                if (typeArrDepth) {
                                     if (!isNaN(+String(prop))) {
                                         const elm = target[SLW_CLONE]({
                                             SLW_OP_PATH:
@@ -1155,14 +1155,12 @@ export class SelectionWrapper<
 
                                     const data = _data as valueT[] | undefined;
 
-                                    if (data === undefined) return undefined;
-
                                     const proxiedData =
                                         cache.proxiedArray.get(
-                                            target[SLW_OP_PATH] ?? "",
+                                            target[SLW_OP_PATH]!,
                                         ) ??
                                         Array.from(
-                                            { length: data.length },
+                                            { length: data?.length ?? 0 },
                                             (_, i) =>
                                                 target[SLW_CLONE]({
                                                     SLW_OP_PATH:
@@ -1192,11 +1190,16 @@ export class SelectionWrapper<
                                         return v;
                                     }
 
+                                    if (data === undefined) return undefined;
+                                    if (data === null) return null;
+
                                     return (proxiedData as any)[prop];
                                 }
 
                                 const data = _data as valueT | undefined;
                                 if (data === undefined) return undefined;
+                                if (data === null) return null;
+
                                 const proto = Object.getPrototypeOf(data);
                                 if (Object.hasOwn(proto, prop)) {
                                     const v = (data as any)[prop];
@@ -1233,6 +1236,28 @@ export class SelectionWrapper<
                                     OP_RESULT_DATA:
                                         target[SLW_OP_RESULT_DATA_OVERRIDE],
                                 });
+                            }
+
+                            if (
+                                slw instanceof SelectionWrapperImpl &&
+                                slw[SLW_FIELD_ARR_DEPTH]
+                            ) {
+                                const dataArr = getResultDataForTarget(slw) as
+                                    | unknown[]
+                                    | undefined
+                                    | null;
+                                if (dataArr === undefined) return undefined;
+                                if (dataArr === null) return null;
+                                if (!dataArr?.length) {
+                                    return [];
+                                }
+                            } else if (slw instanceof SelectionWrapperImpl) {
+                                const data = getResultDataForTarget(slw) as
+                                    | unknown
+                                    | undefined
+                                    | null;
+                                if (data === undefined) return undefined;
+                                if (data === null) return null;
                             }
 
                             if (
