@@ -335,6 +335,15 @@ export class OperationSelectionCollector {
 
     private executed = false;
     private operationResult: any | undefined = undefined;
+
+    public cache: {
+        data: Map<string, any>;
+        proxiedArray: Map<string, any[]>;
+    } = {
+        data: new Map(),
+        proxiedArray: new Map(),
+    };
+
     public async execute(headers?: Record<string, string>) {
         if (!this.op) {
             throw new Error(
@@ -831,22 +840,15 @@ export class SelectionWrapper<
                 reCreateValueCallback,
             ),
             (() => {
-                const cache: {
-                    data: Map<string, valueT>;
-                    proxiedArray: Map<
-                        string,
-                        SelectionWrapper<
-                            fieldName,
-                            typeNamePure,
-                            typeArrDepth,
-                            valueT,
-                            argsT
-                        >[]
-                    >;
-                } = {
-                    data: new Map(),
-                    proxiedArray: new Map(),
-                };
+                const getCache = (
+                    t: SelectionWrapperImpl<
+                        fieldName,
+                        typeNamePure,
+                        typeArrDepth,
+                        valueT,
+                        argsT
+                    >,
+                ) => t[ROOT_OP_COLLECTOR]!.ref.cache;
 
                 const getResultDataForTarget = (
                     t: SelectionWrapperImpl<
@@ -858,6 +860,8 @@ export class SelectionWrapper<
                     >,
                     overrideOpPath?: string,
                 ): valueT | undefined => {
+                    const cache = getCache(t);
+
                     const path = overrideOpPath ?? t[SLW_OP_PATH] ?? "";
                     if (cache.data.has(path)) return cache.data.get(path);
 
@@ -1137,10 +1141,10 @@ export class SelectionWrapper<
 
                             if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
                                 const _data = getResultDataForTarget(target);
-                                const path = target[SLW_OP_PATH] ?? "";
+                                const path = target[SLW_OP_PATH]!;
 
                                 // check if the selected field is an array
-                                if (typeArrDepth) {
+                                if (typeArrDepth && Array.isArray(_data)) {
                                     if (!isNaN(+String(prop))) {
                                         const elm = target[SLW_CLONE]({
                                             SLW_OP_PATH:
@@ -1155,12 +1159,15 @@ export class SelectionWrapper<
 
                                     const data = _data as valueT[] | undefined;
 
+                                    if (data === undefined) return undefined;
+                                    const cache = getCache(target);
+
                                     const proxiedData =
                                         cache.proxiedArray.get(
                                             target[SLW_OP_PATH]!,
                                         ) ??
                                         Array.from(
-                                            { length: data?.length ?? 0 },
+                                            { length: data.length },
                                             (_, i) =>
                                                 target[SLW_CLONE]({
                                                     SLW_OP_PATH:
@@ -1227,15 +1234,13 @@ export class SelectionWrapper<
                                 (target[SLW_OP_RESULT_DATA_OVERRIDE] &&
                                     !slw[SLW_OP_RESULT_DATA_OVERRIDE])
                             ) {
-                                // index access detected, cloning
-                                slw = slw[SLW_CLONE]({
-                                    SLW_OP_PATH:
-                                        target[SLW_OP_PATH] +
-                                        "." +
-                                        String(prop),
-                                    OP_RESULT_DATA:
-                                        target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                });
+                                // index access detected, setting the op path
+                                // with the index (coming from the slw's parent (target))
+                                // it's in the parent because the parent was cloned before
+                                slw[SLW_OP_PATH] =
+                                    target[SLW_OP_PATH] + "." + String(prop);
+                                slw[SLW_OP_RESULT_DATA_OVERRIDE] =
+                                    target[SLW_OP_RESULT_DATA_OVERRIDE];
                             }
 
                             if (
