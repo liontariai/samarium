@@ -1144,7 +1144,7 @@ export class SelectionWrapper<
                                 const path = target[SLW_OP_PATH]!;
 
                                 // check if the selected field is an array
-                                if (typeArrDepth) {
+                                if (typeArrDepth && Array.isArray(_data)) {
                                     if (!isNaN(+String(prop))) {
                                         const elm = target[SLW_CLONE]({
                                             SLW_OP_PATH:
