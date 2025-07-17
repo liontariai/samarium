@@ -589,6 +589,7 @@ export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
     "SLW_RECREATE_VALUE_CALLBACK",
 );
 export const SLW_SETTER_DATA_OVERRIDE = Symbol("SLW_SETTER_DATA_OVERRIDE");
+export const SLW_NEEDS_CLONE = Symbol("SLW_NEEDS_CLONE");
 
 export const SLW_CLONE = Symbol("SLW_CLONE");
 
@@ -610,6 +611,7 @@ export class SelectionWrapperImpl<
             SLW_OP_PATH?: string;
             OP_RESULT_DATA?: any;
             SLW_SETTER_DATA_OVERRIDE?: any;
+            SLW_NEEDS_CLONE?: boolean;
         } = {},
     ) {
         const slw = new SelectionWrapper(
@@ -631,6 +633,12 @@ export class SelectionWrapperImpl<
         slw[SLW_SETTER_DATA_OVERRIDE] =
             overrides.SLW_SETTER_DATA_OVERRIDE ??
             this[SLW_SETTER_DATA_OVERRIDE];
+
+        slw[SLW_NEEDS_CLONE] = overrides.SLW_NEEDS_CLONE
+            ? true
+            : this[SLW_NEEDS_CLONE]
+              ? false
+              : true;
 
         if (overrides.OP_RESULT_DATA) {
             slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
@@ -661,11 +669,11 @@ export class SelectionWrapperImpl<
 
     [SLW_PARENT_SLW]?: SelectionWrapperImpl<string, string, number, any, any>;
     [SLW_LAZY_FLAG]?: boolean;
-
     [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
 
     [SLW_OP_RESULT_DATA_OVERRIDE]?: any;
     [SLW_SETTER_DATA_OVERRIDE]?: any;
+    [SLW_NEEDS_CLONE]?: boolean;
 
     constructor(
         fieldName?: fieldName,
@@ -863,7 +871,8 @@ export class SelectionWrapper<
                     const cache = getCache(t);
 
                     const path = overrideOpPath ?? t[SLW_OP_PATH] ?? "";
-                    if (cache.data.has(path)) return cache.data.get(path);
+                    if (cache.data.has(path) && !t[SLW_NEEDS_CLONE])
+                        return cache.data.get(path);
 
                     const data = t[
                         ROOT_OP_COLLECTOR
@@ -1131,6 +1140,10 @@ export class SelectionWrapper<
                                                                 asyncGenRootPath,
                                                             OP_RESULT_DATA:
                                                                 val.value,
+
+                                                            // this is only for subscriptions
+                                                            SLW_NEEDS_CLONE:
+                                                                true,
                                                         }),
                                                     };
                                                 });
@@ -1234,13 +1247,32 @@ export class SelectionWrapper<
                                 (target[SLW_OP_RESULT_DATA_OVERRIDE] &&
                                     !slw[SLW_OP_RESULT_DATA_OVERRIDE])
                             ) {
-                                // index access detected, setting the op path
-                                // with the index (coming from the slw's parent (target))
-                                // it's in the parent because the parent was cloned before
-                                slw[SLW_OP_PATH] =
-                                    target[SLW_OP_PATH] + "." + String(prop);
-                                slw[SLW_OP_RESULT_DATA_OVERRIDE] =
-                                    target[SLW_OP_RESULT_DATA_OVERRIDE];
+                                if (target[SLW_NEEDS_CLONE]) {
+                                    // if the slw is flagged it needs to be cloned
+                                    // this is only for subscriptions, because
+                                    // the original slw will continue to exist
+                                    // and also have the same op path
+                                    // we need a new object that doesn't reference
+                                    // the other objects
+                                    slw = slw[SLW_CLONE]({
+                                        SLW_OP_PATH:
+                                            target[SLW_OP_PATH] +
+                                            "." +
+                                            String(prop),
+                                        OP_RESULT_DATA:
+                                            target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                    });
+                                } else {
+                                    // index access detected, setting the op path
+                                    // with the index (coming from the slw's parent (target))
+                                    // it's in the parent because the parent was cloned before
+                                    slw[SLW_OP_PATH] =
+                                        target[SLW_OP_PATH] +
+                                        "." +
+                                        String(prop);
+                                    slw[SLW_OP_RESULT_DATA_OVERRIDE] =
+                                        target[SLW_OP_RESULT_DATA_OVERRIDE];
+                                }
                             }
 
                             if (
