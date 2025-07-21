@@ -554,7 +554,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (excludePaths.includes(tk as any)) continue;
 
             if (typeof v === "function") {
-                if (v.name === "bound _SLFN") {
+                if (v.name.startsWith("bound ")) {
                     // if (collector?.parents?.includes(tk)) continue;
                     const col = {
                         parents: [...(collector?.parents ?? []), tk],
@@ -1688,7 +1688,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             opSlw[SLW_IS_ROOT_TYPE] = operation;
                             opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
                             // access the keys of the proxy object, to register operations
-                            (opSlw as any)[field as any];
+                            Object.keys({ [field]: 0 }).forEach(key => (opSlw as any)[key as any]);
                             const rootSlw = new SelectionWrapper(
                                 undefined,
                                 undefined,
@@ -1698,7 +1698,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             );
                             opSlw[ROOT_OP_COLLECTOR] = rootRef;
                             // access the keys of the proxy object, to register operations
-                            (rootSlw as any)[field as any];
+                            Object.keys({ [field]: 0 }).forEach(key => (rootSlw as any)[key as any]);
                                 
                             const resultProxy = new Proxy(
                                 {},
@@ -1747,7 +1747,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         };
 
                     // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
-                    if (fieldFn.name === "bound _SLFN") {
+                    if (fieldFn.name.startsWith("bound ")) {
                         return makeSubSelectionFn();
                     }
                     return (
@@ -1773,7 +1773,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
                     opSlw[SLW_PARENT_SLW] = opSlw;
                     // access the keys of the proxy object, to register operations
-                    (opSlw as any)[field as any];
+                    Object.keys({ [field]: 0 }).forEach(key => (opSlw as any)[key as any]);
                     const rootSlw = new SelectionWrapper(
                         undefined,
                         undefined,
@@ -1783,7 +1783,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     );
                     opSlw[ROOT_OP_COLLECTOR] = rootRef;
                     // access the keys of the proxy object, to register operations
-                    (rootSlw as any)[field as any];
+                    Object.keys({ [field]: 0 }).forEach(key => (rootSlw as any)[key as any]);
 
                     const resultProxy = new Proxy(
                         {},
