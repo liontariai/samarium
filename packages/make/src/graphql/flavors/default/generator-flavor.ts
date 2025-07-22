@@ -891,7 +891,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 )};`;
             }
 
-            return `${description}${field.name}: ${selectionTypeNameForTypescript};`;
+            return `${description}${field.name}${
+                field.type.isNonNull ? "" : "?"
+            }: ${selectionTypeNameForTypescript};`;
         } else {
             console.error(field.type);
             throw new Error(
