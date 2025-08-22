@@ -36,30 +36,9 @@
         "vite-tsconfig-paths": "^5.0.1",
       },
     },
-    "packages/dev": {
-      "name": "@samarium.sdk/dev",
-      "version": "0.24.3",
-      "bin": {
-        "samarium": "bin/samarium",
-      },
-      "dependencies": {
-        "@inquirer/prompts": "^5.0.5",
-        "commander": "^11.1.0",
-        "detect-indent": "^7.0.1",
-        "prettier": "^3.2.5",
-        "yaml": "^2.6.0",
-      },
-      "devDependencies": {
-        "@samarium.sdk/make": "workspace:*",
-        "bun-types": "^1.2.19",
-      },
-      "peerDependencies": {
-        "typescript": "^5.0.0",
-      },
-    },
     "packages/make": {
       "name": "@samarium.sdk/make",
-      "version": "0.24.3",
+      "version": "0.24.4",
       "dependencies": {
         "graphql-request": "^7.1.0",
         "openapi-typescript": "^7.4.1",
@@ -74,7 +53,7 @@
     },
     "packages/new": {
       "name": "@samarium.sdk/new",
-      "version": "0.24.3",
+      "version": "0.24.4",
       "bin": {
         "samarium": "bin/samarium",
       },
@@ -388,8 +367,6 @@
     "@rollup/rollup-win32-ia32-msvc": ["@rollup/rollup-win32-ia32-msvc@4.45.1", "", { "os": "win32", "cpu": "ia32" }, "sha512-lxV2Pako3ujjuUe9jiU3/s7KSrDfH6IgTSQOnDWr9aJ92YsFd7EurmClK0ly/t8dzMkDtd04g60WX6yl0sGfdw=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.45.1", "", { "os": "win32", "cpu": "x64" }, "sha512-M/fKi4sasCdM8i0aWJjCSFm2qEnYRR8AMLG2kxp6wD13+tMGA4Z1tVAuHkNRjud5SW2EM3naLuK35w9twvf6aA=="],
-
-    "@samarium.sdk/dev": ["@samarium.sdk/dev@workspace:packages/dev"],
 
     "@samarium.sdk/make": ["@samarium.sdk/make@workspace:packages/make"],
 
