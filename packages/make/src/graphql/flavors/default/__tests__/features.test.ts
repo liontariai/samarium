@@ -44,7 +44,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
         expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
@@ -134,7 +134,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -177,7 +177,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -226,7 +226,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -277,7 +277,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
         expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
@@ -330,7 +330,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -391,7 +391,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -441,7 +441,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -489,7 +489,7 @@ describe("Testing and validating features", () => {
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -542,7 +542,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -652,7 +652,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -760,7 +760,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        global.fetch = mockFetch;
+        global.fetch = mockFetch as any;
 
         const { first10Launches } = await examplesSpaceX.default((op) =>
             op.query((q) => ({
@@ -840,7 +840,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -892,7 +892,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -944,7 +944,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -998,7 +998,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -1052,7 +1052,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -1108,7 +1108,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -1164,7 +1164,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -1220,7 +1220,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 
@@ -1276,7 +1276,7 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch;
+            global.fetch = mockFetch as any;
 
             const authToken = "Bearer test token";
 

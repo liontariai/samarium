@@ -25,5 +25,11 @@
         },
         "verbatimModuleSyntax": true
     },
-    "include": ["src/**/*", "src/**/*.json", "tests/**/*", "package.json"]
+    "include": [
+        "src/**/*",
+        "src/**/*.json",
+        "tests/**/*",
+        "package.json",
+        "bundle.ts"
+    ]
 }
