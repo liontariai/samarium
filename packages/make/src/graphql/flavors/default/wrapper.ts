@@ -2,8 +2,8 @@ const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
 
 type FnOrPromisOrPrimitive =
-    | (() => string | { [key: string]: string })
-    | (() => Promise<string | { [key: string]: string }>)
+    | (() => string | { [key: string]: string } | undefined)
+    | (() => Promise<string | { [key: string]: string } | undefined>)
     | string
     | { [key: string]: string };
 export const _ = Symbol("_") as any;
@@ -67,8 +67,8 @@ export class RootOperation {
         >,
 
         _auth_fn: undefined as
-            | (() => string | { [key: string]: string })
-            | (() => Promise<string | { [key: string]: string }>)
+            | (() => string | { [key: string]: string } | undefined)
+            | (() => Promise<string | { [key: string]: string } | undefined>)
             | undefined,
         scalars: {
             DateTime: (value: string) => new Date(value),
@@ -1142,8 +1142,7 @@ export class SelectionWrapper<
                                                                 val.value,
 
                                                             // this is only for subscriptions
-                                                            SLW_NEEDS_CLONE:
-                                                                true,
+                                                            SLW_NEEDS_CLONE: true,
                                                         }),
                                                     };
                                                 });
