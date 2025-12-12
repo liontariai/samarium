@@ -1,6 +1,46 @@
 const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
 
+function proxify(data: any, slw: any): any & ArrayLike<any> {
+    // Create proxy around empty array (ensures Array.isArray(proxy) === true)
+    const proxy = new Proxy(data as any | any[], {
+        get(target: any[], prop: PropertyKey, receiver: any): any {
+            return Reflect.get(slw, prop, receiver);
+        },
+        set(
+            target: any[],
+            prop: PropertyKey,
+            value: any,
+            receiver: any,
+        ): boolean {
+            return Reflect.set(slw, prop, value, receiver);
+        },
+        has(target: any[], prop: PropertyKey): boolean {
+            return Reflect.has(slw, prop);
+        },
+        deleteProperty(target: any[], prop: PropertyKey): boolean {
+            return Reflect.deleteProperty(slw, prop);
+        },
+        ownKeys(target: any[]): ArrayLike<string | symbol> {
+            return Reflect.ownKeys(slw);
+        },
+        getOwnPropertyDescriptor(
+            target: any[],
+            prop: PropertyKey,
+        ): PropertyDescriptor | undefined {
+            return Reflect.getOwnPropertyDescriptor(slw, prop);
+        },
+        getPrototypeOf(target: any[]): object | null {
+            // Return Array.prototype for better array-like behavior (e.g., instanceof Array)
+            return Object.getPrototypeOf(target);
+        },
+        // Add more traps as needed for full array-like behavior (e.g., apply/construct if callable)
+    });
+
+    // Optionally, augment here (e.g., add methods or computed props via additional get trap logic)
+    return proxy as unknown as any & ArrayLike<any>;
+}
+
 type FnOrPromisOrPrimitive =
     | (() => string | { [key: string]: string } | undefined)
     | (() => Promise<string | { [key: string]: string } | undefined>)
@@ -352,6 +392,7 @@ export class OperationSelectionCollector {
         }
         this.operationResult = await this.op.execute(headers);
         this.executed = true;
+        return this.operationResult;
     }
     public get isExecuted() {
         return this.executed;
@@ -647,10 +688,10 @@ export class SelectionWrapperImpl<
         return slw;
     }
 
-    readonly [SLW_UID] = this.generateUniqueId();
+    [SLW_UID] = this.generateUniqueId();
     [ROOT_OP_COLLECTOR]?: OperationSelectionCollectorRef;
     [SLW_PARENT_COLLECTOR]?: OperationSelectionCollector;
-    readonly [SLW_COLLECTOR]?: OperationSelectionCollector;
+    [SLW_COLLECTOR]?: OperationSelectionCollector;
 
     [SLW_FIELD_NAME]?: fieldName;
     [SLW_FIELD_TYPENAME]?: typeNamePure;
@@ -993,6 +1034,8 @@ export class SelectionWrapper<
                                     that[SLW_ARGS],
                                     that[SLW_ARGS_META],
                                 );
+                                newThat[SLW_UID] = that[SLW_UID];
+
                                 Object.keys(r!).forEach(
                                     (key) =>
                                         (newThat as valueT)[
@@ -1033,8 +1076,24 @@ export class SelectionWrapper<
                                                     newRootOpCollectorRef.ref
                                                         .execute()
                                                         .catch(reject)
-                                                        .then(() => {
-                                                            resolve(newThat);
+                                                        .then((_data) => {
+                                                            const data =
+                                                                _data[
+                                                                    newThat[
+                                                                        SLW_FIELD_NAME
+                                                                    ]
+                                                                ][
+                                                                    newThat[
+                                                                        SLW_FIELD_NAME
+                                                                    ]
+                                                                ];
+
+                                                            resolve(
+                                                                proxify(
+                                                                    data,
+                                                                    newThat as any,
+                                                                ),
+                                                            );
                                                         });
                                                 },
                                             );
@@ -1094,7 +1153,8 @@ export class SelectionWrapper<
                             prop === SLW_RECREATE_VALUE_CALLBACK ||
                             prop === SLW_OP_RESULT_DATA_OVERRIDE ||
                             prop === SLW_CLONE ||
-                            prop === SLW_SETTER_DATA_OVERRIDE
+                            prop === SLW_SETTER_DATA_OVERRIDE ||
+                            prop === SLW_NEEDS_CLONE
                         ) {
                             return target[
                                 prop as keyof SelectionWrapperImpl<
@@ -1133,17 +1193,18 @@ export class SelectionWrapper<
                                                 .then((val) => {
                                                     return {
                                                         done: val.done,
-                                                        value: target[
-                                                            SLW_CLONE
-                                                        ]({
-                                                            SLW_OP_PATH:
-                                                                asyncGenRootPath,
-                                                            OP_RESULT_DATA:
-                                                                val.value,
+                                                        value: proxify(
+                                                            val.value,
+                                                            target[SLW_CLONE]({
+                                                                SLW_OP_PATH:
+                                                                    asyncGenRootPath,
+                                                                OP_RESULT_DATA:
+                                                                    val.value,
 
-                                                            // this is only for subscriptions
-                                                            SLW_NEEDS_CLONE: true,
-                                                        }),
+                                                                // this is only for subscriptions
+                                                                SLW_NEEDS_CLONE: true,
+                                                            }),
+                                                        ),
                                                     };
                                                 });
                                         },
@@ -1166,7 +1227,10 @@ export class SelectionWrapper<
                                                     SLW_OP_RESULT_DATA_OVERRIDE
                                                 ],
                                         });
-                                        return elm;
+                                        return proxify(
+                                            _data[Number(prop)],
+                                            elm,
+                                        );
                                     }
 
                                     const data = _data as valueT[] | undefined;
@@ -1181,16 +1245,21 @@ export class SelectionWrapper<
                                         Array.from(
                                             { length: data.length },
                                             (_, i) =>
-                                                target[SLW_CLONE]({
-                                                    SLW_OP_PATH:
-                                                        target[SLW_OP_PATH] +
-                                                        "." +
-                                                        String(i),
-                                                    OP_RESULT_DATA:
-                                                        target[
-                                                            SLW_OP_RESULT_DATA_OVERRIDE
-                                                        ],
-                                                }),
+                                                proxify(
+                                                    data[i],
+                                                    target[SLW_CLONE]({
+                                                        SLW_OP_PATH:
+                                                            target[
+                                                                SLW_OP_PATH
+                                                            ] +
+                                                            "." +
+                                                            String(i),
+                                                        OP_RESULT_DATA:
+                                                            target[
+                                                                SLW_OP_RESULT_DATA_OVERRIDE
+                                                            ],
+                                                    }),
+                                                ),
                                         );
 
                                     if (!cache.proxiedArray.has(path)) {
@@ -1287,6 +1356,10 @@ export class SelectionWrapper<
                                 if (!dataArr?.length) {
                                     return [];
                                 }
+
+                                if (slw[SLW_PARENT_COLLECTOR]) {
+                                    return proxify(dataArr, slw);
+                                }
                             } else if (slw instanceof SelectionWrapperImpl) {
                                 const data = getResultDataForTarget(slw) as
                                     | unknown
@@ -1294,14 +1367,13 @@ export class SelectionWrapper<
                                     | null;
                                 if (data === undefined) return undefined;
                                 if (data === null) return null;
+
+                                if (slw[SLW_PARENT_COLLECTOR]) {
+                                    return proxify(data, slw);
+                                }
                             }
 
-                            if (
-                                slw instanceof SelectionWrapperImpl &&
-                                slw[SLW_PARENT_COLLECTOR]
-                            ) {
-                                return slw;
-                            } else if (slw instanceof SelectionWrapperImpl) {
+                            if (slw instanceof SelectionWrapperImpl) {
                                 return getResultDataForTarget(slw);
                             } else if (slw[SLW_LAZY_FLAG]) {
                                 return slw;
