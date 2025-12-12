@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "@liontari.ai/samarium",
@@ -38,7 +39,7 @@
     },
     "packages/make": {
       "name": "@samarium.sdk/make",
-      "version": "0.24.4",
+      "version": "0.25.0",
       "dependencies": {
         "graphql-request": "^7.1.0",
         "openapi-typescript": "^7.4.1",
@@ -53,7 +54,7 @@
     },
     "packages/new": {
       "name": "@samarium.sdk/new",
-      "version": "0.24.4",
+      "version": "0.25.0",
       "bin": {
         "samarium": "bin/samarium",
       },
