@@ -8,9 +8,7 @@ import type { GeneratorSelectionTypeFlavorDefault } from "../flavors/default/gen
  * Class with methods to traverse a given Schema and generate the query builder's code.
  */
 export class Generator {
-    constructor(
-        public readonly Codegen: typeof GeneratorSelectionTypeFlavorDefault,
-    ) {}
+    constructor(public readonly Codegen: typeof GeneratorSelectionTypeFlavorDefault) {}
 
     /**
      * Generate the query builder's code.
@@ -33,33 +31,19 @@ export class Generator {
         const MutationTypeName = schema.getMutationType()?.name;
         const SubscriptionTypeName = schema.getSubscriptionType()?.name;
 
-        const collector = new Collector(
-            QueryTypeName,
-            MutationTypeName,
-            SubscriptionTypeName,
-        );
+        const collector = new Collector(QueryTypeName, MutationTypeName, SubscriptionTypeName);
         gatherMeta(schema, options, collector);
 
         // Generate selection types
         // Generate & collect Enum first, so that they can be used in the selection types
         for (const [typeName, typeMeta] of collector.types.entries()) {
             if (!typeMeta.isEnum) continue;
-            new this.Codegen(
-                typeName,
-                collector,
-                options,
-                authConfig,
-            ).makeEnumType();
+            new this.Codegen(typeName, collector, options, authConfig).makeEnumType();
         }
         // Generate & collect Input first, so that they can be used in the selection types
         for (const [typeName, typeMeta] of collector.types.entries()) {
             if (!typeMeta.isInput) continue;
-            new this.Codegen(
-                typeName,
-                collector,
-                options,
-                authConfig,
-            ).makeSelectionType();
+            new this.Codegen(typeName, collector, options, authConfig).makeSelectionType();
         }
         // Generate directives
         for (const [typeName, typeMeta] of collector.types.entries()) {
@@ -73,42 +57,19 @@ export class Generator {
                 )
             )
                 continue;
-            new this.Codegen(
-                typeName,
-                collector,
-                options,
-                authConfig,
-            ).makeDirective();
+            new this.Codegen(typeName, collector, options, authConfig).makeDirective();
         }
 
         // Generate selection types for all types
         for (const [typeName, typeMeta] of collector.types.entries()) {
-            if (
-                typeMeta.isScalar ||
-                typeMeta.isInput ||
-                typeMeta.isEnum ||
-                typeMeta.isDirective
-            )
-                continue;
-            new this.Codegen(
-                typeName,
-                collector,
-                options,
-                authConfig,
-            ).makeSelectionType();
-            new this.Codegen(
-                typeName,
-                collector,
-                options,
-                authConfig,
-            ).makeSelectionFunction();
+            if (typeMeta.isScalar || typeMeta.isInput || typeMeta.isEnum || typeMeta.isDirective) continue;
+            new this.Codegen(typeName, collector, options, authConfig).makeSelectionType();
+            new this.Codegen(typeName, collector, options, authConfig).makeSelectionFunction();
         }
 
         const code = [
             this.Codegen.FieldValueWrapperType,
-            this.Codegen.HelperTypes(
-                Array.from(collector.customScalars.values()),
-            ),
+            this.Codegen.HelperTypes(Array.from(collector.customScalars.values())),
             this.Codegen.HelperFunctions,
             ...[...collector.enumsTypes.entries()]
                 .map(([_, code]) => code)
@@ -120,20 +81,14 @@ export class Generator {
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             ...[...collector.selectionTypes.entries()]
-                .filter(
-                    ([type]) => type.isInput || type.isObject || type.isUnion,
-                )
+                .filter(([type]) => type.isInput || type.isObject || type.isUnion)
                 .map(([_, code]) => code)
                 .filter((code, index, arr) => arr.indexOf(code) === index),
             this.Codegen.EnumTypesMapped(collector),
             ...[...collector.selectionFunctions.entries()]
-                .filter(
-                    ([type]) => !type.isScalar && !type.isEnum && !type.isInput,
-                )
+                .filter(([type]) => !type.isScalar && !type.isEnum && !type.isInput)
                 .map(([_, code]) => code),
-            ...[...collector.directivesFunctions.entries()].map(
-                ([_, code]) => code,
-            ),
+            ...[...collector.directivesFunctions.entries()].map(([_, code]) => code),
             this.Codegen.makeRootOperationFunction(collector, authConfig),
         ].join("\n");
 

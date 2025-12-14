@@ -1,12 +1,6 @@
 import { expect, describe, it } from "bun:test";
 import { gatherMeta, gatherMetaForType } from "../meta";
-import {
-    GraphQLSchema,
-    GraphQLObjectType,
-    GraphQLInterfaceType,
-    GraphQLNonNull,
-    GraphQLString,
-} from "graphql";
+import { GraphQLSchema, GraphQLObjectType, GraphQLInterfaceType, GraphQLNonNull, GraphQLString } from "graphql";
 import { Collector } from "../collector";
 import { introspectGraphQLSchema } from "./util";
 

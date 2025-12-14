@@ -8,10 +8,7 @@ import { GraphQLClient } from "graphql-request";
  * @param endpoint The GraphQL endpoint URL.
  * @returns A Promise that resolves to the GraphQLSchema object.
  */
-export async function introspectGraphQLSchema(
-    endpoint: string,
-    headers?: string[],
-): Promise<GraphQLSchema> {
+export async function introspectGraphQLSchema(endpoint: string, headers?: string[]): Promise<GraphQLSchema> {
     try {
         // Create a GraphQL client with the 'graphql-request' library
         const client = new GraphQLClient(endpoint);
@@ -20,9 +17,7 @@ export async function introspectGraphQLSchema(
         const introspectionResult = await client.request<IntrospectionQuery>(
             getIntrospectionQuery(),
             undefined,
-            new Headers(
-                headers?.map((header) => header.split("=") as [string, string]),
-            ),
+            new Headers(headers?.map((header) => header.split("=") as [string, string])),
         );
 
         // Build a GraphQLSchema object from the introspection result

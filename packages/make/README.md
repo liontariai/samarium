@@ -54,11 +54,7 @@ bun install @samarium.sdk/make
 #### 2. Import the compiler
 
 ```typescript
-import {
-    GraphQLGenerator,
-    OpenAPIGenerator,
-    Flavors,
-} from "@samarium.sdk/make";
+import { GraphQLGenerator, OpenAPIGenerator, Flavors } from "@samarium.sdk/make";
 ```
 
 #### 3. Use the compiler
@@ -66,35 +62,25 @@ import {
 #### GraphQL
 
 ```typescript
-const sdk = await new GraphQLGenerator.Generator(
-    Flavors.GraphQL.default,
-).generate({
+const sdk = await new GraphQLGenerator.Generator(Flavors.GraphQL.default).generate({
     schema: gqlSchema,
     options: {},
 });
 
 // write the sdk to a file and set the endpoint (manual step right now)
-Bun.write(
-    Bun.file("sdk.ts"),
-    sdk.replaceAll("[ENDPOINT]", "http://localhost:4000"),
-);
+Bun.write(Bun.file("sdk.ts"), sdk.replaceAll("[ENDPOINT]", "http://localhost:4000"));
 ```
 
 #### OpenAPI
 
 ```typescript
-const sdk = await new OpenAPIGenerator.Generator(
-    Flavors.OpenAPI.default,
-).generate({
+const sdk = await new OpenAPIGenerator.Generator(Flavors.OpenAPI.default).generate({
     schema: schema, // the openapi json schema
     options: {},
 });
 
 // write the sdk to a file and set the endpoint (manual step right now)
-Bun.write(
-    Bun.file("sdk.ts"),
-    sdk.replaceAll("[ENDPOINT]", "http://localhost:4000"),
-);
+Bun.write(Bun.file("sdk.ts"), sdk.replaceAll("[ENDPOINT]", "http://localhost:4000"));
 ```
 
 ## Support the project

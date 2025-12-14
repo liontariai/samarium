@@ -6,15 +6,7 @@ export interface SchemaMeta {
     customScalars: TypeMeta[];
 }
 
-export type OperationMethod =
-    | "get"
-    | "post"
-    | "put"
-    | "delete"
-    | "patch"
-    | "options"
-    | "head"
-    | "trace";
+export type OperationMethod = "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "trace";
 export interface OperationMeta {
     name: string;
     description: string | undefined;

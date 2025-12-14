@@ -65,41 +65,24 @@ export abstract class GeneratorSelectionTypeFlavor {
         // Set the name of the GraphQL type to a more typescript friendly name.
         this.typeName = this.originalTypeNameToTypescriptFriendlyName(typeName);
     }
-    protected originalTypeNameToTypescriptFriendlyName(
-        originalTypeName: string,
-    ): string {
-        return originalTypeName
-            .replaceAll("[", "")
-            .replaceAll("]", "Array")
-            .replaceAll("!", "NotNull");
+    protected originalTypeNameToTypescriptFriendlyName(originalTypeName: string): string {
+        return originalTypeName.replaceAll("[", "").replaceAll("]", "Array").replaceAll("!", "NotNull");
     }
     protected originalTypeNameToTypescriptTypeNameWithoutModifiers(
         originalTypeName: string,
         suffix: string = "",
     ): string {
-        return `${originalTypeName
-            .replaceAll("[", "")
-            .replaceAll("]", "")
-            .replaceAll("!", "")}${suffix}`;
+        return `${originalTypeName.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${suffix}`;
     }
-    protected originalTypeNameToTypescriptTypeName(
-        originalTypeName: string,
-        suffix: string = "",
-    ): string {
-        return `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-            originalTypeName,
-            suffix,
-        )}${Array.from({
+    protected originalTypeNameToTypescriptTypeName(originalTypeName: string, suffix: string = ""): string {
+        return `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(originalTypeName, suffix)}${Array.from({
             length: originalTypeName.split("[").length - 1,
         })
             .fill("[]")
             .join("")}`;
     }
 
-    protected abstract makeSelectionTypeInputValueForFieldWrapperType(
-        fieldName: string,
-        fieldMeta: TypeMeta,
-    ): string;
+    protected abstract makeSelectionTypeInputValueForFieldWrapperType(fieldName: string, fieldMeta: TypeMeta): string;
     protected abstract makeSelectionTypeInputValueForField(
         field: FieldMeta,
         parents: string[],
@@ -112,10 +95,7 @@ export abstract class GeneratorSelectionTypeFlavor {
         field: FieldMeta,
         parents: string[],
     ): string;
-    protected abstract makeSelectionFunctionInputObjectValueForField(
-        field: FieldMeta,
-        parents: string[],
-    ): string;
+    protected abstract makeSelectionFunctionInputObjectValueForField(field: FieldMeta, parents: string[]): string;
 
     public abstract makeSelectionFunction(schema: GraphQLSchema): string;
 

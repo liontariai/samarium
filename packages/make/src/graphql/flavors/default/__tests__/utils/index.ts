@@ -10,22 +10,13 @@ import {
 } from "@/graphql/flavors/default/wrapper";
 import type { SelectionFnParent, SLFN } from "./types";
 
-export const makeSLFN = <
-    T extends object,
-    F,
-    N extends string,
-    TNP extends string,
-    TAD extends number,
->(
+export const makeSLFN = <T extends object, F, N extends string, TNP extends string, TAD extends number>(
     makeSLFNInput: () => F,
     SLFN_name: N,
     SLFN_typeNamePure: TNP,
     SLFN_typeArrDepth: TAD,
 ) => {
-    function _SLFN<TT extends T, FF extends F>(
-        this: any,
-        s: (selection: FF) => TT,
-    ) {
+    function _SLFN<TT extends T, FF extends F>(this: any, s: (selection: FF) => TT) {
         let parent: SelectionFnParent = this ?? {
             collector: new OperationSelectionCollector(),
         };
@@ -65,32 +56,19 @@ export const makeSLFN = <
 
             return result;
         }
-        return innerFn.bind(
-            new OperationSelectionCollector(SLFN_name, parent?.collector),
-        )();
+        return innerFn.bind(new OperationSelectionCollector(SLFN_name, parent?.collector))();
     }
     return _SLFN as ReturnType<SLFN<T, F, N, TNP, TAD>>;
 };
 
 export const selectScalars = <S>(selection: Record<string, any>) =>
-    Object.fromEntries(
-        Object.entries(selection).filter(
-            ([k, v]) => v instanceof SelectionWrapperImpl,
-        ),
-    ) as S;
+    Object.fromEntries(Object.entries(selection).filter(([k, v]) => v instanceof SelectionWrapperImpl)) as S;
 
-export const rootSLWFactory = <
-    T extends object,
-    ROPN extends (...args: any) => any,
->(
+export const rootSLWFactory = <T extends object, ROPN extends (...args: any) => any>(
     ropfn: ROPN,
     s: (sl: ReturnType<ROPN>) => T,
 ) => {
-    const root = new OperationSelectionCollector(
-        undefined,
-        undefined,
-        new RootOperation(),
-    );
+    const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
     const rootRef = { ref: root };
 
     const selection = ropfn.bind(rootRef)();
@@ -98,14 +76,7 @@ export const rootSLWFactory = <
     const r = s(selection);
 
     // root SelectionWrapper with no parent, linking everything to the RootOperation
-    const _result = new SelectionWrapper(
-        undefined,
-        undefined,
-        undefined,
-        r,
-        root,
-        undefined,
-    );
+    const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined);
     // for now add this manually to keep the tests valid, need to reevaluate if this is as it should be
     _result[ROOT_OP_COLLECTOR] = rootRef;
 

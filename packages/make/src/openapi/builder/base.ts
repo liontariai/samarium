@@ -1,11 +1,6 @@
 import type { OpenAPI3 } from "openapi-typescript";
 import type { Collector } from "./collector";
-import type {
-    CodegenOptions,
-    FieldMeta,
-    OperationMeta,
-    TypeMeta,
-} from "./meta";
+import type { CodegenOptions, FieldMeta, OperationMeta, TypeMeta } from "./meta";
 
 /**
  * Abstract class for selection type flavors.
@@ -70,29 +65,15 @@ export abstract class GeneratorSelectionTypeFlavor {
 
     protected static reservedKeywords = ["import", "const", "export"];
 
-    protected static originalTypeNameToTypescriptFriendlyName(
-        originalTypeName: string,
-    ): string {
-        if (
-            GeneratorSelectionTypeFlavor.reservedKeywords.includes(
-                originalTypeName,
-            )
-        ) {
+    protected static originalTypeNameToTypescriptFriendlyName(originalTypeName: string): string {
+        if (GeneratorSelectionTypeFlavor.reservedKeywords.includes(originalTypeName)) {
             originalTypeName = `_${originalTypeName}`;
         }
 
-        return originalTypeName
-            .replaceAll("/", "_")
-            .replaceAll("[", "")
-            .replaceAll("]", "Array")
-            .replaceAll("!", "");
+        return originalTypeName.replaceAll("/", "_").replaceAll("[", "").replaceAll("]", "Array").replaceAll("!", "");
     }
-    protected originalTypeNameToTypescriptFriendlyName(
-        originalTypeName: string,
-    ): string {
-        return GeneratorSelectionTypeFlavor.originalTypeNameToTypescriptFriendlyName(
-            originalTypeName,
-        );
+    protected originalTypeNameToTypescriptFriendlyName(originalTypeName: string): string {
+        return GeneratorSelectionTypeFlavor.originalTypeNameToTypescriptFriendlyName(originalTypeName);
     }
 
     protected static originalTypeNameToTypescriptTypeNameWithoutModifiers(
@@ -115,33 +96,18 @@ export abstract class GeneratorSelectionTypeFlavor {
         );
     }
 
-    protected static originalTypeNameToTypescriptTypeName(
-        originalTypeName: string,
-        suffix: string = "",
-    ): string {
-        return `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-            originalTypeName,
-            suffix,
-        )}${Array.from({
+    protected static originalTypeNameToTypescriptTypeName(originalTypeName: string, suffix: string = ""): string {
+        return `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(originalTypeName, suffix)}${Array.from({
             length: originalTypeName.split("[").length - 1,
         })
             .fill("[]")
             .join("")}`;
     }
-    protected originalTypeNameToTypescriptTypeName(
-        originalTypeName: string,
-        suffix: string = "",
-    ): string {
-        return GeneratorSelectionTypeFlavor.originalTypeNameToTypescriptTypeName(
-            originalTypeName,
-            suffix,
-        );
+    protected originalTypeNameToTypescriptTypeName(originalTypeName: string, suffix: string = ""): string {
+        return GeneratorSelectionTypeFlavor.originalTypeNameToTypescriptTypeName(originalTypeName, suffix);
     }
 
-    protected abstract makeSelectionTypeInputValueForFieldWrapperType(
-        fieldName: string,
-        fieldMeta: TypeMeta,
-    ): string;
+    protected abstract makeSelectionTypeInputValueForFieldWrapperType(fieldName: string, fieldMeta: TypeMeta): string;
     protected abstract makeSelectionTypeInputValueForField(
         field: FieldMeta,
         parents: string[],
@@ -154,10 +120,7 @@ export abstract class GeneratorSelectionTypeFlavor {
         field: FieldMeta,
         parents: string[],
     ): string;
-    protected abstract makeSelectionFunctionInputObjectValueForField(
-        field: FieldMeta,
-        parents: string[],
-    ): string;
+    protected abstract makeSelectionFunctionInputObjectValueForField(field: FieldMeta, parents: string[]): string;
 
     public abstract makeSelectionFunction(schema: OpenAPI3): string;
 

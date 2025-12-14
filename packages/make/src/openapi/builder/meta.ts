@@ -55,30 +55,15 @@ const camelCaps = (arr: string[], separator: string = "$") => {
  * @param options Codegen options
  * @returns
  */
-export const gatherMeta = (
-    schema: OpenAPI3,
-    options: CodegenOptions,
-    collector: Collector,
-): SchemaMeta => {
+export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector: Collector): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
         operations: [],
         customScalars: [],
     };
 
-    for (const [key, value] of Object.entries(
-        schema?.components?.schemas ?? {},
-    )) {
-        meta.types.push(
-            gatherMetaForType(
-                schema,
-                key,
-                value,
-                "schemas",
-                { isNonNull: false },
-                collector,
-            ),
-        );
+    for (const [key, value] of Object.entries(schema?.components?.schemas ?? {})) {
+        meta.types.push(gatherMetaForType(schema, key, value, "schemas", { isNonNull: false }, collector));
     }
 
     for (const [key, value] of Object.entries(schema?.paths ?? {})) {
@@ -99,14 +84,7 @@ export const gatherMeta = (
                 continue;
             }
 
-            const operation = gatherMetaForPathOperation(
-                schema,
-                key,
-                method,
-                methodValue,
-                options,
-                collector,
-            );
+            const operation = gatherMetaForPathOperation(schema, key, method, methodValue, options, collector);
             if (!operation) {
                 continue;
             }
@@ -147,20 +125,14 @@ const createACustomScalarType = (
     return meta;
 };
 
-const makeIdentifyingTypeName = (
-    meta: TypeMeta,
-    override?: { isInput?: boolean; isNonNull?: boolean },
-): string => {
+const makeIdentifyingTypeName = (meta: TypeMeta, override?: { isInput?: boolean; isNonNull?: boolean }): string => {
     const isInput = override?.isInput ?? meta.isInput;
     const isNonNull = override?.isNonNull ?? meta.isNonNull;
     const identifyingTypeName = `${meta.name.slice(0, isInput && isNonNull ? -1 : undefined)}${isInput ? `${isNonNull ? "Input!" : "Input"}` : ""}`;
     return identifyingTypeName.replaceAll("-", "_");
 };
 
-const turnObjectIntoInput = (
-    meta: TypeMeta,
-    collector: Collector,
-): TypeMeta => {
+const turnObjectIntoInput = (meta: TypeMeta, collector: Collector): TypeMeta => {
     if (meta.isInput || meta.isScalar) {
         return meta;
     }
@@ -178,9 +150,7 @@ const turnObjectIntoInput = (
             type: turnObjectIntoInput(field.type, collector),
         })),
         fields: [],
-        possibleTypes: meta.possibleTypes.map((t) =>
-            turnObjectIntoInput(t, collector),
-        ),
+        possibleTypes: meta.possibleTypes.map((t) => turnObjectIntoInput(t, collector)),
     };
     // it's way cooler to have the Input type reference the type it came from
     // but for now, the generator needs this to be self-referenced,
@@ -205,12 +175,7 @@ export const gatherMetaForType = (
         | HeaderObject
         | MediaTypeObject
         | TypeMeta,
-    typeType:
-        | "schemas"
-        | "parameters"
-        | "responses"
-        | "requestBodies"
-        | "headers",
+    typeType: "schemas" | "parameters" | "responses" | "requestBodies" | "headers",
     options: {
         isNonNull: boolean;
         operationResponseType?: boolean;
@@ -226,12 +191,7 @@ export const gatherMetaForType = (
         refpath.shift(); // remove '#'
 
         const components = refpath.shift() as "components";
-        const componentType = refpath.shift() as
-            | "schemas"
-            | "parameters"
-            | "responses"
-            | "requestBodies"
-            | "headers";
+        const componentType = refpath.shift() as "schemas" | "parameters" | "responses" | "requestBodies" | "headers";
         const refname = refpath.shift() as string;
 
         const ref = schema[components]?.[componentType]?.[refname];
@@ -264,12 +224,7 @@ export const gatherMetaForType = (
             collector,
         );
     }
-    const type = _type as
-        | SchemaObject
-        | ParameterObject
-        | ResponseObject
-        | RequestBodyObject
-        | HeaderObject;
+    const type = _type as SchemaObject | ParameterObject | ResponseObject | RequestBodyObject | HeaderObject;
 
     // fix corrupted type definition, seems to occur sometimes
     if ("properties" in type && !("type" in type)) {
@@ -277,25 +232,16 @@ export const gatherMetaForType = (
     }
 
     let meta: TypeMeta = {
-        name: options.operationResponseType
-            ? name
-            : options.isNonNull
-              ? `${name}!`
-              : name,
+        name: options.operationResponseType ? name : options.isNonNull ? `${name}!` : name,
 
         description: type.description,
 
         isObject:
             "type" in type &&
-            (type.type === "object" ||
-                JSON.stringify(type.type) ===
-                    JSON.stringify(["object", "null"])),
+            (type.type === "object" || JSON.stringify(type.type) === JSON.stringify(["object", "null"])),
         fields: [],
 
-        isUnion:
-            !!(type as SchemaObject).oneOf ||
-            !!(type as SchemaObject).anyOf ||
-            !!(type as SchemaObject).allOf,
+        isUnion: !!(type as SchemaObject).oneOf || !!(type as SchemaObject).anyOf || !!(type as SchemaObject).allOf,
         possibleTypes: [],
 
         isList: 0,
@@ -313,16 +259,12 @@ export const gatherMetaForType = (
 
         enumValues: [],
 
-        isInput:
-            typeType === "parameters" ||
-            typeType === "headers" ||
-            typeType === "requestBodies",
+        isInput: typeType === "parameters" || typeType === "headers" || typeType === "requestBodies",
         inputFields: [],
 
         ofType: undefined,
     };
-    meta.isScalar =
-        !meta.isObject && !meta.isUnion && !meta.isEnum && !meta.isInput;
+    meta.isScalar = !meta.isObject && !meta.isUnion && !meta.isEnum && !meta.isInput;
 
     const identifyingTypeName = makeIdentifyingTypeName(meta);
     // Handle already processed types
@@ -343,14 +285,7 @@ export const gatherMetaForType = (
             meta.enumValues.push({
                 name: String(enumValue as any),
                 description: type.description,
-                type: gatherMetaForType(
-                    schema,
-                    name,
-                    type,
-                    typeType,
-                    { isNonNull: options.isNonNull },
-                    collector,
-                ),
+                type: gatherMetaForType(schema, name, type, typeType, { isNonNull: options.isNonNull }, collector),
             });
         }
     }
@@ -363,9 +298,7 @@ export const gatherMetaForType = (
         // handle RequestBodyObject
         if ("content" in _t) {
             const t = _t as RequestBodyObject;
-            for (const [contentType, value] of Object.entries(
-                t.content ?? {},
-            )) {
+            for (const [contentType, value] of Object.entries(t.content ?? {})) {
                 collector.removeType(identifyingTypeName);
 
                 const bodyType = turnObjectIntoInput(
@@ -382,10 +315,7 @@ export const gatherMetaForType = (
                     ),
                     collector,
                 );
-                if (
-                    bodyType.fields.length === 1 &&
-                    !!bodyType.fields[0].type.scalarTSType
-                ) {
+                if (bodyType.fields.length === 1 && !!bodyType.fields[0].type.scalarTSType) {
                     collector.removeType(identifyingTypeName);
                     meta = bodyType.fields[0].type;
                     collector.addType(meta);
@@ -514,10 +444,7 @@ export const gatherMetaForType = (
 
         let additionalFieldsType: TypeMeta | undefined;
         const additionalFields = t.additionalProperties;
-        if (
-            additionalFields === true ||
-            JSON.stringify(additionalFields) === JSON.stringify({})
-        ) {
+        if (additionalFields === true || JSON.stringify(additionalFields) === JSON.stringify({})) {
             additionalFieldsType = createACustomScalarType(
                 camelCaps([name, "AdditionalProperties"]),
                 "Additional properties",
@@ -531,10 +458,7 @@ export const gatherMetaForType = (
                 type: additionalFieldsType,
             });
         } else if (typeof additionalFields === "object") {
-            if (
-                "type" in additionalFields &&
-                additionalFields.type === "string"
-            ) {
+            if ("type" in additionalFields && additionalFields.type === "string") {
                 additionalFieldsType = createACustomScalarType(
                     camelCaps([name, "AdditionalProperties"]),
                     "Additional properties",
@@ -548,14 +472,11 @@ export const gatherMetaForType = (
                     type: additionalFieldsType,
                 });
             } else {
-                const isRefObject = ("$ref" in
-                    additionalFields) as unknown as ReferenceObject;
+                const isRefObject = ("$ref" in additionalFields) as unknown as ReferenceObject;
 
                 const valueTypeMeta = gatherMetaForType(
                     schema,
-                    isRefObject
-                        ? ""
-                        : camelCaps([name, "AdditionalProperties"]),
+                    isRefObject ? "" : camelCaps([name, "AdditionalProperties"]),
                     additionalFields,
                     typeType,
                     { isNonNull: false },
@@ -573,8 +494,7 @@ export const gatherMetaForType = (
                         Float: "number",
                         String: "string",
                         Boolean: "boolean",
-                    }[typescriptConformTypeOfRefWithoutArray] ??
-                    typescriptConformTypeOfRefWithoutArray;
+                    }[typescriptConformTypeOfRefWithoutArray] ?? typescriptConformTypeOfRefWithoutArray;
 
                 let typescriptConformTypeOfRef =
                     typescriptConformTypeOfRefWithoutArray +
@@ -587,28 +507,19 @@ export const gatherMetaForType = (
                 if (valueTypeMeta.isScalar && valueTypeMeta.scalarTSType) {
                     additionalFieldsType = valueTypeMeta;
                     meta.fields.push({
-                        name: camelCaps([
-                            name,
-                            typescriptConformTypeOfRefWithoutArray,
-                        ]),
+                        name: camelCaps([name, typescriptConformTypeOfRefWithoutArray]),
                         description: "Additional properties",
                         type: additionalFieldsType,
                     });
                 } else {
                     additionalFieldsType = createACustomScalarType(
-                        camelCaps([
-                            name,
-                            typescriptConformTypeOfRefWithoutArray,
-                        ]),
+                        camelCaps([name, typescriptConformTypeOfRefWithoutArray]),
                         "Additional properties",
                         `Record<string, ${typescriptConformTypeOfRef}>`,
                         collector,
                     );
                     meta.fields.push({
-                        name: camelCaps([
-                            name,
-                            typescriptConformTypeOfRefWithoutArray,
-                        ]),
+                        name: camelCaps([name, typescriptConformTypeOfRefWithoutArray]),
                         description: "Additional properties",
                         type: additionalFieldsType,
                     });
@@ -634,8 +545,7 @@ export const gatherMetaForType = (
         ]) {
             i++;
             collector.removeType(identifyingTypeName);
-            const isRefObject = ("$ref" in
-                possibleType) as unknown as ReferenceObject;
+            const isRefObject = ("$ref" in possibleType) as unknown as ReferenceObject;
 
             meta.possibleTypes.push(
                 gatherMetaForType(
@@ -672,8 +582,7 @@ export const gatherMetaForType = (
             // however, there are schemas that have direct self-referencing array-types,
             // so we will need to check if $ref in items is the same as the name of the current type
             // and if so, we will not remove the type from the collector
-            const isRefObject = ("$ref" in
-                (type as ArraySubtype).items!) as unknown as ReferenceObject;
+            const isRefObject = ("$ref" in (type as ArraySubtype).items!) as unknown as ReferenceObject;
 
             if (
                 !isRefObject ||
@@ -713,10 +622,7 @@ export const gatherMetaForType = (
                 byte: "Int",
             };
             if (t.format && t.format.toLowerCase() in mapFormatToType) {
-                meta.name =
-                    mapFormatToType[
-                        t.format.toLowerCase() as keyof typeof mapFormatToType
-                    ];
+                meta.name = mapFormatToType[t.format.toLowerCase() as keyof typeof mapFormatToType];
             }
         } else if (Array.isArray(t)) {
             collector.removeType(identifyingTypeName);
@@ -760,14 +666,7 @@ export const gatherMetaForParameter = (
         name,
         description: type.description,
         location,
-        type: gatherMetaForType(
-            schema,
-            name,
-            type,
-            typeType,
-            options,
-            collector,
-        ),
+        type: gatherMetaForType(schema, name, type, typeType, options, collector),
     };
 };
 
@@ -790,14 +689,7 @@ export const gatherMetaForField = (
     return {
         name,
         description: type.description,
-        type: gatherMetaForType(
-            schema,
-            name,
-            type,
-            "schemas",
-            options,
-            collector,
-        ),
+        type: gatherMetaForType(schema, name, type, "schemas", options, collector),
     };
 };
 
@@ -822,15 +714,7 @@ const methodToVerbs = {
 export const gatherMetaForPathOperation = (
     schema: OpenAPI3,
     path: string,
-    method:
-        | "get"
-        | "post"
-        | "put"
-        | "delete"
-        | "patch"
-        | "options"
-        | "head"
-        | "trace",
+    method: "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "trace",
     operation: OperationObject,
     options: CodegenOptions,
     collector: Collector,
@@ -843,15 +727,10 @@ export const gatherMetaForPathOperation = (
     const okResponses = Object.entries(operation.responses)
         .filter(([statusCode, _]) => statusCode.toString().startsWith("2"))
         .sort(([codeA, _], [codeB, __]) => +codeA - +codeB);
-    const successResponse =
-        okResponses.length > 0
-            ? okResponses[0][1]
-            : operation.responses.default;
+    const successResponse = okResponses.length > 0 ? okResponses[0][1] : operation.responses.default;
 
     const errorResponses = Object.entries(operation.responses).filter(
-        ([statusCode, _]) =>
-            statusCode.toString().startsWith("4") ||
-            statusCode.toString().startsWith("5"),
+        ([statusCode, _]) => statusCode.toString().startsWith("4") || statusCode.toString().startsWith("5"),
     );
 
     if (!successResponse) {
@@ -860,10 +739,7 @@ export const gatherMetaForPathOperation = (
     }
 
     const operationName =
-        operation.operationId
-            ?.replaceAll(".", "_")
-            .replaceAll("/", "_")
-            .replaceAll("-", "_") ??
+        operation.operationId?.replaceAll(".", "_").replaceAll("/", "_").replaceAll("-", "_") ??
         // TODO: the following fallback is bad, needs more logic
         camelCaps(
             [
@@ -872,10 +748,7 @@ export const gatherMetaForPathOperation = (
                     .split("/")
                     // remove curly braces and use the param name like 'By{Param}'
                     .flatMap((p) =>
-                        [
-                            p.includes("{") ? "By" : "",
-                            p.replace(/{([^}]+)}/g, "$1"),
-                        ].filter((s) => s.length > 0),
+                        [p.includes("{") ? "By" : "", p.replace(/{([^}]+)}/g, "$1")].filter((s) => s.length > 0),
                     ),
             ],
             "",
@@ -891,10 +764,8 @@ export const gatherMetaForPathOperation = (
             schema,
             operationName,
             "content" in successResponse
-                ? successResponse.content!["application/json"] ??
-                      Object.entries(successResponse.content!).find(
-                          ([_, value]) => value,
-                      )?.[1]!
+                ? (successResponse.content!["application/json"] ??
+                      Object.entries(successResponse.content!).find(([_, value]) => value)?.[1]!)
                 : (successResponse as ReferenceObject),
             "responses",
             { isNonNull: false, operationResponseType: true },
@@ -903,16 +774,10 @@ export const gatherMetaForPathOperation = (
     };
 
     // Gather meta for each argument, first from parameters
-    for (const arg of operation.parameters ??
-        ([] as (ReferenceObject | ParameterObject)[])) {
+    for (const arg of operation.parameters ?? ([] as (ReferenceObject | ParameterObject)[])) {
         const name = "$ref" in arg ? arg.$ref.split("/").pop() : arg.name;
         const rawLocation =
-            "in" in arg
-                ? arg.in
-                : (arg.$ref.split("/").at(-2)! as
-                      | "parameters"
-                      | "requestBodies"
-                      | "headers");
+            "in" in arg ? arg.in : (arg.$ref.split("/").at(-2)! as "parameters" | "requestBodies" | "headers");
         const location = (
             {
                 parameters: "query",
@@ -933,7 +798,7 @@ export const gatherMetaForPathOperation = (
                 "parameters",
                 location,
                 {
-                    isNonNull: "$ref" in arg ? false : arg.required ?? false,
+                    isNonNull: "$ref" in arg ? false : (arg.required ?? false),
                 },
                 collector,
             ),

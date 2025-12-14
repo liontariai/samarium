@@ -55,7 +55,8 @@
         "test": "bun test"
     },
     "prettier": {
-        "tabWidth": 4
+        "tabWidth": 4,
+        "printWidth": 120
     },
     "devDependencies": {
         "bun-types": "^1.2.19"

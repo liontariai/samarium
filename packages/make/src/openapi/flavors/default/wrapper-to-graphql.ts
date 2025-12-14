@@ -20,10 +20,7 @@ export class RootOperation {
     };
 
     private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
-        path.reduce(
-            (o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}),
-            obj,
-        );
+        path.reduce((o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}), obj);
 
     private rootCollector: OperationSelectionCollector | undefined = undefined;
     public registerRootCollector(collector: OperationSelectionCollector) {
@@ -34,19 +31,14 @@ export class RootOperation {
             throw new Error("RootOperation has no registered collector");
         }
 
-        type selection = ReturnType<
-            typeof OperationSelectionCollector.prototype.renderSelections
-        >;
+        type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
         const operations: {
             [key: string]: {
                 selection: selection;
                 rootSlw: SelectionWrapperImpl<string, string, number, any>;
             };
         } = {};
-        for (const [
-            opName,
-            opSelection,
-        ] of this.rootCollector?.selections.entries()) {
+        for (const [opName, opSelection] of this.rootCollector?.selections.entries()) {
             if (opSelection[SLW_LAZY_FLAG]) continue;
 
             let rootSlw = opSelection;
@@ -73,9 +65,7 @@ export class RootOperation {
                 ...acc,
                 [opName]: {
                     query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${
-                        selection.variableDefinitions.length
-                            ? `(${selection.variableDefinitions.join(", ")}) `
-                            : ""
+                        selection.variableDefinitions.length ? `(${selection.variableDefinitions.join(", ")}) ` : ""
                     }${selection.selection}`,
                     variables: selection.variables,
                     fragments: selection.usedFragments,
@@ -95,11 +85,7 @@ export class RootOperation {
         const results = Object.fromEntries(
             await Promise.all([
                 ...Object.entries(ops).map(
-                    async ([opName, op]) =>
-                        [
-                            opName,
-                            await this.executeOperation(op, headers),
-                        ] as const,
+                    async ([opName, op]) => [opName, await this.executeOperation(op, headers)] as const,
                 ),
             ]),
         );
@@ -152,9 +138,7 @@ export type OperationSelectionCollectorRef = {
 export class OperationSelectionCollector {
     constructor(
         public readonly name?: string,
-        public readonly parent?:
-            | OperationSelectionCollector
-            | OperationSelectionCollectorRef,
+        public readonly parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         public readonly op?: RootOperation,
     ) {
         if (op) op.registerRootCollector(this);
@@ -162,13 +146,9 @@ export class OperationSelectionCollector {
 
     private executed = false;
     private operationResult: any | undefined = undefined;
-    public async execute(
-        headers: Record<string, string> = RootOperation[OPTIONS].headers,
-    ) {
+    public async execute(headers: Record<string, string> = RootOperation[OPTIONS].headers) {
         if (!this.op) {
-            throw new Error(
-                "OperationSelectionCollector is not registered to a root operation",
-            );
+            throw new Error("OperationSelectionCollector is not registered to a root operation");
         }
         this.operationResult = await this.op.execute(headers);
         this.executed = true;
@@ -177,14 +157,8 @@ export class OperationSelectionCollector {
         return this.executed;
     }
 
-    public readonly selections = new Map<
-        string,
-        SelectionWrapperImpl<string, string, number, any>
-    >();
-    public registerSelection(
-        id: string,
-        selection: SelectionWrapperImpl<string, string, number, any, any>,
-    ) {
+    public readonly selections = new Map<string, SelectionWrapperImpl<string, string, number, any>>();
+    public registerSelection(id: string, selection: SelectionWrapperImpl<string, string, number, any, any>) {
         this.selections.set(id, selection);
     }
 
@@ -192,12 +166,7 @@ export class OperationSelectionCollector {
         path: string[] = [],
         opVars: Record<string, any> = {},
         usedFragments: Map<string, string> = new Map(),
-        renderOnlyTheseSelections: SelectionWrapperImpl<
-            string,
-            string,
-            number,
-            any
-        >[] = [],
+        renderOnlyTheseSelections: SelectionWrapperImpl<string, string, number, any>[] = [],
     ) {
         const result: Record<string, string | undefined> = {};
         const varDefs: string[] = [];
@@ -206,9 +175,7 @@ export class OperationSelectionCollector {
         for (const [key, value] of [...this.selections.entries()].filter(
             ([k, v]) =>
                 renderOnlyTheseSelections.length === 0 ||
-                renderOnlyTheseSelections.find(
-                    (r) => r[SLW_UID] === v[SLW_UID],
-                ),
+                renderOnlyTheseSelections.find((r) => r[SLW_UID] === v[SLW_UID]),
         )) {
             const subPath = [...path, key];
             const {
@@ -244,26 +211,19 @@ export class OperationSelectionCollector {
                 // else {
                 result[key] = fieldSelection;
                 // }
-            } else if (
-                value[SLW_COLLECTOR] instanceof OperationSelectionCollector
-            ) {
+            } else if (value[SLW_COLLECTOR] instanceof OperationSelectionCollector) {
                 const {
                     selection: subSelection,
                     variableDefinitions: subVarDefs,
                     variables: subVars,
-                } = value[SLW_COLLECTOR].renderSelections(
-                    subPath,
-                    opVars,
-                    usedFragments,
-                );
+                } = value[SLW_COLLECTOR].renderSelections(subPath, opVars, usedFragments);
 
                 if (value[SLW_IS_ON_TYPE_FRAGMENT]) {
                     // if (directiveRendered) {
                     //     result[key] =
                     //         `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${directiveRendered.rendered} ${subSelection}`;
                     // } else {
-                    result[key] =
-                        `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
+                    result[key] = `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
                     // }
                 } else if (value[SLW_IS_FRAGMENT]) {
                     const fragmentName = `${key}_${subVarDefs.map((v) => v.split(":")[0].slice(1)).join("_")}`;
@@ -279,9 +239,7 @@ export class OperationSelectionCollector {
                     if (!usedFragments.has(fragmentName)) {
                         usedFragments.set(fragmentName, fragment);
                     } else if (usedFragments.get(fragmentName) !== fragment) {
-                        console.warn(
-                            `Fragment ${fragmentName} is already defined with a different selection`,
-                        );
+                        console.warn(`Fragment ${fragmentName} is already defined with a different selection`);
                     }
                 } else {
                     // if (directiveRendered) {
@@ -298,11 +256,8 @@ export class OperationSelectionCollector {
             }
         }
         let rendered = "{ ";
-        for (const [key, value] of Object.entries(result).filter(
-            ([k, v]) => v !== undefined,
-        ) as [string, string][]) {
-            const keyIsFieldName =
-                value.startsWith(`${key} {`) || value.startsWith(`${key} (`);
+        for (const [key, value] of Object.entries(result).filter(([k, v]) => v !== undefined) as [string, string][]) {
+            const keyIsFieldName = value.startsWith(`${key} {`) || value.startsWith(`${key} (`);
             const isSubSelection = value.startsWith("{");
             const isOnType = value.startsWith("... on");
             const isFragment = value.startsWith("...");
@@ -323,16 +278,10 @@ export class OperationSelectionCollector {
         };
     }
 
-    private utilGet = (obj: Record<string, any>, path: (string | number)[]) =>
-        path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(
-        path: (string | number)[] = [],
-        type?: string,
-    ): T {
+    private utilGet = (obj: Record<string, any>, path: (string | number)[]) => path.reduce((o, p) => o?.[p], obj);
+    public getOperationResultPath<T>(path: (string | number)[] = [], type?: string): T {
         if (!this.op) {
-            throw new Error(
-                "OperationSelectionCollector is not registered to a root operation",
-            );
+            throw new Error("OperationSelectionCollector is not registered to a root operation");
         }
 
         let result = this.operationResult;
@@ -350,25 +299,17 @@ export class OperationSelectionCollector {
                 depth++;
             }
 
-            const deepParse = (
-                res: any | any[],
-                depth: number,
-                parse: (v: string) => any,
-            ) => {
+            const deepParse = (res: any | any[], depth: number, parse: (v: string) => any) => {
                 if (depth === 0) {
                     return parse(res);
                 }
-                return res.map((rarr: any) =>
-                    deepParse(rarr, depth - 1, parse),
-                );
+                return res.map((rarr: any) => deepParse(rarr, depth - 1, parse));
             };
 
             return deepParse(
                 finalResult,
                 depth,
-                RootOperation[OPTIONS].scalars[
-                    type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]
-                ],
+                RootOperation[OPTIONS].scalars[type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]],
             ) as T;
         }
 
@@ -400,9 +341,7 @@ export const SLW_OP_PATH = Symbol("SLW_OP_PATH");
 export const SLW_REGISTER_PATH = Symbol("SLW_REGISTER_PATH");
 export const SLW_RENDER_WITH_ARGS = Symbol("SLW_RENDER_WITH_ARGS");
 
-export const SLW_RECREATE_VALUE_CALLBACK = Symbol(
-    "SLW_RECREATE_VALUE_CALLBACK",
-);
+export const SLW_RECREATE_VALUE_CALLBACK = Symbol("SLW_RECREATE_VALUE_CALLBACK");
 
 export const SLW_CLONE = Symbol("SLW_CLONE");
 
@@ -414,10 +353,7 @@ export class SelectionWrapperImpl<
     argsT extends Record<string, any> | undefined = undefined,
 > {
     private generateUniqueId(): string {
-        return (
-            performance.now().toString(36) +
-            Math.random().toString(36).substring(2)
-        );
+        return performance.now().toString(36) + Math.random().toString(36).substring(2);
     }
     [SLW_CLONE](
         overrides: {
@@ -508,9 +444,7 @@ export class SelectionWrapperImpl<
             this[SLW_COLLECTOR] = collector;
 
             let rootCollector = collector;
-            while (
-                rootCollector?.parent instanceof OperationSelectionCollector
-            ) {
+            while (rootCollector?.parent instanceof OperationSelectionCollector) {
                 rootCollector = rootCollector.parent;
             }
             if (rootCollector.parent && "ref" in rootCollector.parent) {
@@ -544,10 +478,7 @@ export class SelectionWrapperImpl<
             for (const key of Object.keys(args)) {
                 let varName = key;
                 if (opVars[key] !== undefined) {
-                    varName = `${key}_${
-                        Object.keys(opVars).filter((k) => k.startsWith(key))
-                            .length
-                    }`;
+                    varName = `${key}_${Object.keys(opVars).filter((k) => k.startsWith(key)).length}`;
                     argToVarMap[varName] = varName;
                     args[varName] = args[key];
                     argsMeta[varName] = argsMeta[key];
@@ -569,10 +500,7 @@ export class SelectionWrapperImpl<
             const args = this[SLW_ARGS];
             const argsMeta = this[SLW_ARGS_META]!;
 
-            const { argsString, argToVarMap } = renderArgsString(
-                args,
-                argsMeta,
-            );
+            const { argsString, argToVarMap } = renderArgsString(args, argsMeta);
             return {
                 selection: `${this[SLW_FIELD_NAME]}${Object.keys(args).length ? argsString : ""}`,
                 variables: args,
@@ -601,9 +529,7 @@ export class SelectionWrapper<
     typeArrDepth extends number,
     valueT extends any = any,
     argsT extends Record<string, any> | undefined = undefined,
-> extends Proxy<
-    SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>
-> {
+> extends Proxy<SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>> {
     constructor(
         fieldName?: fieldName,
         typeNamePure?: typeNamePure,
@@ -622,13 +548,7 @@ export class SelectionWrapper<
         reCreateValueCallback?: () => valueT,
     ) {
         super(
-            new SelectionWrapperImpl<
-                fieldName,
-                typeNamePure,
-                typeArrDepth,
-                valueT,
-                argsT
-            >(
+            new SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>(
                 fieldName,
                 typeNamePure,
                 typeArrDepth,
@@ -648,8 +568,7 @@ export class SelectionWrapper<
                     return Reflect.getOwnPropertyDescriptor(value ?? {}, prop);
                 },
                 has(target, prop) {
-                    if (prop === Symbol.for("nodejs.util.inspect.custom"))
-                        return true;
+                    if (prop === Symbol.for("nodejs.util.inspect.custom")) return true;
                     return Reflect.has(value ?? {}, prop);
                 },
                 get: (target, prop) => {
@@ -657,35 +576,18 @@ export class SelectionWrapper<
                         const that = this;
                         function lazy(
                             this: {
-                                parentSlw: SelectionWrapperImpl<
-                                    fieldName,
-                                    typeNamePure,
-                                    typeArrDepth,
-                                    valueT,
-                                    argsT
-                                >;
+                                parentSlw: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>;
                                 key: string;
                             },
                             args?: argsT,
                         ) {
                             const { parentSlw, key } = this;
                             const newRootOpCollectorRef = {
-                                ref: new OperationSelectionCollector(
-                                    undefined,
-                                    undefined,
-                                    new RootOperation(),
-                                ),
+                                ref: new OperationSelectionCollector(undefined, undefined, new RootOperation()),
                             };
 
-                            const newThisCollector =
-                                new OperationSelectionCollector(
-                                    undefined,
-                                    newRootOpCollectorRef,
-                                );
-                            const r =
-                                that[SLW_RECREATE_VALUE_CALLBACK]?.bind(
-                                    newThisCollector,
-                                )();
+                            const newThisCollector = new OperationSelectionCollector(undefined, newRootOpCollectorRef);
+                            const r = that[SLW_RECREATE_VALUE_CALLBACK]?.bind(newThisCollector)();
 
                             const newThat = new SelectionWrapper(
                                 that[SLW_FIELD_NAME],
@@ -697,21 +599,14 @@ export class SelectionWrapper<
                                 that[SLW_ARGS],
                                 that[SLW_ARGS_META],
                             );
-                            Object.keys(r!).forEach(
-                                (key) =>
-                                    (newThat as valueT)[key as keyof valueT],
-                            );
+                            Object.keys(r!).forEach((key) => (newThat as valueT)[key as keyof valueT]);
 
                             newThat[SLW_IS_ROOT_TYPE] = that[SLW_IS_ROOT_TYPE];
-                            newThat[SLW_IS_ON_TYPE_FRAGMENT] =
-                                that[SLW_IS_ON_TYPE_FRAGMENT];
+                            newThat[SLW_IS_ON_TYPE_FRAGMENT] = that[SLW_IS_ON_TYPE_FRAGMENT];
                             newThat[SLW_IS_FRAGMENT] = that[SLW_IS_FRAGMENT];
 
                             newThat[SLW_PARENT_SLW] = parentSlw;
-                            parentSlw[SLW_COLLECTOR]?.registerSelection(
-                                key,
-                                newThat,
-                            );
+                            parentSlw[SLW_COLLECTOR]?.registerSelection(key, newThat);
                             newThat[SLW_ARGS] = {
                                 ...(that[SLW_ARGS] ?? {}),
                                 ...args,
@@ -719,10 +614,7 @@ export class SelectionWrapper<
 
                             newThat[SLW_OP_PATH] = that[SLW_OP_PATH];
 
-                            newRootOpCollectorRef.ref.registerSelection(
-                                newThat[SLW_FIELD_NAME]!,
-                                newThat,
-                            );
+                            newRootOpCollectorRef.ref.registerSelection(newThat[SLW_FIELD_NAME]!, newThat);
 
                             return new Promise((resolve, reject) => {
                                 newRootOpCollectorRef.ref
@@ -760,12 +652,7 @@ export class SelectionWrapper<
                         prop === SLW_CLONE
                     ) {
                         return target[
-                            prop as keyof SelectionWrapperImpl<
-                                fieldName,
-                                typeNamePure,
-                                typeArrDepth,
-                                valueT
-                            >
+                            prop as keyof SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT>
                         ];
                     }
                     if (prop === SLW_VALUE) {
@@ -775,26 +662,14 @@ export class SelectionWrapper<
                         return this;
                     }
 
-                    let slw_value = target[SLW_VALUE] as
-                        | Record<string, any>
-                        | undefined;
+                    let slw_value = target[SLW_VALUE] as Record<string, any> | undefined;
 
                     if (target[ROOT_OP_COLLECTOR]?.ref.isExecuted) {
                         const getResultDataForTarget = (
-                            t: SelectionWrapperImpl<
-                                fieldName,
-                                typeNamePure,
-                                typeArrDepth,
-                                valueT,
-                                argsT
-                            >,
+                            t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>,
                         ): valueT | undefined => {
-                            const data = t[
-                                ROOT_OP_COLLECTOR
-                            ]!.ref.getOperationResultPath<valueT>(
-                                (t[SLW_OP_PATH]?.split(".") ?? []).map((p) =>
-                                    !isNaN(+p) ? +p : p,
-                                ),
+                            const data = t[ROOT_OP_COLLECTOR]!.ref.getOperationResultPath<valueT>(
+                                (t[SLW_OP_PATH]?.split(".") ?? []).map((p) => (!isNaN(+p) ? +p : p)),
                                 t[SLW_FIELD_TYPENAME],
                             );
                             return data;
@@ -805,37 +680,25 @@ export class SelectionWrapper<
                             if (typeArrDepth) {
                                 if (!isNaN(+String(prop))) {
                                     const elm = target[SLW_CLONE]({
-                                        SLW_OP_PATH:
-                                            target[SLW_OP_PATH] +
-                                            "." +
-                                            String(prop),
+                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(prop),
                                     });
                                     return elm;
                                 }
 
-                                const data = getResultDataForTarget(target) as
-                                    | valueT[]
-                                    | undefined;
+                                const data = getResultDataForTarget(target) as valueT[] | undefined;
 
                                 if (data === undefined) return undefined;
 
-                                const proxiedData = Array.from(
-                                    { length: data.length },
-                                    (_, i) =>
-                                        target[SLW_CLONE]({
-                                            SLW_OP_PATH:
-                                                target[SLW_OP_PATH] +
-                                                "." +
-                                                String(i),
-                                        }),
+                                const proxiedData = Array.from({ length: data.length }, (_, i) =>
+                                    target[SLW_CLONE]({
+                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                    }),
                                 );
 
-                                const proto =
-                                    Object.getPrototypeOf(proxiedData);
+                                const proto = Object.getPrototypeOf(proxiedData);
                                 if (Object.hasOwn(proto, prop)) {
                                     const v = (proxiedData as any)[prop];
-                                    if (typeof v === "function")
-                                        return v.bind(proxiedData);
+                                    if (typeof v === "function") return v.bind(proxiedData);
                                     return v;
                                 }
 
@@ -847,8 +710,7 @@ export class SelectionWrapper<
                             const proto = Object.getPrototypeOf(data);
                             if (Object.hasOwn(proto, prop)) {
                                 const v = (data as any)[prop];
-                                if (typeof v === "function")
-                                    return v.bind(data);
+                                if (typeof v === "function") return v.bind(data);
                                 return v;
                             }
 
@@ -856,21 +718,15 @@ export class SelectionWrapper<
                         }
 
                         let slw = slw_value?.[String(prop)];
-                        const slwOpPathIsIndexAccess = !isNaN(
-                            +target[SLW_OP_PATH]?.split(".").pop()!,
-                        );
+                        const slwOpPathIsIndexAccess = !isNaN(+target[SLW_OP_PATH]?.split(".").pop()!);
                         if (slwOpPathIsIndexAccess) {
                             // index access detected, cloning
                             slw = slw[SLW_CLONE]({
-                                SLW_OP_PATH:
-                                    target[SLW_OP_PATH] + "." + String(prop),
+                                SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(prop),
                             });
                         }
 
-                        if (
-                            slw instanceof SelectionWrapperImpl &&
-                            slw[SLW_PARENT_COLLECTOR]
-                        ) {
+                        if (slw instanceof SelectionWrapperImpl && slw[SLW_PARENT_COLLECTOR]) {
                             return slw;
                         } else if (slw instanceof SelectionWrapperImpl) {
                             return getResultDataForTarget(slw);
@@ -883,14 +739,10 @@ export class SelectionWrapper<
 
                     if (
                         Object.hasOwn(slw_value ?? {}, String(prop)) &&
-                        slw_value?.[String(prop)] instanceof
-                            SelectionWrapperImpl
+                        slw_value?.[String(prop)] instanceof SelectionWrapperImpl
                     ) {
                         if (target[SLW_COLLECTOR]) {
-                            target[SLW_COLLECTOR].registerSelection(
-                                String(prop),
-                                slw_value[String(prop)],
-                            );
+                            target[SLW_COLLECTOR].registerSelection(String(prop), slw_value[String(prop)]);
                         }
                         if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
                             slw_value[String(prop)][SLW_PARENT_SLW] = target;

@@ -50,9 +50,7 @@ const createACustomScalarType = (
     collector: Collector<any, any, any>,
 ): TypeMeta => {
     const descriptionIncludesTypedef = description?.includes("@typedef");
-    const typeFromTypedef = descriptionIncludesTypedef
-        ? description?.match(/@typedef\s*{(.*)}/)?.[1]
-        : undefined;
+    const typeFromTypedef = descriptionIncludesTypedef ? description?.match(/@typedef\s*{(.*)}/)?.[1] : undefined;
 
     const metaNullable: TypeMeta = {
         name,
@@ -99,11 +97,7 @@ const createACustomScalarType = (
  * @param options Codegen options
  * @returns
  */
-export const gatherMeta = (
-    schema: GraphQLSchema,
-    options: CodegenOptions,
-    collector: Collector,
-): SchemaMeta => {
+export const gatherMeta = (schema: GraphQLSchema, options: CodegenOptions, collector: Collector): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
         directives: [],
@@ -117,15 +111,9 @@ export const gatherMeta = (
     for (const typeName in schema.getTypeMap()) {
         if (!options.includeSchemaDefinition) {
             if (
-                [
-                    "__Schema",
-                    "__Type",
-                    "__TypeKind",
-                    "__Field",
-                    "__InputValue",
-                    "__EnumValue",
-                    "__Directive",
-                ].includes(typeName)
+                ["__Schema", "__Type", "__TypeKind", "__Field", "__InputValue", "__EnumValue", "__Directive"].includes(
+                    typeName,
+                )
             ) {
                 continue;
             }
@@ -133,18 +121,9 @@ export const gatherMeta = (
         const type = schema.getTypeMap()[typeName];
         if (type instanceof GraphQLScalarType) {
             if (
-                [
-                    "String",
-                    "Int",
-                    "Float",
-                    "Boolean",
-                    "ID",
-                    "Date",
-                    "DateTime",
-                    "DateTimeISO",
-                    "Time",
-                    "JSON",
-                ].includes(typeName)
+                ["String", "Int", "Float", "Boolean", "ID", "Date", "DateTime", "DateTimeISO", "Time", "JSON"].includes(
+                    typeName,
+                )
             ) {
                 continue;
             }
@@ -164,15 +143,7 @@ export const gatherMeta = (
     if (queryType) {
         for (let field of Object.values(queryType.getFields())) {
             // if(!["_service"].includes(field.name)){
-            meta.query.push(
-                gatherMetaForRootField(
-                    schema,
-                    field,
-                    Operation.Query,
-                    options,
-                    collector,
-                ),
-            );
+            meta.query.push(gatherMetaForRootField(schema, field, Operation.Query, options, collector));
             // }
         }
     }
@@ -180,30 +151,14 @@ export const gatherMeta = (
     const mutationType = schema.getMutationType();
     if (mutationType) {
         for (let field of Object.values(mutationType.getFields())) {
-            meta.mutation.push(
-                gatherMetaForRootField(
-                    schema,
-                    field,
-                    Operation.Mutation,
-                    options,
-                    collector,
-                ),
-            );
+            meta.mutation.push(gatherMetaForRootField(schema, field, Operation.Mutation, options, collector));
         }
     }
 
     const subscriptionType = schema.getSubscriptionType();
     if (subscriptionType) {
         for (let field of Object.values(subscriptionType.getFields())) {
-            meta.subscription.push(
-                gatherMetaForRootField(
-                    schema,
-                    field,
-                    Operation.Subscription,
-                    options,
-                    collector,
-                ),
-            );
+            meta.subscription.push(gatherMetaForRootField(schema, field, Operation.Subscription, options, collector));
         }
     }
 
@@ -211,37 +166,23 @@ export const gatherMeta = (
     for (const typeName in schema.getTypeMap()) {
         if (!options.includeSchemaDefinition) {
             if (
-                [
-                    "__Schema",
-                    "__Type",
-                    "__TypeKind",
-                    "__Field",
-                    "__InputValue",
-                    "__EnumValue",
-                    "__Directive",
-                ].includes(typeName)
+                ["__Schema", "__Type", "__TypeKind", "__Field", "__InputValue", "__EnumValue", "__Directive"].includes(
+                    typeName,
+                )
             ) {
                 continue;
             }
         }
 
         const type = schema.getTypeMap()[typeName];
-        if (
-            isObjectType(type) ||
-            (hasCollectedCustomScalars && isInputObjectType(type)) ||
-            isInterfaceType(type)
-        ) {
-            meta.types.push(
-                gatherMetaForType(schema, type, options, collector),
-            );
+        if (isObjectType(type) || (hasCollectedCustomScalars && isInputObjectType(type)) || isInterfaceType(type)) {
+            meta.types.push(gatherMetaForType(schema, type, options, collector));
         }
     }
 
     // Gather meta for each directive
     for (const directive of schema.getDirectives()) {
-        meta.directives.push(
-            gatherMetaForDirective(schema, directive, options, collector),
-        );
+        meta.directives.push(gatherMetaForDirective(schema, directive, options, collector));
     }
 
     return meta;
@@ -362,40 +303,25 @@ export const gatherMetaForType = (
         // Gather meta for each input field
         const fields = (namedType as GraphQLInputObjectType).getFields();
         for (const inputField in fields) {
-            meta.inputFields.push(
-                gatherMetaForArgument(
-                    schema,
-                    fields[inputField],
-                    options,
-                    collector,
-                ),
-            );
+            meta.inputFields.push(gatherMetaForArgument(schema, fields[inputField], options, collector));
         }
     }
 
     // Handle interface types
     if (meta.isInterface) {
         // Gather meta for each field
-        const fields = (
-            namedType as GraphQLInterfaceType | GraphQLObjectType
-        ).getFields();
+        const fields = (namedType as GraphQLInterfaceType | GraphQLObjectType).getFields();
         for (const field in fields) {
-            meta.fields.push(
-                gatherMetaForField(schema, fields[field], options, collector),
-            );
+            meta.fields.push(gatherMetaForField(schema, fields[field], options, collector));
         }
     }
 
     // Handle object types
     if (meta.isObject) {
         // Gather meta for each field
-        const fields = (
-            namedType as GraphQLInterfaceType | GraphQLObjectType
-        ).getFields();
+        const fields = (namedType as GraphQLInterfaceType | GraphQLObjectType).getFields();
         for (const field in fields) {
-            meta.fields.push(
-                gatherMetaForField(schema, fields[field], options, collector),
-            );
+            meta.fields.push(gatherMetaForField(schema, fields[field], options, collector));
         }
     }
 
@@ -403,9 +329,7 @@ export const gatherMetaForType = (
     if (meta.isUnion) {
         // Gather meta for each possible type
         for (const possibleType of (namedType as GraphQLUnionType).getTypes()) {
-            meta.possibleTypes.push(
-                gatherMetaForType(schema, possibleType, options, collector),
-            );
+            meta.possibleTypes.push(gatherMetaForType(schema, possibleType, options, collector));
         }
     }
 

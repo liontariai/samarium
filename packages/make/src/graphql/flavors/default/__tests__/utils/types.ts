@@ -19,9 +19,7 @@ export interface ScalarTypeMapDefault {
 
 export type SelectionFnParent =
     | {
-          collector:
-              | OperationSelectionCollector
-              | OperationSelectionCollectorRef;
+          collector: OperationSelectionCollector | OperationSelectionCollectorRef;
           fieldName?: string;
           args?: Record<string, any>;
           argsMeta?: Record<string, string>;
@@ -42,32 +40,14 @@ export type Prettify<T> = {
 export type SLWsFromSelection<
     S,
     R = {
-        [K in keyof S]: S[K] extends SelectionWrapperImpl<
-            infer FN,
-            infer TNP,
-            infer TAD
-        >
-            ? S[K]
-            : never;
+        [K in keyof S]: S[K] extends SelectionWrapperImpl<infer FN, infer TNP, infer TAD> ? S[K] : never;
     },
 > = Prettify<CleanupNever<R>>;
-export type ReturnTypeFromFragment<T> = T extends (
-    this: any,
-    ...args: any[]
-) => infer R
-    ? R
-    : never;
-export type ArgumentsTypeFromFragment<T> = T extends (
-    this: any,
-    ...args: infer A
-) => any
-    ? A
-    : never;
+export type ReturnTypeFromFragment<T> = T extends (this: any, ...args: any[]) => infer R ? R : never;
+export type ArgumentsTypeFromFragment<T> = T extends (this: any, ...args: infer A) => any ? A : never;
 
 export type ReplaceReturnType<T, R> = T extends (...a: any) => any
-    ? (
-          ...a: Parameters<T>
-      ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
+    ? (...a: Parameters<T>) => ReturnType<T> extends Promise<any> ? Promise<R> : R
     : never;
 export type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
     ? ScalarTypeMapWithCustom[TNP]
@@ -75,9 +55,7 @@ export type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
       ? ScalarTypeMapDefault[TNP]
       : never;
 export type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
-export type ToTArrayWithDepth<T, D extends number> = D extends 0
-    ? T
-    : ToTArrayWithDepth<T[], Prev[D]>;
+export type ToTArrayWithDepth<T, D extends number> = D extends 0 ? T : ToTArrayWithDepth<T[], Prev[D]>;
 
 export type SLFN<
     T extends object,
@@ -97,13 +75,7 @@ export type SLFN<
     s: (selection: FF) => TT,
 ) => ToTArrayWithDepth<
     {
-        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-            infer FN,
-            infer TTNP,
-            infer TTAD,
-            infer VT,
-            infer AT
-        >
+        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<infer FN, infer TTNP, infer TTAD, infer VT, infer AT>
             ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
             : TT[K];
     },

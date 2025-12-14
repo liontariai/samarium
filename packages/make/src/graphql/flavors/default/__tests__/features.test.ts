@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "bun:test";
+import { beforeAll, describe, expect, it, jest } from "bun:test";
 import {
     OPTIONS,
     ROOT_OP_COLLECTOR,
@@ -16,29 +16,26 @@ import * as examplesContentful from "@/graphql/flavors/default/__tests__/example
 
 describe("Testing and validating features", () => {
     it("executes multiple operations and returns results", async () => {
-        const slw = rootSLWFactory(
-            examplesBooksSimple._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    bookTitles: q.books(({ title }) => ({
-                        title,
-                    })),
+        const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                bookTitles: q.books(({ title }) => ({
+                    title,
                 })),
-                operation2: op.query((q) => ({
-                    bookAuthors: q.books(({ author }) => ({
-                        author,
-                    })),
+            })),
+            operation2: op.query((q) => ({
+                bookAuthors: q.books(({ author }) => ({
+                    author,
                 })),
-                mutation1: op.mutation((m) => ({
-                    created: m.createBooks({
-                        titles: ["book1", "book2"],
-                        authors: ["author1", "author2"],
-                    })(({ title }) => ({
-                        title,
-                    })),
+            })),
+            mutation1: op.mutation((m) => ({
+                created: m.createBooks({
+                    titles: ["book1", "book2"],
+                    authors: ["author1", "author2"],
+                })(({ title }) => ({
+                    title,
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -114,16 +111,13 @@ describe("Testing and validating features", () => {
     });
 
     it("works with aliases", async () => {
-        const slw = rootSLWFactory(
-            examplesBooksSimple._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    bookTitles: q.books(({ title }) => ({
-                        nameOfBook: title,
-                    })),
+        const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                bookTitles: q.books(({ title }) => ({
+                    nameOfBook: title,
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -162,16 +156,13 @@ describe("Testing and validating features", () => {
     });
 
     it("selects all scalars by using the $scalars() helper", async () => {
-        const slw = rootSLWFactory(
-            examplesUnions._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    bookTitles: q.books(({ $scalars }) => ({
-                        ...$scalars(),
-                    })),
+        const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                bookTitles: q.books(({ $scalars }) => ({
+                    ...$scalars(),
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -211,16 +202,13 @@ describe("Testing and validating features", () => {
             }));
         }
 
-        const slw = rootSLWFactory(
-            examplesBooksSimple._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    bookTitles: q.books(({ title }) => ({
-                        ...titleOnly(),
-                    })),
+        const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                bookTitles: q.books(({ title }) => ({
+                    ...titleOnly(),
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -260,18 +248,15 @@ describe("Testing and validating features", () => {
             }));
         }
 
-        const slw = rootSLWFactory(
-            examplesSpaceX._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    withFragment: q.launches({
-                        limit: 10,
-                    })(({ $fragment }) => ({
-                        ...$fragment(launchFragment)(),
-                    })),
+        const slw = rootSLWFactory(examplesSpaceX._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                withFragment: q.launches({
+                    limit: 10,
+                })(({ $fragment }) => ({
+                    ...$fragment(launchFragment)(),
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -317,14 +302,11 @@ describe("Testing and validating features", () => {
             }));
         }
 
-        const slw = rootSLWFactory(
-            examplesSpaceX._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query(({ $fragment }) => ({
-                    ...$fragment(launchQueryFragment)(10),
-                })),
-            }),
-        );
+        const slw = rootSLWFactory(examplesSpaceX._makeRootOperationInput, (op) => ({
+            operation1: op.query(({ $fragment }) => ({
+                ...$fragment(launchQueryFragment)(10),
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -370,22 +352,19 @@ describe("Testing and validating features", () => {
             }));
         }
 
-        const slw = rootSLWFactory(
-            examplesUnions._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((s) => ({
-                    b: s.books((s) => ({
-                        title: s.title,
-                    })),
-                    a_DE: s.articles((s) => ({
-                        ...s.$fragment(titleOnly)("de"),
-                    })),
-                    a_EN: s.articles((s) => ({
-                        ...s.$fragment(titleOnly)("en"),
-                    })),
+        const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
+            operation1: op.query((s) => ({
+                b: s.books((s) => ({
+                    title: s.title,
                 })),
-            }),
-        );
+                a_DE: s.articles((s) => ({
+                    ...s.$fragment(titleOnly)("de"),
+                })),
+                a_EN: s.articles((s) => ({
+                    ...s.$fragment(titleOnly)("en"),
+                })),
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -421,21 +400,18 @@ describe("Testing and validating features", () => {
     });
 
     it("works with inline ...on fragments for union types", async () => {
-        const slw = rootSLWFactory(
-            examplesUnions._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    all: q.search({ title: "test" })(({ $on }) => ({
-                        ...$on.Book((s) => ({
-                            ...s.$scalars(),
-                        })),
-                        ...$on.Article((s) => ({
-                            ...s.$scalars(),
-                        })),
+        const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                all: q.search({ title: "test" })(({ $on }) => ({
+                    ...$on.Book((s) => ({
+                        ...s.$scalars(),
+                    })),
+                    ...$on.Article((s) => ({
+                        ...s.$scalars(),
                     })),
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -472,18 +448,15 @@ describe("Testing and validating features", () => {
 
     it("supports directives", async () => {
         const tag = examplesDirectives.$directives.tag;
-        const slw = rootSLWFactory(
-            examplesDirectives._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    bookTitles: q.books(({ title }) => ({
-                        title: tag({
-                            tag: "Fragment!!",
-                        })(title),
-                    })),
+        const slw = rootSLWFactory(examplesDirectives._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                bookTitles: q.books(({ title }) => ({
+                    title: tag({
+                        tag: "Fragment!!",
+                    })(title),
                 })),
-            }),
-        );
+            })),
+        }));
 
         const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
@@ -523,14 +496,11 @@ describe("Testing and validating features", () => {
             },
         });
 
-        const slw = rootSLWFactory(
-            examplesDates._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    date: q.date,
-                })),
-            }),
-        );
+        const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                date: q.date,
+            })),
+        }));
 
         const date = new Date();
         const realFetch = global.fetch;
@@ -594,15 +564,7 @@ describe("Testing and validating features", () => {
 
         type RSLW = typeof result2;
         type Retrieved =
-            RSLW extends SelectionWrapper<
-                infer FN,
-                infer TTNP,
-                infer TTAD,
-                infer VT,
-                infer AT
-            >
-                ? VT
-                : never;
+            RSLW extends SelectionWrapper<infer FN, infer TTNP, infer TTAD, infer VT, infer AT> ? VT : never;
 
         const retrieved = result2 as unknown as Retrieved;
 
@@ -621,16 +583,13 @@ describe("Testing and validating features", () => {
             },
         });
 
-        const slw = rootSLWFactory(
-            examplesDates._makeRootOperationInput,
-            (op) => ({
-                operation1: op.query((q) => ({
-                    dates: q.dates,
-                    nestedDates: q.nestedDates,
-                    nestedDates2: q.nestedDates2,
-                })),
-            }),
-        );
+        const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
+            operation1: op.query((q) => ({
+                dates: q.dates,
+                nestedDates: q.nestedDates,
+                nestedDates2: q.nestedDates2,
+            })),
+        }));
 
         const date = new Date();
         const dates = [date, date];
@@ -643,12 +602,8 @@ describe("Testing and validating features", () => {
                 Promise.resolve({
                     data: {
                         dates: dates.map((d) => d.toISOString()),
-                        nestedDates: nestedDates.map((d) =>
-                            d.map((d) => d.toISOString()),
-                        ),
-                        nestedDates2: nestedDates2.map((d) =>
-                            d.map((d) => d.map((d) => d.toISOString())),
-                        ),
+                        nestedDates: nestedDates.map((d) => d.map((d) => d.toISOString())),
+                        nestedDates2: nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString()))),
                     },
                 }),
         });
@@ -686,12 +641,8 @@ describe("Testing and validating features", () => {
         expect(result).toEqual({
             operation1: {
                 dates: dates.map((d) => d.toISOString()),
-                nestedDates: nestedDates.map((d) =>
-                    d.map((d) => d.toISOString()),
-                ),
-                nestedDates2: nestedDates2.map((d) =>
-                    d.map((d) => d.map((d) => d.toISOString())),
-                ),
+                nestedDates: nestedDates.map((d) => d.map((d) => d.toISOString())),
+                nestedDates2: nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString()))),
             },
         });
 
@@ -711,35 +662,15 @@ describe("Testing and validating features", () => {
 
         type RSLW = typeof result2;
         type Retrieved =
-            RSLW extends SelectionWrapper<
-                infer FN,
-                infer TTNP,
-                infer TTAD,
-                infer VT,
-                infer AT
-            >
-                ? VT
-                : never;
+            RSLW extends SelectionWrapper<infer FN, infer TTNP, infer TTAD, infer VT, infer AT> ? VT : never;
 
         const retrieved = result2 as unknown as Retrieved;
 
         expect(retrieved.operation1).toEqual({
-            dates: dates.map((d) =>
-                RootOperation[OPTIONS].scalars.DateTime(d.toISOString()),
-            ),
-            nestedDates: nestedDates.map((d) =>
-                d.map((d) =>
-                    RootOperation[OPTIONS].scalars.DateTime(d.toISOString()),
-                ),
-            ),
+            dates: dates.map((d) => RootOperation[OPTIONS].scalars.DateTime(d.toISOString())),
+            nestedDates: nestedDates.map((d) => d.map((d) => RootOperation[OPTIONS].scalars.DateTime(d.toISOString()))),
             nestedDates2: nestedDates2.map((d) =>
-                d.map((d) =>
-                    d.map((d) =>
-                        RootOperation[OPTIONS].scalars.DateTime(
-                            d.toISOString(),
-                        ),
-                    ),
-                ),
+                d.map((d) => d.map((d) => RootOperation[OPTIONS].scalars.DateTime(d.toISOString()))),
             ),
         });
 
@@ -752,11 +683,7 @@ describe("Testing and validating features", () => {
             json: () =>
                 Promise.resolve({
                     data: {
-                        first10Launches: [
-                            { id: "1" },
-                            { id: "2" },
-                            { id: "3" },
-                        ],
+                        first10Launches: [{ id: "1" }, { id: "2" }, { id: "3" }],
                     },
                 }),
         });
@@ -764,8 +691,7 @@ describe("Testing and validating features", () => {
 
         const { first10Launches } = await examplesSpaceX.default((op) =>
             op.query((q) => ({
-                first10Launches: q.launches({ limit: 10 })(({ id }) => ({ id }))
-                    .$lazy,
+                first10Launches: q.launches({ limit: 10 })(({ id }) => ({ id })).$lazy,
             })),
         );
 
@@ -793,11 +719,7 @@ describe("Testing and validating features", () => {
         // since the result is not a true array but a proxy object, we need to convert it to an array in order to test it
         expect(Array.from(result)).toBeArray();
         expect(Array.from(result)).toHaveLength(3);
-        expect(Array.from(result)).toEqual([
-            { id: "1" },
-            { id: "2" },
-            { id: "3" },
-        ]);
+        expect(Array.from(result)).toEqual([{ id: "1" }, { id: "2" }, { id: "3" }]);
 
         const result2 = await first10Launches({ limit: 22 });
 
@@ -817,11 +739,7 @@ describe("Testing and validating features", () => {
         // since the result is not a true array but a proxy object, we need to convert it to an array in order to test it
         expect(Array.from(result2)).toBeArray();
         expect(Array.from(result2)).toHaveLength(3);
-        expect(Array.from(result2)).toEqual([
-            { id: "1" },
-            { id: "2" },
-            { id: "3" },
-        ]);
+        expect(Array.from(result2)).toEqual([{ id: "1" }, { id: "2" }, { id: "3" }]);
 
         global.fetch = realFetch;
     });
@@ -847,12 +765,10 @@ describe("Testing and validating features", () => {
             const { test } = await examplesContentful
                 .default((op) =>
                     op.query((q) => ({
-                        test: q.asset({ id: "test" })(
-                            ({ title, description }) => ({
-                                title: title({ locale: "en-US" }),
-                                description: description({ locale: "en-US" }),
-                            }),
-                        ),
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
                     })),
                 )
                 .auth(authToken);
@@ -899,12 +815,10 @@ describe("Testing and validating features", () => {
             const { test } = await examplesContentful
                 .default((op) =>
                     op.query((q) => ({
-                        test: q.asset({ id: "test" })(
-                            ({ title, description }) => ({
-                                title: title({ locale: "en-US" }),
-                                description: description({ locale: "en-US" }),
-                            }),
-                        ),
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
                     })),
                 )
                 .auth(() => authToken);
@@ -951,12 +865,10 @@ describe("Testing and validating features", () => {
             const { test } = await examplesContentful
                 .default((op) =>
                     op.query((q) => ({
-                        test: q.asset({ id: "test" })(
-                            ({ title, description }) => ({
-                                title: title({ locale: "en-US" }),
-                                description: description({ locale: "en-US" }),
-                            }),
-                        ),
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
                     })),
                 )
                 .auth(async () => {
@@ -1005,12 +917,10 @@ describe("Testing and validating features", () => {
             const { test } = await examplesContentful
                 .default((op) =>
                     op.query((q) => ({
-                        test: q.asset({ id: "test" })(
-                            ({ title, description }) => ({
-                                title: title({ locale: "en-US" }),
-                                description: description({ locale: "en-US" }),
-                            }),
-                        ),
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
                     })),
                 )
                 .auth({
@@ -1059,12 +969,10 @@ describe("Testing and validating features", () => {
             const { test } = await examplesContentful
                 .default((op) =>
                     op.query((q) => ({
-                        test: q.asset({ id: "test" })(
-                            ({ title, description }) => ({
-                                title: title({ locale: "en-US" }),
-                                description: description({ locale: "en-US" }),
-                            }),
-                        ),
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
                     })),
                 )
                 .auth(() => {
@@ -1115,12 +1023,10 @@ describe("Testing and validating features", () => {
             const { test } = await examplesContentful
                 .default((op) =>
                     op.query((q) => ({
-                        test: q.asset({ id: "test" })(
-                            ({ title, description }) => ({
-                                title: title({ locale: "en-US" }),
-                                description: description({ locale: "en-US" }),
-                            }),
-                        ),
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
                     })),
                 )
                 .auth(async () => {

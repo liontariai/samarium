@@ -16,11 +16,11 @@ export class Collector<
         public readonly MutationTypeName: MT,
         public readonly SubscriptionTypeName: ST,
     ) {
-        this.OperationTypeNames = [
-            QueryTypeName,
-            MutationTypeName,
-            SubscriptionTypeName,
-        ].filter((t) => t) as (QT | MT | ST)[];
+        this.OperationTypeNames = [QueryTypeName, MutationTypeName, SubscriptionTypeName].filter((t) => t) as (
+            | QT
+            | MT
+            | ST
+        )[];
     }
 
     /**
