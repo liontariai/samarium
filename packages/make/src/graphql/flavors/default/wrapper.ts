@@ -911,8 +911,8 @@ export class SelectionWrapper<
                 ): valueT | undefined => {
                     const cache = getCache(t);
 
-                    const path = overrideOpPath ?? t[SLW_OP_PATH] ?? "";
-                    if (cache.data.has(path) && !t[SLW_NEEDS_CLONE])
+                    const path = overrideOpPath ?? t[SLW_OP_PATH] ?? undefined;
+                    if (path && cache.data.has(path) && !t[SLW_NEEDS_CLONE])
                         return cache.data.get(path);
 
                     const data = t[
@@ -925,7 +925,7 @@ export class SelectionWrapper<
                         t[SLW_OP_RESULT_DATA_OVERRIDE],
                     );
 
-                    cache.data.set(path, data);
+                    if (path) cache.data.set(path, data);
                     return data;
                 };
 
