@@ -1077,20 +1077,42 @@ export class SelectionWrapper<
                                                         .execute()
                                                         .catch(reject)
                                                         .then((_data) => {
-                                                            const data =
+                                                            const fieldName =
+                                                                newThat[
+                                                                    SLW_FIELD_NAME
+                                                                ]!;
+                                                            const d =
                                                                 _data[
-                                                                    newThat[
-                                                                        SLW_FIELD_NAME
-                                                                    ]
-                                                                ][
-                                                                    newThat[
-                                                                        SLW_FIELD_NAME
-                                                                    ]
+                                                                    fieldName
                                                                 ];
 
-                                                            resolve(
+                                                            if (
+                                                                Symbol.asyncIterator in
+                                                                d
+                                                            ) {
+                                                                return resolve(
+                                                                    newThat,
+                                                                );
+                                                            }
+                                                            if (
+                                                                typeof d ===
+                                                                    "object" &&
+                                                                d &&
+                                                                fieldName in d
+                                                            ) {
+                                                                return resolve(
+                                                                    proxify(
+                                                                        d[
+                                                                            fieldName
+                                                                        ],
+                                                                        newThat as any,
+                                                                    ),
+                                                                );
+                                                            }
+
+                                                            return resolve(
                                                                 proxify(
-                                                                    data,
+                                                                    d,
                                                                     newThat as any,
                                                                 ),
                                                             );
