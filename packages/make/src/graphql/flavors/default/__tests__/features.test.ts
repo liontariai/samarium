@@ -15,6 +15,10 @@ import * as examplesDates from "@/graphql/flavors/default/__tests__/examples/dat
 import * as examplesContentful from "@/graphql/flavors/default/__tests__/examples/contentful.with-test-slw";
 
 describe("Testing and validating features", () => {
+    beforeAll(() => {
+        RootOperation.authHeaderName = "Authorization";
+    });
+
     it("executes multiple operations and returns results", async () => {
         const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
             operation1: op.query((q) => ({
