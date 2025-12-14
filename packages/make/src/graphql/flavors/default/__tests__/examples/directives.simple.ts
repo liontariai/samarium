@@ -59,50 +59,27 @@ export const QuerySearchArgsMeta = { title: "String" } as const;
 export function makeBookArraySelectionInput(this: any) {
     return {
         title: new SelectionWrapper("title", "String", 0, {}, this, undefined),
-        author: new SelectionWrapper(
-            "author",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        author: new SelectionWrapper("author", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeBookArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeBookArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeBookArraySelectionInput>
             >,
     } as const;
 }
-export const BookArraySelection = makeSLFN(
-    makeBookArraySelectionInput,
-    "BookArraySelection",
-    "Book",
-    1,
-);
+export const BookArraySelection = makeSLFN(makeBookArraySelectionInput, "BookArraySelection", "Book", 1);
 
 export function makeArticleArraySelectionInput(this: any) {
     return {
         title: new SelectionWrapper("title", "String", 0, {}, this, undefined),
-        publisher: new SelectionWrapper(
-            "publisher",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        publisher: new SelectionWrapper("publisher", "String", 0, {}, this, undefined),
         books: (args: ArticleArrayBooksArgs) =>
             BookArraySelection.bind({
                 collector: this,
@@ -111,40 +88,22 @@ export function makeArticleArraySelectionInput(this: any) {
                 argsMeta: ArticleArrayBooksArgsMeta,
             }),
         rollDice: (args: ArticleArrayRollDiceArgs) =>
-            new SelectionWrapper(
-                "rollDice",
-                "Int",
-                1,
-                {},
-                this,
-                undefined,
-                args,
-                ArticleArrayRollDiceArgsMeta,
-            ),
+            new SelectionWrapper("rollDice", "Int", 1, {}, this, undefined, args, ArticleArrayRollDiceArgsMeta),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeArticleArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeArticleArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeArticleArraySelectionInput>
             >,
     } as const;
 }
-export const ArticleArraySelection = makeSLFN(
-    makeArticleArraySelectionInput,
-    "ArticleArraySelection",
-    "Article",
-    1,
-);
+export const ArticleArraySelection = makeSLFN(makeArticleArraySelectionInput, "ArticleArraySelection", "Article", 1);
 
 export function makeSearchResultArraySelectionInput(this: any) {
     return {
@@ -172,48 +131,27 @@ export const SearchResultArraySelection = makeSLFN(
 export function makeBookSelectionInput(this: any) {
     return {
         title: new SelectionWrapper("title", "String", 0, {}, this, undefined),
-        author: new SelectionWrapper(
-            "author",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        author: new SelectionWrapper("author", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeBookSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeBookSelectionInput>>,
+            selectScalars(makeBookSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeBookSelectionInput>
+            >,
     } as const;
 }
-export const BookSelection = makeSLFN(
-    makeBookSelectionInput,
-    "BookSelection",
-    "Book",
-    0,
-);
+export const BookSelection = makeSLFN(makeBookSelectionInput, "BookSelection", "Book", 0);
 
 export function makeArticleSelectionInput(this: any) {
     return {
         title: new SelectionWrapper("title", "String", 0, {}, this, undefined),
-        publisher: new SelectionWrapper(
-            "publisher",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        publisher: new SelectionWrapper("publisher", "String", 0, {}, this, undefined),
         books: (args: ArticleBooksArgs) =>
             BookArraySelection.bind({
                 collector: this,
@@ -222,40 +160,22 @@ export function makeArticleSelectionInput(this: any) {
                 argsMeta: ArticleBooksArgsMeta,
             }),
         rollDice: (args: ArticleRollDiceArgs) =>
-            new SelectionWrapper(
-                "rollDice",
-                "Int",
-                1,
-                {},
-                this,
-                undefined,
-                args,
-                ArticleRollDiceArgsMeta,
-            ),
+            new SelectionWrapper("rollDice", "Int", 1, {}, this, undefined, args, ArticleRollDiceArgsMeta),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeArticleSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeArticleSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeArticleSelectionInput>
             >,
     } as const;
 }
-export const ArticleSelection = makeSLFN(
-    makeArticleSelectionInput,
-    "ArticleSelection",
-    "Article",
-    0,
-);
+export const ArticleSelection = makeSLFN(makeArticleSelectionInput, "ArticleSelection", "Article", 0);
 
 type ReturnTypeFromQuerySelection = {
     books: ReturnType<
@@ -303,9 +223,7 @@ type ReturnTypeFromQuerySelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeQuerySelectionInput(
-    this: any,
-): ReturnTypeFromQuerySelection {
+export function makeQuerySelectionInput(this: any): ReturnTypeFromQuerySelection {
     return {
         books: BookArraySelection.bind({ collector: this, fieldName: "books" }),
         articles: ArticleArraySelection.bind({
@@ -325,17 +243,10 @@ export function makeQuerySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const QuerySelection = makeSLFN(
-    makeQuerySelectionInput,
-    "QuerySelection",
-    "Query",
-    0,
-);
+export const QuerySelection = makeSLFN(makeQuerySelectionInput, "QuerySelection", "Query", 0);
 
 export const _directive_tag =
     (args: Directive_tagArgs) =>

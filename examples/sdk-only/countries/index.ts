@@ -16,6 +16,7 @@ const {
     })),
 }));
 
+console.log(continents[0].countries.map((c) => c));
 console.log(
     continents?.flatMap((continent) =>
         continent.countries.map((country) => country.name),

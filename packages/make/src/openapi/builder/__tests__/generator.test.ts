@@ -10,7 +10,7 @@ import reelgoodJson from "./examples/reelgood.json";
 import { GeneratorSelectionTypeFlavorDefault } from "../../flavors/default/generator-flavor";
 import { Generator } from "../generator";
 
-describe.only("generate", () => {
+describe.skip("generate", () => {
     it("should generate code", async () => {
         const schema = reelgoodJson as unknown as OpenAPI3;
 

@@ -2481,26 +2481,10 @@
                 "additionalProperties": {}
             },
             "RoleType": {
-                "enum": [
-                    "Director",
-                    "Actor",
-                    "Producer",
-                    "ExecutiveProducer",
-                    "Writer",
-                    "Composer",
-                    "Creator"
-                ],
+                "enum": ["Director", "Actor", "Producer", "ExecutiveProducer", "Writer", "Composer", "Creator"],
                 "type": "string",
                 "format": "",
-                "x-enumNames": [
-                    "Director",
-                    "Actor",
-                    "Producer",
-                    "ExecutiveProducer",
-                    "Writer",
-                    "Composer",
-                    "Creator"
-                ],
+                "x-enumNames": ["Director", "Actor", "Producer", "ExecutiveProducer", "Writer", "Composer", "Creator"],
                 "x-enum-varnames": [
                     "Director",
                     "Actor",

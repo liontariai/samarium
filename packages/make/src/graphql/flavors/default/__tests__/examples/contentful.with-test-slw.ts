@@ -24,13 +24,7 @@ import type {
     ScalarTypeMapDefault,
     ScalarTypeMapWithCustom,
 } from "../utils/types";
-export type ImageResizeStrategy =
-    | "FIT"
-    | "PAD"
-    | "FILL"
-    | "SCALE"
-    | "CROP"
-    | "THUMB";
+export type ImageResizeStrategy = "FIT" | "PAD" | "FILL" | "SCALE" | "CROP" | "THUMB";
 export enum ImageResizeStrategyEnum {
     /** Resizes the image to fit into the specified dimensions. */
     FIT = "FIT",
@@ -84,13 +78,7 @@ export enum ImageResizeFocusEnum {
     FACES = "FACES",
 }
 
-export type ImageFormat =
-    | "JPG"
-    | "JPG_PROGRESSIVE"
-    | "PNG"
-    | "PNG8"
-    | "WEBP"
-    | "AVIF";
+export type ImageFormat = "JPG" | "JPG_PROGRESSIVE" | "PNG" | "PNG8" | "WEBP" | "AVIF";
 export enum ImageFormatEnum {
     /** JPG image format. */
     JPG = "JPG",
@@ -571,116 +559,43 @@ export type EntryFilter = {
 type ReturnTypeFromSysNotNullSelection = {
     id: SelectionWrapper<"id", "String", 0, {}, undefined>;
     spaceId: SelectionWrapper<"spaceId", "String", 0, {}, undefined>;
-    environmentId: SelectionWrapper<
-        "environmentId",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    environmentId: SelectionWrapper<"environmentId", "String", 0, {}, undefined>;
     publishedAt: SelectionWrapper<"publishedAt", "DateTime", 0, {}, undefined>;
-    firstPublishedAt: SelectionWrapper<
-        "firstPublishedAt",
-        "DateTime",
-        0,
-        {},
-        undefined
-    >;
-    publishedVersion: SelectionWrapper<
-        "publishedVersion",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    firstPublishedAt: SelectionWrapper<"firstPublishedAt", "DateTime", 0, {}, undefined>;
+    publishedVersion: SelectionWrapper<"publishedVersion", "Int", 0, {}, undefined>;
     locale: SelectionWrapper<"locale", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeSysNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeSysNotNullSelectionInput>>;
 };
 
-export function makeSysNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromSysNotNullSelection {
+export function makeSysNotNullSelectionInput(this: any): ReturnTypeFromSysNotNullSelection {
     return {
         id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
-        spaceId: new SelectionWrapper(
-            "spaceId",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        environmentId: new SelectionWrapper(
-            "environmentId",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        publishedAt: new SelectionWrapper(
-            "publishedAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        firstPublishedAt: new SelectionWrapper(
-            "firstPublishedAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        publishedVersion: new SelectionWrapper(
-            "publishedVersion",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        locale: new SelectionWrapper(
-            "locale",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        spaceId: new SelectionWrapper("spaceId", "String", 0, {}, this, undefined),
+        environmentId: new SelectionWrapper("environmentId", "String", 0, {}, this, undefined),
+        publishedAt: new SelectionWrapper("publishedAt", "DateTime", 0, {}, this, undefined),
+        firstPublishedAt: new SelectionWrapper("firstPublishedAt", "DateTime", 0, {}, this, undefined),
+        publishedVersion: new SelectionWrapper("publishedVersion", "Int", 0, {}, this, undefined),
+        locale: new SelectionWrapper("locale", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeSysNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeSysNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeSysNotNullSelectionInput>
             >,
     } as const;
 }
-export const SysNotNullSelection = makeSLFN(
-    makeSysNotNullSelectionInput,
-    "SysNotNullSelection",
-    "Sys",
-    0,
-);
+export const SysNotNullSelection = makeSLFN(makeSysNotNullSelectionInput, "SysNotNullSelection", "Sys", 0);
 
 type ReturnTypeFromContentfulMetadataNotNullSelection = {
     tags: ReturnType<
@@ -716,9 +631,7 @@ export function makeContentfulMetadataNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const ContentfulMetadataNotNullSelection = makeSLFN(
@@ -736,9 +649,7 @@ type ReturnTypeFromContentfulTagArrayNotNullSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeContentfulTagArrayNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeContentfulTagArrayNotNullSelectionInput>>;
 };
 
 export function makeContentfulTagArrayNotNullSelectionInput(
@@ -753,14 +664,10 @@ export function makeContentfulTagArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeContentfulTagArrayNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeContentfulTagArrayNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeContentfulTagArrayNotNullSelectionInput>
             >,
     } as const;
@@ -773,9 +680,7 @@ export const ContentfulTagArrayNotNullSelection = makeSLFN(
 );
 
 type ReturnTypeFromAssetLinkingCollectionsSelection = {
-    entryCollection: (
-        args: AssetLinkingCollectionsEntryCollectionArgs,
-    ) => ReturnType<
+    entryCollection: (args: AssetLinkingCollectionsEntryCollectionArgs) => ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeEntryCollectionSelectionInput>,
@@ -783,9 +688,7 @@ type ReturnTypeFromAssetLinkingCollectionsSelection = {
             "EntryCollection",
             0,
             {
-                $lazy: (
-                    args: AssetLinkingCollectionsEntryCollectionArgs,
-                ) => Promise<"T">;
+                $lazy: (args: AssetLinkingCollectionsEntryCollectionArgs) => Promise<"T">;
             },
             "$lazy"
         >
@@ -796,9 +699,7 @@ type ReturnTypeFromAssetLinkingCollectionsSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeAssetLinkingCollectionsSelectionInput(
-    this: any,
-): ReturnTypeFromAssetLinkingCollectionsSelection {
+export function makeAssetLinkingCollectionsSelectionInput(this: any): ReturnTypeFromAssetLinkingCollectionsSelection {
     return {
         entryCollection: (args: AssetLinkingCollectionsEntryCollectionArgs) =>
             EntryCollectionSelection.bind({
@@ -813,9 +714,7 @@ export function makeAssetLinkingCollectionsSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const AssetLinkingCollectionsSelection = makeSLFN(
@@ -847,14 +746,10 @@ type ReturnTypeFromEntryCollectionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeEntryCollectionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeEntryCollectionSelectionInput>>;
 };
 
-export function makeEntryCollectionSelectionInput(
-    this: any,
-): ReturnTypeFromEntryCollectionSelection {
+export function makeEntryCollectionSelectionInput(this: any): ReturnTypeFromEntryCollectionSelection {
     return {
         total: new SelectionWrapper("total", "Int", 0, {}, this, undefined),
         skip: new SelectionWrapper("skip", "Int", 0, {}, this, undefined),
@@ -869,14 +764,10 @@ export function makeEntryCollectionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeEntryCollectionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeEntryCollectionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeEntryCollectionSelectionInput>
             >,
     } as const;
@@ -921,9 +812,7 @@ type ReturnTypeFromEntryArrayNotNullSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeEntryArrayNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromEntryArrayNotNullSelection {
+export function makeEntryArrayNotNullSelectionInput(this: any): ReturnTypeFromEntryArrayNotNullSelection {
     return {
         sys: SysNotNullSelection.bind({ collector: this, fieldName: "sys" }),
         contentfulMetadata: ContentfulMetadataNotNullSelection.bind({
@@ -936,9 +825,7 @@ export function makeEntryArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const EntryArrayNotNullSelection = makeSLFN(
@@ -975,30 +862,14 @@ type ReturnTypeFromAssetSelection = {
             "$lazy"
         >
     >;
-    title: (
-        args: AssetTitleArgs,
-    ) => SelectionWrapper<"title", "String", 0, {}, AssetTitleArgs>;
-    description: (
-        args: AssetDescriptionArgs,
-    ) => SelectionWrapper<"description", "String", 0, {}, AssetDescriptionArgs>;
-    contentType: (
-        args: AssetContentTypeArgs,
-    ) => SelectionWrapper<"contentType", "String", 0, {}, AssetContentTypeArgs>;
-    fileName: (
-        args: AssetFileNameArgs,
-    ) => SelectionWrapper<"fileName", "String", 0, {}, AssetFileNameArgs>;
-    size: (
-        args: AssetSizeArgs,
-    ) => SelectionWrapper<"size", "Int", 0, {}, AssetSizeArgs>;
-    url: (
-        args: AssetUrlArgs,
-    ) => SelectionWrapper<"url", "String", 0, {}, AssetUrlArgs>;
-    width: (
-        args: AssetWidthArgs,
-    ) => SelectionWrapper<"width", "Int", 0, {}, AssetWidthArgs>;
-    height: (
-        args: AssetHeightArgs,
-    ) => SelectionWrapper<"height", "Int", 0, {}, AssetHeightArgs>;
+    title: (args: AssetTitleArgs) => SelectionWrapper<"title", "String", 0, {}, AssetTitleArgs>;
+    description: (args: AssetDescriptionArgs) => SelectionWrapper<"description", "String", 0, {}, AssetDescriptionArgs>;
+    contentType: (args: AssetContentTypeArgs) => SelectionWrapper<"contentType", "String", 0, {}, AssetContentTypeArgs>;
+    fileName: (args: AssetFileNameArgs) => SelectionWrapper<"fileName", "String", 0, {}, AssetFileNameArgs>;
+    size: (args: AssetSizeArgs) => SelectionWrapper<"size", "Int", 0, {}, AssetSizeArgs>;
+    url: (args: AssetUrlArgs) => SelectionWrapper<"url", "String", 0, {}, AssetUrlArgs>;
+    width: (args: AssetWidthArgs) => SelectionWrapper<"width", "Int", 0, {}, AssetWidthArgs>;
+    height: (args: AssetHeightArgs) => SelectionWrapper<"height", "Int", 0, {}, AssetHeightArgs>;
     linkedFrom: (args: AssetLinkedFromArgs) => ReturnType<
         SLFN<
             {},
@@ -1017,14 +888,10 @@ type ReturnTypeFromAssetSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeAssetSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeAssetSelectionInput>>;
 };
 
-export function makeAssetSelectionInput(
-    this: any,
-): ReturnTypeFromAssetSelection {
+export function makeAssetSelectionInput(this: any): ReturnTypeFromAssetSelection {
     return {
         sys: SysNotNullSelection.bind({ collector: this, fieldName: "sys" }),
         contentfulMetadata: ContentfulMetadataNotNullSelection.bind({
@@ -1032,93 +899,21 @@ export function makeAssetSelectionInput(
             fieldName: "contentfulMetadata",
         }),
         title: (args: AssetTitleArgs) =>
-            new SelectionWrapper(
-                "title",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetTitleArgsMeta,
-            ),
+            new SelectionWrapper("title", "String", 0, {}, this, undefined, args, AssetTitleArgsMeta),
         description: (args: AssetDescriptionArgs) =>
-            new SelectionWrapper(
-                "description",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetDescriptionArgsMeta,
-            ),
+            new SelectionWrapper("description", "String", 0, {}, this, undefined, args, AssetDescriptionArgsMeta),
         contentType: (args: AssetContentTypeArgs) =>
-            new SelectionWrapper(
-                "contentType",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetContentTypeArgsMeta,
-            ),
+            new SelectionWrapper("contentType", "String", 0, {}, this, undefined, args, AssetContentTypeArgsMeta),
         fileName: (args: AssetFileNameArgs) =>
-            new SelectionWrapper(
-                "fileName",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetFileNameArgsMeta,
-            ),
+            new SelectionWrapper("fileName", "String", 0, {}, this, undefined, args, AssetFileNameArgsMeta),
         size: (args: AssetSizeArgs) =>
-            new SelectionWrapper(
-                "size",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetSizeArgsMeta,
-            ),
+            new SelectionWrapper("size", "Int", 0, {}, this, undefined, args, AssetSizeArgsMeta),
         url: (args: AssetUrlArgs) =>
-            new SelectionWrapper(
-                "url",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetUrlArgsMeta,
-            ),
+            new SelectionWrapper("url", "String", 0, {}, this, undefined, args, AssetUrlArgsMeta),
         width: (args: AssetWidthArgs) =>
-            new SelectionWrapper(
-                "width",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetWidthArgsMeta,
-            ),
+            new SelectionWrapper("width", "Int", 0, {}, this, undefined, args, AssetWidthArgsMeta),
         height: (args: AssetHeightArgs) =>
-            new SelectionWrapper(
-                "height",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetHeightArgsMeta,
-            ),
+            new SelectionWrapper("height", "Int", 0, {}, this, undefined, args, AssetHeightArgsMeta),
         linkedFrom: (args: AssetLinkedFromArgs) =>
             AssetLinkingCollectionsSelection.bind({
                 collector: this,
@@ -1132,22 +927,15 @@ export function makeAssetSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeAssetSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeAssetSelectionInput>>,
+            selectScalars(makeAssetSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeAssetSelectionInput>
+            >,
     } as const;
 }
-export const AssetSelection = makeSLFN(
-    makeAssetSelectionInput,
-    "AssetSelection",
-    "Asset",
-    0,
-);
+export const AssetSelection = makeSLFN(makeAssetSelectionInput, "AssetSelection", "Asset", 0);
 
 type ReturnTypeFromAssetArrayNotNullSelection = {
     sys: ReturnType<
@@ -1176,45 +964,19 @@ type ReturnTypeFromAssetArrayNotNullSelection = {
             "$lazy"
         >
     >;
-    title: (
-        args: AssetArrayNotNullTitleArgs,
-    ) => SelectionWrapper<"title", "String", 0, {}, AssetArrayNotNullTitleArgs>;
+    title: (args: AssetArrayNotNullTitleArgs) => SelectionWrapper<"title", "String", 0, {}, AssetArrayNotNullTitleArgs>;
     description: (
         args: AssetArrayNotNullDescriptionArgs,
-    ) => SelectionWrapper<
-        "description",
-        "String",
-        0,
-        {},
-        AssetArrayNotNullDescriptionArgs
-    >;
+    ) => SelectionWrapper<"description", "String", 0, {}, AssetArrayNotNullDescriptionArgs>;
     contentType: (
         args: AssetArrayNotNullContentTypeArgs,
-    ) => SelectionWrapper<
-        "contentType",
-        "String",
-        0,
-        {},
-        AssetArrayNotNullContentTypeArgs
-    >;
+    ) => SelectionWrapper<"contentType", "String", 0, {}, AssetArrayNotNullContentTypeArgs>;
     fileName: (
         args: AssetArrayNotNullFileNameArgs,
-    ) => SelectionWrapper<
-        "fileName",
-        "String",
-        0,
-        {},
-        AssetArrayNotNullFileNameArgs
-    >;
-    size: (
-        args: AssetArrayNotNullSizeArgs,
-    ) => SelectionWrapper<"size", "Int", 0, {}, AssetArrayNotNullSizeArgs>;
-    url: (
-        args: AssetArrayNotNullUrlArgs,
-    ) => SelectionWrapper<"url", "String", 0, {}, AssetArrayNotNullUrlArgs>;
-    width: (
-        args: AssetArrayNotNullWidthArgs,
-    ) => SelectionWrapper<"width", "Int", 0, {}, AssetArrayNotNullWidthArgs>;
+    ) => SelectionWrapper<"fileName", "String", 0, {}, AssetArrayNotNullFileNameArgs>;
+    size: (args: AssetArrayNotNullSizeArgs) => SelectionWrapper<"size", "Int", 0, {}, AssetArrayNotNullSizeArgs>;
+    url: (args: AssetArrayNotNullUrlArgs) => SelectionWrapper<"url", "String", 0, {}, AssetArrayNotNullUrlArgs>;
+    width: (args: AssetArrayNotNullWidthArgs) => SelectionWrapper<"width", "Int", 0, {}, AssetArrayNotNullWidthArgs>;
     height: (
         args: AssetArrayNotNullHeightArgs,
     ) => SelectionWrapper<"height", "Int", 0, {}, AssetArrayNotNullHeightArgs>;
@@ -1236,14 +998,10 @@ type ReturnTypeFromAssetArrayNotNullSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeAssetArrayNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeAssetArrayNotNullSelectionInput>>;
 };
 
-export function makeAssetArrayNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromAssetArrayNotNullSelection {
+export function makeAssetArrayNotNullSelectionInput(this: any): ReturnTypeFromAssetArrayNotNullSelection {
     return {
         sys: SysNotNullSelection.bind({ collector: this, fieldName: "sys" }),
         contentfulMetadata: ContentfulMetadataNotNullSelection.bind({
@@ -1251,16 +1009,7 @@ export function makeAssetArrayNotNullSelectionInput(
             fieldName: "contentfulMetadata",
         }),
         title: (args: AssetArrayNotNullTitleArgs) =>
-            new SelectionWrapper(
-                "title",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetArrayNotNullTitleArgsMeta,
-            ),
+            new SelectionWrapper("title", "String", 0, {}, this, undefined, args, AssetArrayNotNullTitleArgsMeta),
         description: (args: AssetArrayNotNullDescriptionArgs) =>
             new SelectionWrapper(
                 "description",
@@ -1284,60 +1033,15 @@ export function makeAssetArrayNotNullSelectionInput(
                 AssetArrayNotNullContentTypeArgsMeta,
             ),
         fileName: (args: AssetArrayNotNullFileNameArgs) =>
-            new SelectionWrapper(
-                "fileName",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetArrayNotNullFileNameArgsMeta,
-            ),
+            new SelectionWrapper("fileName", "String", 0, {}, this, undefined, args, AssetArrayNotNullFileNameArgsMeta),
         size: (args: AssetArrayNotNullSizeArgs) =>
-            new SelectionWrapper(
-                "size",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetArrayNotNullSizeArgsMeta,
-            ),
+            new SelectionWrapper("size", "Int", 0, {}, this, undefined, args, AssetArrayNotNullSizeArgsMeta),
         url: (args: AssetArrayNotNullUrlArgs) =>
-            new SelectionWrapper(
-                "url",
-                "String",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetArrayNotNullUrlArgsMeta,
-            ),
+            new SelectionWrapper("url", "String", 0, {}, this, undefined, args, AssetArrayNotNullUrlArgsMeta),
         width: (args: AssetArrayNotNullWidthArgs) =>
-            new SelectionWrapper(
-                "width",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetArrayNotNullWidthArgsMeta,
-            ),
+            new SelectionWrapper("width", "Int", 0, {}, this, undefined, args, AssetArrayNotNullWidthArgsMeta),
         height: (args: AssetArrayNotNullHeightArgs) =>
-            new SelectionWrapper(
-                "height",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                AssetArrayNotNullHeightArgsMeta,
-            ),
+            new SelectionWrapper("height", "Int", 0, {}, this, undefined, args, AssetArrayNotNullHeightArgsMeta),
         linkedFrom: (args: AssetArrayNotNullLinkedFromArgs) =>
             AssetLinkingCollectionsSelection.bind({
                 collector: this,
@@ -1351,14 +1055,10 @@ export function makeAssetArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeAssetArrayNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeAssetArrayNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeAssetArrayNotNullSelectionInput>
             >,
     } as const;
@@ -1392,14 +1092,10 @@ type ReturnTypeFromAssetCollectionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeAssetCollectionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeAssetCollectionSelectionInput>>;
 };
 
-export function makeAssetCollectionSelectionInput(
-    this: any,
-): ReturnTypeFromAssetCollectionSelection {
+export function makeAssetCollectionSelectionInput(this: any): ReturnTypeFromAssetCollectionSelection {
     return {
         total: new SelectionWrapper("total", "Int", 0, {}, this, undefined),
         skip: new SelectionWrapper("skip", "Int", 0, {}, this, undefined),
@@ -1414,14 +1110,10 @@ export function makeAssetCollectionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeAssetCollectionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeAssetCollectionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeAssetCollectionSelectionInput>
             >,
     } as const;
@@ -1434,9 +1126,7 @@ export const AssetCollectionSelection = makeSLFN(
 );
 
 type ReturnTypeFromTestLinkingCollectionsSelection = {
-    entryCollection: (
-        args: TestLinkingCollectionsEntryCollectionArgs,
-    ) => ReturnType<
+    entryCollection: (args: TestLinkingCollectionsEntryCollectionArgs) => ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeEntryCollectionSelectionInput>,
@@ -1444,9 +1134,7 @@ type ReturnTypeFromTestLinkingCollectionsSelection = {
             "EntryCollection",
             0,
             {
-                $lazy: (
-                    args: TestLinkingCollectionsEntryCollectionArgs,
-                ) => Promise<"T">;
+                $lazy: (args: TestLinkingCollectionsEntryCollectionArgs) => Promise<"T">;
             },
             "$lazy"
         >
@@ -1457,9 +1145,7 @@ type ReturnTypeFromTestLinkingCollectionsSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestLinkingCollectionsSelectionInput(
-    this: any,
-): ReturnTypeFromTestLinkingCollectionsSelection {
+export function makeTestLinkingCollectionsSelectionInput(this: any): ReturnTypeFromTestLinkingCollectionsSelection {
     return {
         entryCollection: (args: TestLinkingCollectionsEntryCollectionArgs) =>
             EntryCollectionSelection.bind({
@@ -1474,9 +1160,7 @@ export function makeTestLinkingCollectionsSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestLinkingCollectionsSelection = makeSLFN(
@@ -1506,14 +1190,10 @@ type ReturnTypeFromTestTestSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeTestTestSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeTestTestSelectionInput>>;
 };
 
-export function makeTestTestSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestSelection {
+export function makeTestTestSelectionInput(this: any): ReturnTypeFromTestTestSelection {
     return {
         json: new SelectionWrapper("json", "JSON", 0, {}, this, undefined),
         links: TestTestLinksNotNullSelection.bind({
@@ -1526,24 +1206,15 @@ export function makeTestTestSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeTestTestSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeTestTestSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeTestTestSelectionInput>
             >,
     } as const;
 }
-export const TestTestSelection = makeSLFN(
-    makeTestTestSelectionInput,
-    "TestTestSelection",
-    "TestTest",
-    0,
-);
+export const TestTestSelection = makeSLFN(makeTestTestSelectionInput, "TestTestSelection", "TestTest", 0);
 
 type ReturnTypeFromTestTestLinksNotNullSelection = {
     entries: ReturnType<
@@ -1591,9 +1262,7 @@ type ReturnTypeFromTestTestLinksNotNullSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestLinksNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestLinksNotNullSelection {
+export function makeTestTestLinksNotNullSelectionInput(this: any): ReturnTypeFromTestTestLinksNotNullSelection {
     return {
         entries: TestTestEntriesNotNullSelection.bind({
             collector: this,
@@ -1613,9 +1282,7 @@ export function makeTestTestLinksNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestLinksNotNullSelection = makeSLFN(
@@ -1671,9 +1338,7 @@ type ReturnTypeFromTestTestEntriesNotNullSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestEntriesNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestEntriesNotNullSelection {
+export function makeTestTestEntriesNotNullSelectionInput(this: any): ReturnTypeFromTestTestEntriesNotNullSelection {
     return {
         inline: EntryArrayNotNullSelection.bind({
             collector: this,
@@ -1693,9 +1358,7 @@ export function makeTestTestEntriesNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestEntriesNotNullSelection = makeSLFN(
@@ -1738,9 +1401,7 @@ type ReturnTypeFromTestTestAssetsNotNullSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestAssetsNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestAssetsNotNullSelection {
+export function makeTestTestAssetsNotNullSelectionInput(this: any): ReturnTypeFromTestTestAssetsNotNullSelection {
     return {
         hyperlink: AssetArrayNotNullSelection.bind({
             collector: this,
@@ -1756,9 +1417,7 @@ export function makeTestTestAssetsNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestAssetsNotNullSelection = makeSLFN(
@@ -1772,9 +1431,7 @@ type ReturnTypeFromTestTestResourcesNotNullSelection = {
     block: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeTestTestResourcesBlockNotNullArrayNotNullSelectionInput
-            >,
+            ReturnType<typeof makeTestTestResourcesBlockNotNullArrayNotNullSelectionInput>,
             "TestTestResourcesBlockNotNullArrayNotNullSelection",
             "TestTestResourcesBlock",
             1,
@@ -1787,9 +1444,7 @@ type ReturnTypeFromTestTestResourcesNotNullSelection = {
     inline: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeTestTestResourcesInlineNotNullArrayNotNullSelectionInput
-            >,
+            ReturnType<typeof makeTestTestResourcesInlineNotNullArrayNotNullSelectionInput>,
             "TestTestResourcesInlineNotNullArrayNotNullSelection",
             "TestTestResourcesInline",
             1,
@@ -1802,9 +1457,7 @@ type ReturnTypeFromTestTestResourcesNotNullSelection = {
     hyperlink: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeTestTestResourcesHyperlinkNotNullArrayNotNullSelectionInput
-            >,
+            ReturnType<typeof makeTestTestResourcesHyperlinkNotNullArrayNotNullSelectionInput>,
             "TestTestResourcesHyperlinkNotNullArrayNotNullSelection",
             "TestTestResourcesHyperlink",
             1,
@@ -1820,9 +1473,7 @@ type ReturnTypeFromTestTestResourcesNotNullSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestResourcesNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestResourcesNotNullSelection {
+export function makeTestTestResourcesNotNullSelectionInput(this: any): ReturnTypeFromTestTestResourcesNotNullSelection {
     return {
         block: TestTestResourcesBlockNotNullArrayNotNullSelection.bind({
             collector: this,
@@ -1842,9 +1493,7 @@ export function makeTestTestResourcesNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesNotNullSelection = makeSLFN(
@@ -1888,9 +1537,7 @@ export function makeTestTestResourcesBlockNotNullArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesBlockNotNullArrayNotNullSelection = makeSLFN(
@@ -1908,38 +1555,23 @@ type ReturnTypeFromResourceSysNotNullSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeResourceSysNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeResourceSysNotNullSelectionInput>>;
 };
 
-export function makeResourceSysNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromResourceSysNotNullSelection {
+export function makeResourceSysNotNullSelectionInput(this: any): ReturnTypeFromResourceSysNotNullSelection {
     return {
         urn: new SelectionWrapper("urn", "String", 0, {}, this, undefined),
-        linkType: new SelectionWrapper(
-            "linkType",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        linkType: new SelectionWrapper("linkType", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeResourceSysNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeResourceSysNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeResourceSysNotNullSelectionInput>
             >,
     } as const;
@@ -1985,9 +1617,7 @@ export function makeTestTestResourcesInlineNotNullArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesInlineNotNullArrayNotNullSelection = makeSLFN(
@@ -2031,9 +1661,7 @@ export function makeTestTestResourcesHyperlinkNotNullArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesHyperlinkNotNullArrayNotNullSelection = makeSLFN(
@@ -2102,9 +1730,7 @@ type ReturnTypeFromTestSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeTestSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeTestSelectionInput>>;
 };
 
 export function makeTestSelectionInput(this: any): ReturnTypeFromTestSelection {
@@ -2135,22 +1761,15 @@ export function makeTestSelectionInput(this: any): ReturnTypeFromTestSelection {
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeTestSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeTestSelectionInput>>,
+            selectScalars(makeTestSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeTestSelectionInput>
+            >,
     } as const;
 }
-export const TestSelection = makeSLFN(
-    makeTestSelectionInput,
-    "TestSelection",
-    "Test",
-    0,
-);
+export const TestSelection = makeSLFN(makeTestSelectionInput, "TestSelection", "Test", 0);
 
 type ReturnTypeFromTestArrayNotNullSelection = {
     sys: ReturnType<
@@ -2211,14 +1830,10 @@ type ReturnTypeFromTestArrayNotNullSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeTestArrayNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeTestArrayNotNullSelectionInput>>;
 };
 
-export function makeTestArrayNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromTestArrayNotNullSelection {
+export function makeTestArrayNotNullSelectionInput(this: any): ReturnTypeFromTestArrayNotNullSelection {
     return {
         sys: SysNotNullSelection.bind({ collector: this, fieldName: "sys" }),
         contentfulMetadata: ContentfulMetadataNotNullSelection.bind({
@@ -2246,14 +1861,10 @@ export function makeTestArrayNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeTestArrayNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeTestArrayNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeTestArrayNotNullSelectionInput>
             >,
     } as const;
@@ -2287,14 +1898,10 @@ type ReturnTypeFromTestCollectionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeTestCollectionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeTestCollectionSelectionInput>>;
 };
 
-export function makeTestCollectionSelectionInput(
-    this: any,
-): ReturnTypeFromTestCollectionSelection {
+export function makeTestCollectionSelectionInput(this: any): ReturnTypeFromTestCollectionSelection {
     return {
         total: new SelectionWrapper("total", "Int", 0, {}, this, undefined),
         skip: new SelectionWrapper("skip", "Int", 0, {}, this, undefined),
@@ -2309,14 +1916,10 @@ export function makeTestCollectionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeTestCollectionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeTestCollectionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeTestCollectionSelectionInput>
             >,
     } as const;
@@ -2335,14 +1938,10 @@ type ReturnTypeFrom_NodeSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof make_NodeSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof make_NodeSelectionInput>>;
 };
 
-export function make_NodeSelectionInput(
-    this: any,
-): ReturnTypeFrom_NodeSelection {
+export function make_NodeSelectionInput(this: any): ReturnTypeFrom_NodeSelection {
     return {
         _id: new SelectionWrapper("_id", "ID", 0, {}, this, undefined),
 
@@ -2351,22 +1950,15 @@ export function make_NodeSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                make_NodeSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof make_NodeSelectionInput>>,
+            selectScalars(make_NodeSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof make_NodeSelectionInput>
+            >,
     } as const;
 }
-export const _NodeSelection = makeSLFN(
-    make_NodeSelectionInput,
-    "_NodeSelection",
-    "_Node",
-    0,
-);
+export const _NodeSelection = makeSLFN(make_NodeSelectionInput, "_NodeSelection", "_Node", 0);
 
 type ReturnTypeFromQuerySelection = {
     asset: (args: QueryAssetArgs) => ReturnType<
@@ -2453,9 +2045,7 @@ type ReturnTypeFromQuerySelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeQuerySelectionInput(
-    this: any,
-): ReturnTypeFromQuerySelection {
+export function makeQuerySelectionInput(this: any): ReturnTypeFromQuerySelection {
     return {
         asset: (args: QueryAssetArgs) =>
             AssetSelection.bind({
@@ -2505,43 +2095,18 @@ export function makeQuerySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const QuerySelection = makeSLFN(
-    makeQuerySelectionInput,
-    "QuerySelection",
-    "Query",
-    0,
-);
+export const QuerySelection = makeSLFN(makeQuerySelectionInput, "QuerySelection", "Query", 0);
 
 type ReturnTypeFromSysSelection = {
     id: SelectionWrapper<"id", "String", 0, {}, undefined>;
     spaceId: SelectionWrapper<"spaceId", "String", 0, {}, undefined>;
-    environmentId: SelectionWrapper<
-        "environmentId",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    environmentId: SelectionWrapper<"environmentId", "String", 0, {}, undefined>;
     publishedAt: SelectionWrapper<"publishedAt", "DateTime", 0, {}, undefined>;
-    firstPublishedAt: SelectionWrapper<
-        "firstPublishedAt",
-        "DateTime",
-        0,
-        {},
-        undefined
-    >;
-    publishedVersion: SelectionWrapper<
-        "publishedVersion",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    firstPublishedAt: SelectionWrapper<"firstPublishedAt", "DateTime", 0, {}, undefined>;
+    publishedVersion: SelectionWrapper<"publishedVersion", "Int", 0, {}, undefined>;
     locale: SelectionWrapper<"locale", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
@@ -2554,76 +2119,27 @@ type ReturnTypeFromSysSelection = {
 export function makeSysSelectionInput(this: any): ReturnTypeFromSysSelection {
     return {
         id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
-        spaceId: new SelectionWrapper(
-            "spaceId",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        environmentId: new SelectionWrapper(
-            "environmentId",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        publishedAt: new SelectionWrapper(
-            "publishedAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        firstPublishedAt: new SelectionWrapper(
-            "firstPublishedAt",
-            "DateTime",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        publishedVersion: new SelectionWrapper(
-            "publishedVersion",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        locale: new SelectionWrapper(
-            "locale",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        spaceId: new SelectionWrapper("spaceId", "String", 0, {}, this, undefined),
+        environmentId: new SelectionWrapper("environmentId", "String", 0, {}, this, undefined),
+        publishedAt: new SelectionWrapper("publishedAt", "DateTime", 0, {}, this, undefined),
+        firstPublishedAt: new SelectionWrapper("firstPublishedAt", "DateTime", 0, {}, this, undefined),
+        publishedVersion: new SelectionWrapper("publishedVersion", "Int", 0, {}, this, undefined),
+        locale: new SelectionWrapper("locale", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeSysSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeSysSelectionInput>>,
+            selectScalars(makeSysSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeSysSelectionInput>
+            >,
     } as const;
 }
-export const SysSelection = makeSLFN(
-    makeSysSelectionInput,
-    "SysSelection",
-    "Sys",
-    0,
-);
+export const SysSelection = makeSLFN(makeSysSelectionInput, "SysSelection", "Sys", 0);
 
 type ReturnTypeFromContentfulMetadataSelection = {
     tags: ReturnType<
@@ -2645,9 +2161,7 @@ type ReturnTypeFromContentfulMetadataSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeContentfulMetadataSelectionInput(
-    this: any,
-): ReturnTypeFromContentfulMetadataSelection {
+export function makeContentfulMetadataSelectionInput(this: any): ReturnTypeFromContentfulMetadataSelection {
     return {
         tags: ContentfulTagArrayNotNullSelection.bind({
             collector: this,
@@ -2659,9 +2173,7 @@ export function makeContentfulMetadataSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const ContentfulMetadataSelection = makeSLFN(
@@ -2679,14 +2191,10 @@ type ReturnTypeFromContentfulTagSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeContentfulTagSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeContentfulTagSelectionInput>>;
 };
 
-export function makeContentfulTagSelectionInput(
-    this: any,
-): ReturnTypeFromContentfulTagSelection {
+export function makeContentfulTagSelectionInput(this: any): ReturnTypeFromContentfulTagSelection {
     return {
         id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
@@ -2696,14 +2204,10 @@ export function makeContentfulTagSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeContentfulTagSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeContentfulTagSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeContentfulTagSelectionInput>
             >,
     } as const;
@@ -2748,9 +2252,7 @@ type ReturnTypeFromEntrySelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeEntrySelectionInput(
-    this: any,
-): ReturnTypeFromEntrySelection {
+export function makeEntrySelectionInput(this: any): ReturnTypeFromEntrySelection {
     return {
         sys: SysNotNullSelection.bind({ collector: this, fieldName: "sys" }),
         contentfulMetadata: ContentfulMetadataNotNullSelection.bind({
@@ -2763,17 +2265,10 @@ export function makeEntrySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const EntrySelection = makeSLFN(
-    makeEntrySelectionInput,
-    "EntrySelection",
-    "Entry",
-    0,
-);
+export const EntrySelection = makeSLFN(makeEntrySelectionInput, "EntrySelection", "Entry", 0);
 
 type ReturnTypeFromTestTestLinksSelection = {
     entries: ReturnType<
@@ -2821,9 +2316,7 @@ type ReturnTypeFromTestTestLinksSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestLinksSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestLinksSelection {
+export function makeTestTestLinksSelectionInput(this: any): ReturnTypeFromTestTestLinksSelection {
     return {
         entries: TestTestEntriesNotNullSelection.bind({
             collector: this,
@@ -2843,9 +2336,7 @@ export function makeTestTestLinksSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestLinksSelection = makeSLFN(
@@ -2901,9 +2392,7 @@ type ReturnTypeFromTestTestEntriesSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestEntriesSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestEntriesSelection {
+export function makeTestTestEntriesSelectionInput(this: any): ReturnTypeFromTestTestEntriesSelection {
     return {
         inline: EntryArrayNotNullSelection.bind({
             collector: this,
@@ -2923,9 +2412,7 @@ export function makeTestTestEntriesSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestEntriesSelection = makeSLFN(
@@ -2968,9 +2455,7 @@ type ReturnTypeFromTestTestAssetsSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestAssetsSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestAssetsSelection {
+export function makeTestTestAssetsSelectionInput(this: any): ReturnTypeFromTestTestAssetsSelection {
     return {
         hyperlink: AssetArrayNotNullSelection.bind({
             collector: this,
@@ -2986,9 +2471,7 @@ export function makeTestTestAssetsSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestAssetsSelection = makeSLFN(
@@ -3002,9 +2485,7 @@ type ReturnTypeFromTestTestResourcesSelection = {
     block: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeTestTestResourcesBlockNotNullArrayNotNullSelectionInput
-            >,
+            ReturnType<typeof makeTestTestResourcesBlockNotNullArrayNotNullSelectionInput>,
             "TestTestResourcesBlockNotNullArrayNotNullSelection",
             "TestTestResourcesBlock",
             1,
@@ -3017,9 +2498,7 @@ type ReturnTypeFromTestTestResourcesSelection = {
     inline: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeTestTestResourcesInlineNotNullArrayNotNullSelectionInput
-            >,
+            ReturnType<typeof makeTestTestResourcesInlineNotNullArrayNotNullSelectionInput>,
             "TestTestResourcesInlineNotNullArrayNotNullSelection",
             "TestTestResourcesInline",
             1,
@@ -3032,9 +2511,7 @@ type ReturnTypeFromTestTestResourcesSelection = {
     hyperlink: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeTestTestResourcesHyperlinkNotNullArrayNotNullSelectionInput
-            >,
+            ReturnType<typeof makeTestTestResourcesHyperlinkNotNullArrayNotNullSelectionInput>,
             "TestTestResourcesHyperlinkNotNullArrayNotNullSelection",
             "TestTestResourcesHyperlink",
             1,
@@ -3050,9 +2527,7 @@ type ReturnTypeFromTestTestResourcesSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestResourcesSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestResourcesSelection {
+export function makeTestTestResourcesSelectionInput(this: any): ReturnTypeFromTestTestResourcesSelection {
     return {
         block: TestTestResourcesBlockNotNullArrayNotNullSelection.bind({
             collector: this,
@@ -3072,9 +2547,7 @@ export function makeTestTestResourcesSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesSelection = makeSLFN(
@@ -3104,9 +2577,7 @@ type ReturnTypeFromTestTestResourcesBlockSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestResourcesBlockSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestResourcesBlockSelection {
+export function makeTestTestResourcesBlockSelectionInput(this: any): ReturnTypeFromTestTestResourcesBlockSelection {
     return {
         sys: ResourceSysNotNullSelection.bind({
             collector: this,
@@ -3118,9 +2589,7 @@ export function makeTestTestResourcesBlockSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesBlockSelection = makeSLFN(
@@ -3150,9 +2619,7 @@ type ReturnTypeFromResourceLinkSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeResourceLinkSelectionInput(
-    this: any,
-): ReturnTypeFromResourceLinkSelection {
+export function makeResourceLinkSelectionInput(this: any): ReturnTypeFromResourceLinkSelection {
     return {
         sys: ResourceSysNotNullSelection.bind({
             collector: this,
@@ -3164,9 +2631,7 @@ export function makeResourceLinkSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const ResourceLinkSelection = makeSLFN(
@@ -3184,48 +2649,28 @@ type ReturnTypeFromResourceSysSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeResourceSysSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeResourceSysSelectionInput>>;
 };
 
-export function makeResourceSysSelectionInput(
-    this: any,
-): ReturnTypeFromResourceSysSelection {
+export function makeResourceSysSelectionInput(this: any): ReturnTypeFromResourceSysSelection {
     return {
         urn: new SelectionWrapper("urn", "String", 0, {}, this, undefined),
-        linkType: new SelectionWrapper(
-            "linkType",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        linkType: new SelectionWrapper("linkType", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeResourceSysSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeResourceSysSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeResourceSysSelectionInput>
             >,
     } as const;
 }
-export const ResourceSysSelection = makeSLFN(
-    makeResourceSysSelectionInput,
-    "ResourceSysSelection",
-    "ResourceSys",
-    0,
-);
+export const ResourceSysSelection = makeSLFN(makeResourceSysSelectionInput, "ResourceSysSelection", "ResourceSys", 0);
 
 type ReturnTypeFromTestTestResourcesInlineSelection = {
     sys: ReturnType<
@@ -3247,9 +2692,7 @@ type ReturnTypeFromTestTestResourcesInlineSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeTestTestResourcesInlineSelectionInput(
-    this: any,
-): ReturnTypeFromTestTestResourcesInlineSelection {
+export function makeTestTestResourcesInlineSelectionInput(this: any): ReturnTypeFromTestTestResourcesInlineSelection {
     return {
         sys: ResourceSysNotNullSelection.bind({
             collector: this,
@@ -3261,9 +2704,7 @@ export function makeTestTestResourcesInlineSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesInlineSelection = makeSLFN(
@@ -3307,9 +2748,7 @@ export function makeTestTestResourcesHyperlinkSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const TestTestResourcesHyperlinkSelection = makeSLFN(
@@ -3357,26 +2796,15 @@ type __AuthenticationArg__ =
     | { [key: string]: string }
     | (() => string | { [key: string]: string })
     | (() => Promise<string | { [key: string]: string }>);
-function __client__<
-    T extends object,
-    F extends ReturnType<typeof _makeRootOperationInput>,
->(this: any, s: (selection: F) => T) {
-    const root = new OperationSelectionCollector(
-        undefined,
-        undefined,
-        new RootOperation(),
-    );
+function __client__<T extends object, F extends ReturnType<typeof _makeRootOperationInput>>(
+    this: any,
+    s: (selection: F) => T,
+) {
+    const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
     const rootRef = { ref: root };
     const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
     const r = s(selection);
-    const _result = new SelectionWrapper(
-        undefined,
-        undefined,
-        undefined,
-        r,
-        root,
-        undefined,
-    ) as unknown as T;
+    const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
     Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
     const result = _result as {
         [k in keyof T]: T[k] extends (...args: infer A) => any
@@ -3399,8 +2827,7 @@ function __client__<
                 const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
                 if (tokenOrPromise instanceof Promise) {
                     tokenOrPromise.then((t) => {
-                        if (typeof t === "string")
-                            headers = { Authorization: t };
+                        if (typeof t === "string") headers = { Authorization: t };
                         else headers = t;
 
                         doExecute();
@@ -3430,8 +2857,7 @@ function __client__<
                     const tokenOrPromise = auth();
                     if (tokenOrPromise instanceof Promise) {
                         return tokenOrPromise.then((t) => {
-                            if (typeof t === "string")
-                                headers = { Authorization: t };
+                            if (typeof t === "string") headers = { Authorization: t };
                             else headers = t;
 
                             return finalPromise as Promise<TR>;
@@ -3460,13 +2886,9 @@ const __init__ = (options: {
     auth?: __AuthenticationArg__;
     headers?: { [key: string]: string };
     scalars?: {
-        [key in keyof ScalarTypeMapDefault]?: (
-            v: string,
-        ) => ScalarTypeMapDefault[key];
+        [key in keyof ScalarTypeMapDefault]?: (v: string) => ScalarTypeMapDefault[key];
     } & {
-        [key in keyof ScalarTypeMapWithCustom]?: (
-            v: string,
-        ) => ScalarTypeMapWithCustom[key];
+        [key in keyof ScalarTypeMapWithCustom]?: (v: string) => ScalarTypeMapWithCustom[key];
     };
 }) => {
     if (typeof options.auth === "string") {

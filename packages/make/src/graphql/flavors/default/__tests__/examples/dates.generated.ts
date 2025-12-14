@@ -31,74 +31,36 @@ type ReturnTypeFromQuerySelection = {
     date: SelectionWrapper<"date", "DateTime", 0, {}, undefined>;
     dates: SelectionWrapper<"dates", "DateTime", 1, {}, undefined>;
     nestedDates: SelectionWrapper<"nestedDates", "DateTime", 2, {}, undefined>;
-    nestedDates2: SelectionWrapper<
-        "nestedDates2",
-        "DateTime",
-        3,
-        {},
-        undefined
-    >;
+    nestedDates2: SelectionWrapper<"nestedDates2", "DateTime", 3, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeQuerySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeQuerySelectionInput>>;
 };
 
-export function makeQuerySelectionInput(
-    this: any,
-): ReturnTypeFromQuerySelection {
+export function makeQuerySelectionInput(this: any): ReturnTypeFromQuerySelection {
     return {
         date: new SelectionWrapper("date", "DateTime", 0, {}, this, undefined),
-        dates: new SelectionWrapper(
-            "dates",
-            "DateTime",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        nestedDates: new SelectionWrapper(
-            "nestedDates",
-            "DateTime",
-            2,
-            {},
-            this,
-            undefined,
-        ),
-        nestedDates2: new SelectionWrapper(
-            "nestedDates2",
-            "DateTime",
-            3,
-            {},
-            this,
-            undefined,
-        ),
+        dates: new SelectionWrapper("dates", "DateTime", 1, {}, this, undefined),
+        nestedDates: new SelectionWrapper("nestedDates", "DateTime", 2, {}, this, undefined),
+        nestedDates2: new SelectionWrapper("nestedDates2", "DateTime", 3, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeQuerySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeQuerySelectionInput>>,
+            selectScalars(makeQuerySelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeQuerySelectionInput>
+            >,
     } as const;
 }
-export const QuerySelection = makeSLFN(
-    makeQuerySelectionInput,
-    "QuerySelection",
-    "Query",
-    0,
-);
+export const QuerySelection = makeSLFN(makeQuerySelectionInput, "QuerySelection", "Query", 0);
 
 export const _directive_include =
     (args: Directive_includeArgs) =>
@@ -136,13 +98,9 @@ export function _makeRootOperationInput(this: any) {
 export const init = (options: {
     headers?: { [key: string]: string };
     scalars?: {
-        [key in keyof ScalarTypeMapDefault]?: (
-            v: string,
-        ) => ScalarTypeMapDefault[key];
+        [key in keyof ScalarTypeMapDefault]?: (v: string) => ScalarTypeMapDefault[key];
     } & {
-        [key in keyof ScalarTypeMapWithCustom]?: (
-            v: string,
-        ) => ScalarTypeMapWithCustom[key];
+        [key in keyof ScalarTypeMapWithCustom]?: (v: string) => ScalarTypeMapWithCustom[key];
     };
 }) => {
     if (options.headers) {

@@ -25,13 +25,7 @@ import type {
     ScalarTypeMapWithCustom,
 } from "../utils/types";
 
-export type users_select_column =
-    | "column"
-    | "name"
-    | "id"
-    | "rocket"
-    | "timestamp"
-    | "twitter";
+export type users_select_column = "column" | "name" | "id" | "rocket" | "timestamp" | "twitter";
 export enum users_select_columnEnum {
     column = "column",
     name = "name",
@@ -41,13 +35,7 @@ export enum users_select_columnEnum {
     twitter = "twitter",
 }
 
-export type order_by =
-    | "asc"
-    | "asc_nulls_first"
-    | "asc_nulls_last"
-    | "desc"
-    | "desc_nulls_first"
-    | "desc_nulls_last";
+export type order_by = "asc" | "asc_nulls_first" | "asc_nulls_last" | "desc" | "desc_nulls_first" | "desc_nulls_last";
 export enum order_byEnum {
     /** in the ascending order, nulls last */
     asc = "asc",
@@ -63,13 +51,7 @@ export enum order_byEnum {
     desc_nulls_last = "desc_nulls_last",
 }
 
-export type users_constraint =
-    | "unique"
-    | "or"
-    | "primary"
-    | "key"
-    | "constraint"
-    | "users_pkey";
+export type users_constraint = "unique" | "or" | "primary" | "key" | "constraint" | "users_pkey";
 export enum users_constraintEnum {
     unique = "unique",
     or = "or",
@@ -79,13 +61,7 @@ export enum users_constraintEnum {
     users_pkey = "users_pkey",
 }
 
-export type users_update_column =
-    | "column"
-    | "name"
-    | "id"
-    | "rocket"
-    | "timestamp"
-    | "twitter";
+export type users_update_column = "column" | "name" | "id" | "rocket" | "timestamp" | "twitter";
 export enum users_update_columnEnum {
     column = "column",
     name = "name",
@@ -830,13 +806,7 @@ type ReturnTypeFromDragonSelection = {
         >
     >;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    orbit_duration_yr: SelectionWrapper<
-        "orbit_duration_yr",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    orbit_duration_yr: SelectionWrapper<"orbit_duration_yr", "Int", 0, {}, undefined>;
     pressurized_capsule: ReturnType<
         SLFN<
             {},
@@ -876,13 +846,7 @@ type ReturnTypeFromDragonSelection = {
             "$lazy"
         >
     >;
-    sidewall_angle_deg: SelectionWrapper<
-        "sidewall_angle_deg",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    sidewall_angle_deg: SelectionWrapper<"sidewall_angle_deg", "Float", 0, {}, undefined>;
     thrusters: ReturnType<
         SLFN<
             {},
@@ -916,67 +880,21 @@ type ReturnTypeFromDragonSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDragonSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDragonSelectionInput>>;
 };
 
-export function makeDragonSelectionInput(
-    this: any,
-): ReturnTypeFromDragonSelection {
+export function makeDragonSelectionInput(this: any): ReturnTypeFromDragonSelection {
     return {
-        active: new SelectionWrapper(
-            "active",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        crew_capacity: new SelectionWrapper(
-            "crew_capacity",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        description: new SelectionWrapper(
-            "description",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        active: new SelectionWrapper("active", "Boolean", 0, {}, this, undefined),
+        crew_capacity: new SelectionWrapper("crew_capacity", "Int", 0, {}, this, undefined),
+        description: new SelectionWrapper("description", "String", 0, {}, this, undefined),
         diameter: DistanceSelection.bind({
             collector: this,
             fieldName: "diameter",
         }),
-        dry_mass_kg: new SelectionWrapper(
-            "dry_mass_kg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        dry_mass_lb: new SelectionWrapper(
-            "dry_mass_lb",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        first_flight: new SelectionWrapper(
-            "first_flight",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        dry_mass_kg: new SelectionWrapper("dry_mass_kg", "Int", 0, {}, this, undefined),
+        dry_mass_lb: new SelectionWrapper("dry_mass_lb", "Int", 0, {}, this, undefined),
+        first_flight: new SelectionWrapper("first_flight", "String", 0, {}, this, undefined),
         heat_shield: DragonHeatShieldSelection.bind({
             collector: this,
             fieldName: "heat_shield",
@@ -995,14 +913,7 @@ export function makeDragonSelectionInput(
             fieldName: "launch_payload_vol",
         }),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        orbit_duration_yr: new SelectionWrapper(
-            "orbit_duration_yr",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        orbit_duration_yr: new SelectionWrapper("orbit_duration_yr", "Int", 0, {}, this, undefined),
         pressurized_capsule: DragonPressurizedCapsuleSelection.bind({
             collector: this,
             fieldName: "pressurized_capsule",
@@ -1015,14 +926,7 @@ export function makeDragonSelectionInput(
             collector: this,
             fieldName: "return_payload_vol",
         }),
-        sidewall_angle_deg: new SelectionWrapper(
-            "sidewall_angle_deg",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        sidewall_angle_deg: new SelectionWrapper("sidewall_angle_deg", "Float", 0, {}, this, undefined),
         thrusters: DragonThrustArraySelection.bind({
             collector: this,
             fieldName: "thrusters",
@@ -1032,36 +936,22 @@ export function makeDragonSelectionInput(
             fieldName: "trunk",
         }),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDragonSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeDragonSelectionInput>>,
+            selectScalars(makeDragonSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeDragonSelectionInput>
+            >,
     } as const;
 }
-export const DragonSelection = makeSLFN(
-    makeDragonSelectionInput,
-    "DragonSelection",
-    "Dragon",
-    0,
-);
+export const DragonSelection = makeSLFN(makeDragonSelectionInput, "DragonSelection", "Dragon", 0);
 
 type ReturnTypeFromDistanceSelection = {
     feet: SelectionWrapper<"feet", "Float", 0, {}, undefined>;
@@ -1071,14 +961,10 @@ type ReturnTypeFromDistanceSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDistanceSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDistanceSelectionInput>>;
 };
 
-export function makeDistanceSelectionInput(
-    this: any,
-): ReturnTypeFromDistanceSelection {
+export function makeDistanceSelectionInput(this: any): ReturnTypeFromDistanceSelection {
     return {
         feet: new SelectionWrapper("feet", "Float", 0, {}, this, undefined),
         meters: new SelectionWrapper("meters", "Float", 0, {}, this, undefined),
@@ -1088,24 +974,15 @@ export function makeDistanceSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDistanceSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeDistanceSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeDistanceSelectionInput>
             >,
     } as const;
 }
-export const DistanceSelection = makeSLFN(
-    makeDistanceSelectionInput,
-    "DistanceSelection",
-    "Distance",
-    0,
-);
+export const DistanceSelection = makeSLFN(makeDistanceSelectionInput, "DistanceSelection", "Distance", 0);
 
 type ReturnTypeFromDragonHeatShieldSelection = {
     dev_partner: SelectionWrapper<"dev_partner", "String", 0, {}, undefined>;
@@ -1117,61 +994,25 @@ type ReturnTypeFromDragonHeatShieldSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDragonHeatShieldSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDragonHeatShieldSelectionInput>>;
 };
 
-export function makeDragonHeatShieldSelectionInput(
-    this: any,
-): ReturnTypeFromDragonHeatShieldSelection {
+export function makeDragonHeatShieldSelectionInput(this: any): ReturnTypeFromDragonHeatShieldSelection {
     return {
-        dev_partner: new SelectionWrapper(
-            "dev_partner",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        material: new SelectionWrapper(
-            "material",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        size_meters: new SelectionWrapper(
-            "size_meters",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        temp_degrees: new SelectionWrapper(
-            "temp_degrees",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        dev_partner: new SelectionWrapper("dev_partner", "String", 0, {}, this, undefined),
+        material: new SelectionWrapper("material", "String", 0, {}, this, undefined),
+        size_meters: new SelectionWrapper("size_meters", "Float", 0, {}, this, undefined),
+        temp_degrees: new SelectionWrapper("temp_degrees", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDragonHeatShieldSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeDragonHeatShieldSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeDragonHeatShieldSelectionInput>
             >,
     } as const;
@@ -1191,9 +1032,7 @@ type ReturnTypeFromMassSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeMassSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeMassSelectionInput>>;
 };
 
 export function makeMassSelectionInput(this: any): ReturnTypeFromMassSelection {
@@ -1206,22 +1045,15 @@ export function makeMassSelectionInput(this: any): ReturnTypeFromMassSelection {
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeMassSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeMassSelectionInput>>,
+            selectScalars(makeMassSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeMassSelectionInput>
+            >,
     } as const;
 }
-export const MassSelection = makeSLFN(
-    makeMassSelectionInput,
-    "MassSelection",
-    "Mass",
-    0,
-);
+export const MassSelection = makeSLFN(makeMassSelectionInput, "MassSelection", "Mass", 0);
 
 type ReturnTypeFromVolumeSelection = {
     cubic_feet: SelectionWrapper<"cubic_feet", "Int", 0, {}, undefined>;
@@ -1231,53 +1063,28 @@ type ReturnTypeFromVolumeSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeVolumeSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeVolumeSelectionInput>>;
 };
 
-export function makeVolumeSelectionInput(
-    this: any,
-): ReturnTypeFromVolumeSelection {
+export function makeVolumeSelectionInput(this: any): ReturnTypeFromVolumeSelection {
     return {
-        cubic_feet: new SelectionWrapper(
-            "cubic_feet",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        cubic_meters: new SelectionWrapper(
-            "cubic_meters",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        cubic_feet: new SelectionWrapper("cubic_feet", "Int", 0, {}, this, undefined),
+        cubic_meters: new SelectionWrapper("cubic_meters", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeVolumeSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeVolumeSelectionInput>>,
+            selectScalars(makeVolumeSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeVolumeSelectionInput>
+            >,
     } as const;
 }
-export const VolumeSelection = makeSLFN(
-    makeVolumeSelectionInput,
-    "VolumeSelection",
-    "Volume",
-    0,
-);
+export const VolumeSelection = makeSLFN(makeVolumeSelectionInput, "VolumeSelection", "Volume", 0);
 
 type ReturnTypeFromDragonPressurizedCapsuleSelection = {
     payload_volume: ReturnType<
@@ -1299,9 +1106,7 @@ type ReturnTypeFromDragonPressurizedCapsuleSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeDragonPressurizedCapsuleSelectionInput(
-    this: any,
-): ReturnTypeFromDragonPressurizedCapsuleSelection {
+export function makeDragonPressurizedCapsuleSelectionInput(this: any): ReturnTypeFromDragonPressurizedCapsuleSelection {
     return {
         payload_volume: VolumeSelection.bind({
             collector: this,
@@ -1313,9 +1118,7 @@ export function makeDragonPressurizedCapsuleSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const DragonPressurizedCapsuleSelection = makeSLFN(
@@ -1349,32 +1152,14 @@ type ReturnTypeFromDragonThrustArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDragonThrustArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDragonThrustArraySelectionInput>>;
 };
 
-export function makeDragonThrustArraySelectionInput(
-    this: any,
-): ReturnTypeFromDragonThrustArraySelection {
+export function makeDragonThrustArraySelectionInput(this: any): ReturnTypeFromDragonThrustArraySelection {
     return {
         amount: new SelectionWrapper("amount", "Int", 0, {}, this, undefined),
-        fuel_1: new SelectionWrapper(
-            "fuel_1",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        fuel_2: new SelectionWrapper(
-            "fuel_2",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        fuel_1: new SelectionWrapper("fuel_1", "String", 0, {}, this, undefined),
+        fuel_2: new SelectionWrapper("fuel_2", "String", 0, {}, this, undefined),
         pods: new SelectionWrapper("pods", "Int", 0, {}, this, undefined),
         thrust: ForceSelection.bind({ collector: this, fieldName: "thrust" }),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
@@ -1384,14 +1169,10 @@ export function makeDragonThrustArraySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDragonThrustArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeDragonThrustArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeDragonThrustArraySelectionInput>
             >,
     } as const;
@@ -1411,14 +1192,10 @@ type ReturnTypeFromForceSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeForceSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeForceSelectionInput>>;
 };
 
-export function makeForceSelectionInput(
-    this: any,
-): ReturnTypeFromForceSelection {
+export function makeForceSelectionInput(this: any): ReturnTypeFromForceSelection {
     return {
         kN: new SelectionWrapper("kN", "Float", 0, {}, this, undefined),
         lbf: new SelectionWrapper("lbf", "Float", 0, {}, this, undefined),
@@ -1428,22 +1205,15 @@ export function makeForceSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeForceSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeForceSelectionInput>>,
+            selectScalars(makeForceSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeForceSelectionInput>
+            >,
     } as const;
 }
-export const ForceSelection = makeSLFN(
-    makeForceSelectionInput,
-    "ForceSelection",
-    "Force",
-    0,
-);
+export const ForceSelection = makeSLFN(makeForceSelectionInput, "ForceSelection", "Force", 0);
 
 type ReturnTypeFromDragonTrunkSelection = {
     cargo: ReturnType<
@@ -1478,9 +1248,7 @@ type ReturnTypeFromDragonTrunkSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeDragonTrunkSelectionInput(
-    this: any,
-): ReturnTypeFromDragonTrunkSelection {
+export function makeDragonTrunkSelectionInput(this: any): ReturnTypeFromDragonTrunkSelection {
     return {
         cargo: DragonTrunkCargoSelection.bind({
             collector: this,
@@ -1496,71 +1264,36 @@ export function makeDragonTrunkSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const DragonTrunkSelection = makeSLFN(
-    makeDragonTrunkSelectionInput,
-    "DragonTrunkSelection",
-    "DragonTrunk",
-    0,
-);
+export const DragonTrunkSelection = makeSLFN(makeDragonTrunkSelectionInput, "DragonTrunkSelection", "DragonTrunk", 0);
 
 type ReturnTypeFromDragonTrunkCargoSelection = {
     solar_array: SelectionWrapper<"solar_array", "Int", 0, {}, undefined>;
-    unpressurized_cargo: SelectionWrapper<
-        "unpressurized_cargo",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    unpressurized_cargo: SelectionWrapper<"unpressurized_cargo", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDragonTrunkCargoSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDragonTrunkCargoSelectionInput>>;
 };
 
-export function makeDragonTrunkCargoSelectionInput(
-    this: any,
-): ReturnTypeFromDragonTrunkCargoSelection {
+export function makeDragonTrunkCargoSelectionInput(this: any): ReturnTypeFromDragonTrunkCargoSelection {
     return {
-        solar_array: new SelectionWrapper(
-            "solar_array",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        unpressurized_cargo: new SelectionWrapper(
-            "unpressurized_cargo",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        solar_array: new SelectionWrapper("solar_array", "Int", 0, {}, this, undefined),
+        unpressurized_cargo: new SelectionWrapper("unpressurized_cargo", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDragonTrunkCargoSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeDragonTrunkCargoSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeDragonTrunkCargoSelectionInput>
             >,
     } as const;
@@ -1580,14 +1313,10 @@ type ReturnTypeFromCapsuleMissionArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCapsuleMissionArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCapsuleMissionArraySelectionInput>>;
 };
 
-export function makeCapsuleMissionArraySelectionInput(
-    this: any,
-): ReturnTypeFromCapsuleMissionArraySelection {
+export function makeCapsuleMissionArraySelectionInput(this: any): ReturnTypeFromCapsuleMissionArraySelection {
     return {
         flight: new SelectionWrapper("flight", "Int", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
@@ -1597,14 +1326,10 @@ export function makeCapsuleMissionArraySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCapsuleMissionArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeCapsuleMissionArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeCapsuleMissionArraySelectionInput>
             >,
     } as const;
@@ -1645,13 +1370,7 @@ type ReturnTypeFromCapsuleSelection = {
             "$lazy"
         >
     >;
-    original_launch: SelectionWrapper<
-        "original_launch",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    original_launch: SelectionWrapper<"original_launch", "Date", 0, {}, undefined>;
     reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
     type: SelectionWrapper<"type", "String", 0, {}, undefined>;
@@ -1660,53 +1379,21 @@ type ReturnTypeFromCapsuleSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCapsuleSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCapsuleSelectionInput>>;
 };
 
-export function makeCapsuleSelectionInput(
-    this: any,
-): ReturnTypeFromCapsuleSelection {
+export function makeCapsuleSelectionInput(this: any): ReturnTypeFromCapsuleSelection {
     return {
         dragon: DragonSelection.bind({ collector: this, fieldName: "dragon" }),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        landings: new SelectionWrapper(
-            "landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        landings: new SelectionWrapper("landings", "Int", 0, {}, this, undefined),
         missions: CapsuleMissionArraySelection.bind({
             collector: this,
             fieldName: "missions",
         }),
-        original_launch: new SelectionWrapper(
-            "original_launch",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reuse_count: new SelectionWrapper(
-            "reuse_count",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        original_launch: new SelectionWrapper("original_launch", "Date", 0, {}, this, undefined),
+        reuse_count: new SelectionWrapper("reuse_count", "Int", 0, {}, this, undefined),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -1714,24 +1401,15 @@ export function makeCapsuleSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCapsuleSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeCapsuleSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeCapsuleSelectionInput>
             >,
     } as const;
 }
-export const CapsuleSelection = makeSLFN(
-    makeCapsuleSelectionInput,
-    "CapsuleSelection",
-    "Capsule",
-    0,
-);
+export const CapsuleSelection = makeSLFN(makeCapsuleSelectionInput, "CapsuleSelection", "Capsule", 0);
 
 type ReturnTypeFromCapsuleArraySelection = {
     dragon: ReturnType<
@@ -1762,13 +1440,7 @@ type ReturnTypeFromCapsuleArraySelection = {
             "$lazy"
         >
     >;
-    original_launch: SelectionWrapper<
-        "original_launch",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    original_launch: SelectionWrapper<"original_launch", "Date", 0, {}, undefined>;
     reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
     type: SelectionWrapper<"type", "String", 0, {}, undefined>;
@@ -1777,53 +1449,21 @@ type ReturnTypeFromCapsuleArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCapsuleArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCapsuleArraySelectionInput>>;
 };
 
-export function makeCapsuleArraySelectionInput(
-    this: any,
-): ReturnTypeFromCapsuleArraySelection {
+export function makeCapsuleArraySelectionInput(this: any): ReturnTypeFromCapsuleArraySelection {
     return {
         dragon: DragonSelection.bind({ collector: this, fieldName: "dragon" }),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        landings: new SelectionWrapper(
-            "landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        landings: new SelectionWrapper("landings", "Int", 0, {}, this, undefined),
         missions: CapsuleMissionArraySelection.bind({
             collector: this,
             fieldName: "missions",
         }),
-        original_launch: new SelectionWrapper(
-            "original_launch",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reuse_count: new SelectionWrapper(
-            "reuse_count",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        original_launch: new SelectionWrapper("original_launch", "Date", 0, {}, this, undefined),
+        reuse_count: new SelectionWrapper("reuse_count", "Int", 0, {}, this, undefined),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -1831,24 +1471,15 @@ export function makeCapsuleArraySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCapsuleArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeCapsuleArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeCapsuleArraySelectionInput>
             >,
     } as const;
 }
-export const CapsuleArraySelection = makeSLFN(
-    makeCapsuleArraySelectionInput,
-    "CapsuleArraySelection",
-    "Capsule",
-    1,
-);
+export const CapsuleArraySelection = makeSLFN(makeCapsuleArraySelectionInput, "CapsuleArraySelection", "Capsule", 1);
 
 type ReturnTypeFromAddressSelection = {
     address: SelectionWrapper<"address", "String", 0, {}, undefined>;
@@ -1859,23 +1490,12 @@ type ReturnTypeFromAddressSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeAddressSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeAddressSelectionInput>>;
 };
 
-export function makeAddressSelectionInput(
-    this: any,
-): ReturnTypeFromAddressSelection {
+export function makeAddressSelectionInput(this: any): ReturnTypeFromAddressSelection {
     return {
-        address: new SelectionWrapper(
-            "address",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        address: new SelectionWrapper("address", "String", 0, {}, this, undefined),
         city: new SelectionWrapper("city", "String", 0, {}, this, undefined),
         state: new SelectionWrapper("state", "String", 0, {}, this, undefined),
 
@@ -1884,24 +1504,15 @@ export function makeAddressSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeAddressSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeAddressSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeAddressSelectionInput>
             >,
     } as const;
 }
-export const AddressSelection = makeSLFN(
-    makeAddressSelectionInput,
-    "AddressSelection",
-    "Address",
-    0,
-);
+export const AddressSelection = makeSLFN(makeAddressSelectionInput, "AddressSelection", "Address", 0);
 
 type ReturnTypeFromInfoLinksSelection = {
     elon_twitter: SelectionWrapper<"elon_twitter", "String", 0, {}, undefined>;
@@ -1913,83 +1524,36 @@ type ReturnTypeFromInfoLinksSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeInfoLinksSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeInfoLinksSelectionInput>>;
 };
 
-export function makeInfoLinksSelectionInput(
-    this: any,
-): ReturnTypeFromInfoLinksSelection {
+export function makeInfoLinksSelectionInput(this: any): ReturnTypeFromInfoLinksSelection {
     return {
-        elon_twitter: new SelectionWrapper(
-            "elon_twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        flickr: new SelectionWrapper(
-            "flickr",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        website: new SelectionWrapper(
-            "website",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        elon_twitter: new SelectionWrapper("elon_twitter", "String", 0, {}, this, undefined),
+        flickr: new SelectionWrapper("flickr", "String", 0, {}, this, undefined),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
+        website: new SelectionWrapper("website", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeInfoLinksSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeInfoLinksSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeInfoLinksSelectionInput>
             >,
     } as const;
 }
-export const InfoLinksSelection = makeSLFN(
-    makeInfoLinksSelectionInput,
-    "InfoLinksSelection",
-    "InfoLinks",
-    0,
-);
+export const InfoLinksSelection = makeSLFN(makeInfoLinksSelectionInput, "InfoLinksSelection", "InfoLinks", 0);
 
 type ReturnTypeFromInfoSelection = {
     ceo: SelectionWrapper<"ceo", "String", 0, {}, undefined>;
     coo: SelectionWrapper<"coo", "String", 0, {}, undefined>;
     cto: SelectionWrapper<"cto", "String", 0, {}, undefined>;
-    cto_propulsion: SelectionWrapper<
-        "cto_propulsion",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    cto_propulsion: SelectionWrapper<"cto_propulsion", "String", 0, {}, undefined>;
     employees: SelectionWrapper<"employees", "Int", 0, {}, undefined>;
     founded: SelectionWrapper<"founded", "Int", 0, {}, undefined>;
     founder: SelectionWrapper<"founder", "String", 0, {}, undefined>;
@@ -2030,9 +1594,7 @@ type ReturnTypeFromInfoSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeInfoSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeInfoSelectionInput>>;
 };
 
 export function makeInfoSelectionInput(this: any): ReturnTypeFromInfoSelection {
@@ -2040,99 +1602,36 @@ export function makeInfoSelectionInput(this: any): ReturnTypeFromInfoSelection {
         ceo: new SelectionWrapper("ceo", "String", 0, {}, this, undefined),
         coo: new SelectionWrapper("coo", "String", 0, {}, this, undefined),
         cto: new SelectionWrapper("cto", "String", 0, {}, this, undefined),
-        cto_propulsion: new SelectionWrapper(
-            "cto_propulsion",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        employees: new SelectionWrapper(
-            "employees",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        cto_propulsion: new SelectionWrapper("cto_propulsion", "String", 0, {}, this, undefined),
+        employees: new SelectionWrapper("employees", "Int", 0, {}, this, undefined),
         founded: new SelectionWrapper("founded", "Int", 0, {}, this, undefined),
-        founder: new SelectionWrapper(
-            "founder",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        founder: new SelectionWrapper("founder", "String", 0, {}, this, undefined),
         headquarters: AddressSelection.bind({
             collector: this,
             fieldName: "headquarters",
         }),
-        launch_sites: new SelectionWrapper(
-            "launch_sites",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        launch_sites: new SelectionWrapper("launch_sites", "Int", 0, {}, this, undefined),
         links: InfoLinksSelection.bind({ collector: this, fieldName: "links" }),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        summary: new SelectionWrapper(
-            "summary",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        test_sites: new SelectionWrapper(
-            "test_sites",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        valuation: new SelectionWrapper(
-            "valuation",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        vehicles: new SelectionWrapper(
-            "vehicles",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        summary: new SelectionWrapper("summary", "String", 0, {}, this, undefined),
+        test_sites: new SelectionWrapper("test_sites", "Int", 0, {}, this, undefined),
+        valuation: new SelectionWrapper("valuation", "Float", 0, {}, this, undefined),
+        vehicles: new SelectionWrapper("vehicles", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeInfoSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeInfoSelectionInput>>,
+            selectScalars(makeInfoSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeInfoSelectionInput>
+            >,
     } as const;
 }
-export const InfoSelection = makeSLFN(
-    makeInfoSelectionInput,
-    "InfoSelection",
-    "Info",
-    0,
-);
+export const InfoSelection = makeSLFN(makeInfoSelectionInput, "InfoSelection", "Info", 0);
 
 type ReturnTypeFromCoreSelection = {
     asds_attempts: SelectionWrapper<"asds_attempts", "Int", 0, {}, undefined>;
@@ -2152,128 +1651,51 @@ type ReturnTypeFromCoreSelection = {
             "$lazy"
         >
     >;
-    original_launch: SelectionWrapper<
-        "original_launch",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    original_launch: SelectionWrapper<"original_launch", "Date", 0, {}, undefined>;
     reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
     rtls_attempts: SelectionWrapper<"rtls_attempts", "Int", 0, {}, undefined>;
     rtls_landings: SelectionWrapper<"rtls_landings", "Int", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    water_landing: SelectionWrapper<
-        "water_landing",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    water_landing: SelectionWrapper<"water_landing", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCoreSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCoreSelectionInput>>;
 };
 
 export function makeCoreSelectionInput(this: any): ReturnTypeFromCoreSelection {
     return {
-        asds_attempts: new SelectionWrapper(
-            "asds_attempts",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        asds_landings: new SelectionWrapper(
-            "asds_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        asds_attempts: new SelectionWrapper("asds_attempts", "Int", 0, {}, this, undefined),
+        asds_landings: new SelectionWrapper("asds_landings", "Int", 0, {}, this, undefined),
         block: new SelectionWrapper("block", "Int", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         missions: CapsuleMissionArraySelection.bind({
             collector: this,
             fieldName: "missions",
         }),
-        original_launch: new SelectionWrapper(
-            "original_launch",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reuse_count: new SelectionWrapper(
-            "reuse_count",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rtls_attempts: new SelectionWrapper(
-            "rtls_attempts",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rtls_landings: new SelectionWrapper(
-            "rtls_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        water_landing: new SelectionWrapper(
-            "water_landing",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        original_launch: new SelectionWrapper("original_launch", "Date", 0, {}, this, undefined),
+        reuse_count: new SelectionWrapper("reuse_count", "Int", 0, {}, this, undefined),
+        rtls_attempts: new SelectionWrapper("rtls_attempts", "Int", 0, {}, this, undefined),
+        rtls_landings: new SelectionWrapper("rtls_landings", "Int", 0, {}, this, undefined),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        water_landing: new SelectionWrapper("water_landing", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCoreSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeCoreSelectionInput>>,
+            selectScalars(makeCoreSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeCoreSelectionInput>
+            >,
     } as const;
 }
-export const CoreSelection = makeSLFN(
-    makeCoreSelectionInput,
-    "CoreSelection",
-    "Core",
-    0,
-);
+export const CoreSelection = makeSLFN(makeCoreSelectionInput, "CoreSelection", "Core", 0);
 
 type ReturnTypeFromCoreArraySelection = {
     asds_attempts: SelectionWrapper<"asds_attempts", "Int", 0, {}, undefined>;
@@ -2293,132 +1715,51 @@ type ReturnTypeFromCoreArraySelection = {
             "$lazy"
         >
     >;
-    original_launch: SelectionWrapper<
-        "original_launch",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    original_launch: SelectionWrapper<"original_launch", "Date", 0, {}, undefined>;
     reuse_count: SelectionWrapper<"reuse_count", "Int", 0, {}, undefined>;
     rtls_attempts: SelectionWrapper<"rtls_attempts", "Int", 0, {}, undefined>;
     rtls_landings: SelectionWrapper<"rtls_landings", "Int", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    water_landing: SelectionWrapper<
-        "water_landing",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    water_landing: SelectionWrapper<"water_landing", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCoreArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCoreArraySelectionInput>>;
 };
 
-export function makeCoreArraySelectionInput(
-    this: any,
-): ReturnTypeFromCoreArraySelection {
+export function makeCoreArraySelectionInput(this: any): ReturnTypeFromCoreArraySelection {
     return {
-        asds_attempts: new SelectionWrapper(
-            "asds_attempts",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        asds_landings: new SelectionWrapper(
-            "asds_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        asds_attempts: new SelectionWrapper("asds_attempts", "Int", 0, {}, this, undefined),
+        asds_landings: new SelectionWrapper("asds_landings", "Int", 0, {}, this, undefined),
         block: new SelectionWrapper("block", "Int", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         missions: CapsuleMissionArraySelection.bind({
             collector: this,
             fieldName: "missions",
         }),
-        original_launch: new SelectionWrapper(
-            "original_launch",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reuse_count: new SelectionWrapper(
-            "reuse_count",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rtls_attempts: new SelectionWrapper(
-            "rtls_attempts",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rtls_landings: new SelectionWrapper(
-            "rtls_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        water_landing: new SelectionWrapper(
-            "water_landing",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        original_launch: new SelectionWrapper("original_launch", "Date", 0, {}, this, undefined),
+        reuse_count: new SelectionWrapper("reuse_count", "Int", 0, {}, this, undefined),
+        rtls_attempts: new SelectionWrapper("rtls_attempts", "Int", 0, {}, this, undefined),
+        rtls_landings: new SelectionWrapper("rtls_landings", "Int", 0, {}, this, undefined),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        water_landing: new SelectionWrapper("water_landing", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCoreArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeCoreArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeCoreArraySelectionInput>
             >,
     } as const;
 }
-export const CoreArraySelection = makeSLFN(
-    makeCoreArraySelectionInput,
-    "CoreArraySelection",
-    "Core",
-    1,
-);
+export const CoreArraySelection = makeSLFN(makeCoreArraySelectionInput, "CoreArraySelection", "Core", 1);
 
 type ReturnTypeFromDragonArraySelection = {
     active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
@@ -2494,13 +1835,7 @@ type ReturnTypeFromDragonArraySelection = {
         >
     >;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
-    orbit_duration_yr: SelectionWrapper<
-        "orbit_duration_yr",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    orbit_duration_yr: SelectionWrapper<"orbit_duration_yr", "Int", 0, {}, undefined>;
     pressurized_capsule: ReturnType<
         SLFN<
             {},
@@ -2540,13 +1875,7 @@ type ReturnTypeFromDragonArraySelection = {
             "$lazy"
         >
     >;
-    sidewall_angle_deg: SelectionWrapper<
-        "sidewall_angle_deg",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    sidewall_angle_deg: SelectionWrapper<"sidewall_angle_deg", "Float", 0, {}, undefined>;
     thrusters: ReturnType<
         SLFN<
             {},
@@ -2580,67 +1909,21 @@ type ReturnTypeFromDragonArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDragonArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDragonArraySelectionInput>>;
 };
 
-export function makeDragonArraySelectionInput(
-    this: any,
-): ReturnTypeFromDragonArraySelection {
+export function makeDragonArraySelectionInput(this: any): ReturnTypeFromDragonArraySelection {
     return {
-        active: new SelectionWrapper(
-            "active",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        crew_capacity: new SelectionWrapper(
-            "crew_capacity",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        description: new SelectionWrapper(
-            "description",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        active: new SelectionWrapper("active", "Boolean", 0, {}, this, undefined),
+        crew_capacity: new SelectionWrapper("crew_capacity", "Int", 0, {}, this, undefined),
+        description: new SelectionWrapper("description", "String", 0, {}, this, undefined),
         diameter: DistanceSelection.bind({
             collector: this,
             fieldName: "diameter",
         }),
-        dry_mass_kg: new SelectionWrapper(
-            "dry_mass_kg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        dry_mass_lb: new SelectionWrapper(
-            "dry_mass_lb",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        first_flight: new SelectionWrapper(
-            "first_flight",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        dry_mass_kg: new SelectionWrapper("dry_mass_kg", "Int", 0, {}, this, undefined),
+        dry_mass_lb: new SelectionWrapper("dry_mass_lb", "Int", 0, {}, this, undefined),
+        first_flight: new SelectionWrapper("first_flight", "String", 0, {}, this, undefined),
         heat_shield: DragonHeatShieldSelection.bind({
             collector: this,
             fieldName: "heat_shield",
@@ -2659,14 +1942,7 @@ export function makeDragonArraySelectionInput(
             fieldName: "launch_payload_vol",
         }),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        orbit_duration_yr: new SelectionWrapper(
-            "orbit_duration_yr",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        orbit_duration_yr: new SelectionWrapper("orbit_duration_yr", "Int", 0, {}, this, undefined),
         pressurized_capsule: DragonPressurizedCapsuleSelection.bind({
             collector: this,
             fieldName: "pressurized_capsule",
@@ -2679,14 +1955,7 @@ export function makeDragonArraySelectionInput(
             collector: this,
             fieldName: "return_payload_vol",
         }),
-        sidewall_angle_deg: new SelectionWrapper(
-            "sidewall_angle_deg",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        sidewall_angle_deg: new SelectionWrapper("sidewall_angle_deg", "Float", 0, {}, this, undefined),
         thrusters: DragonThrustArraySelection.bind({
             collector: this,
             fieldName: "thrusters",
@@ -2696,64 +1965,30 @@ export function makeDragonArraySelectionInput(
             fieldName: "trunk",
         }),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDragonArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeDragonArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeDragonArraySelectionInput>
             >,
     } as const;
 }
-export const DragonArraySelection = makeSLFN(
-    makeDragonArraySelectionInput,
-    "DragonArraySelection",
-    "Dragon",
-    1,
-);
+export const DragonArraySelection = makeSLFN(makeDragonArraySelectionInput, "DragonArraySelection", "Dragon", 1);
 
 type ReturnTypeFromLaunchSelection = {
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
     is_tentative: SelectionWrapper<"is_tentative", "Boolean", 0, {}, undefined>;
-    launch_date_local: SelectionWrapper<
-        "launch_date_local",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    launch_date_unix: SelectionWrapper<
-        "launch_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    launch_date_utc: SelectionWrapper<
-        "launch_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    launch_date_local: SelectionWrapper<"launch_date_local", "Date", 0, {}, undefined>;
+    launch_date_unix: SelectionWrapper<"launch_date_unix", "Date", 0, {}, undefined>;
+    launch_date_utc: SelectionWrapper<"launch_date_utc", "Date", 0, {}, undefined>;
     launch_site: ReturnType<
         SLFN<
             {},
@@ -2767,13 +2002,7 @@ type ReturnTypeFromLaunchSelection = {
             "$lazy"
         >
     >;
-    launch_success: SelectionWrapper<
-        "launch_success",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    launch_success: SelectionWrapper<"launch_success", "Boolean", 0, {}, undefined>;
     launch_year: SelectionWrapper<"launch_year", "String", 0, {}, undefined>;
     links: ReturnType<
         SLFN<
@@ -2816,20 +2045,8 @@ type ReturnTypeFromLaunchSelection = {
             "$lazy"
         >
     >;
-    static_fire_date_unix: SelectionWrapper<
-        "static_fire_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    static_fire_date_utc: SelectionWrapper<
-        "static_fire_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    static_fire_date_unix: SelectionWrapper<"static_fire_date_unix", "Date", 0, {}, undefined>;
+    static_fire_date_utc: SelectionWrapper<"static_fire_date_utc", "Date", 0, {}, undefined>;
     telemetry: ReturnType<
         SLFN<
             {},
@@ -2843,292 +2060,108 @@ type ReturnTypeFromLaunchSelection = {
             "$lazy"
         >
     >;
-    tentative_max_precision: SelectionWrapper<
-        "tentative_max_precision",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    tentative_max_precision: SelectionWrapper<"tentative_max_precision", "String", 0, {}, undefined>;
     upcoming: SelectionWrapper<"upcoming", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchSelectionInput>>;
 };
 
-export function makeLaunchSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchSelection {
+export function makeLaunchSelectionInput(this: any): ReturnTypeFromLaunchSelection {
     return {
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        is_tentative: new SelectionWrapper(
-            "is_tentative",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_local: new SelectionWrapper(
-            "launch_date_local",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_unix: new SelectionWrapper(
-            "launch_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_utc: new SelectionWrapper(
-            "launch_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        is_tentative: new SelectionWrapper("is_tentative", "Boolean", 0, {}, this, undefined),
+        launch_date_local: new SelectionWrapper("launch_date_local", "Date", 0, {}, this, undefined),
+        launch_date_unix: new SelectionWrapper("launch_date_unix", "Date", 0, {}, this, undefined),
+        launch_date_utc: new SelectionWrapper("launch_date_utc", "Date", 0, {}, this, undefined),
         launch_site: LaunchSiteSelection.bind({
             collector: this,
             fieldName: "launch_site",
         }),
-        launch_success: new SelectionWrapper(
-            "launch_success",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_year: new SelectionWrapper(
-            "launch_year",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        launch_success: new SelectionWrapper("launch_success", "Boolean", 0, {}, this, undefined),
+        launch_year: new SelectionWrapper("launch_year", "String", 0, {}, this, undefined),
         links: LaunchLinksSelection.bind({
             collector: this,
             fieldName: "links",
         }),
-        mission_id: new SelectionWrapper(
-            "mission_id",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        mission_name: new SelectionWrapper(
-            "mission_name",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        mission_id: new SelectionWrapper("mission_id", "String", 1, {}, this, undefined),
+        mission_name: new SelectionWrapper("mission_name", "String", 0, {}, this, undefined),
         rocket: LaunchRocketSelection.bind({
             collector: this,
             fieldName: "rocket",
         }),
         ships: ShipArraySelection.bind({ collector: this, fieldName: "ships" }),
-        static_fire_date_unix: new SelectionWrapper(
-            "static_fire_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        static_fire_date_utc: new SelectionWrapper(
-            "static_fire_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        static_fire_date_unix: new SelectionWrapper("static_fire_date_unix", "Date", 0, {}, this, undefined),
+        static_fire_date_utc: new SelectionWrapper("static_fire_date_utc", "Date", 0, {}, this, undefined),
         telemetry: LaunchTelemetrySelection.bind({
             collector: this,
             fieldName: "telemetry",
         }),
-        tentative_max_precision: new SelectionWrapper(
-            "tentative_max_precision",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        upcoming: new SelectionWrapper(
-            "upcoming",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        tentative_max_precision: new SelectionWrapper("tentative_max_precision", "String", 0, {}, this, undefined),
+        upcoming: new SelectionWrapper("upcoming", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeLaunchSelectionInput>>,
+            selectScalars(makeLaunchSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeLaunchSelectionInput>
+            >,
     } as const;
 }
-export const LaunchSelection = makeSLFN(
-    makeLaunchSelectionInput,
-    "LaunchSelection",
-    "Launch",
-    0,
-);
+export const LaunchSelection = makeSLFN(makeLaunchSelectionInput, "LaunchSelection", "Launch", 0);
 
 type ReturnTypeFromLaunchSiteSelection = {
     site_id: SelectionWrapper<"site_id", "String", 0, {}, undefined>;
     site_name: SelectionWrapper<"site_name", "String", 0, {}, undefined>;
-    site_name_long: SelectionWrapper<
-        "site_name_long",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    site_name_long: SelectionWrapper<"site_name_long", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchSiteSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchSiteSelectionInput>>;
 };
 
-export function makeLaunchSiteSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchSiteSelection {
+export function makeLaunchSiteSelectionInput(this: any): ReturnTypeFromLaunchSiteSelection {
     return {
-        site_id: new SelectionWrapper(
-            "site_id",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        site_name: new SelectionWrapper(
-            "site_name",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        site_name_long: new SelectionWrapper(
-            "site_name_long",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        site_id: new SelectionWrapper("site_id", "String", 0, {}, this, undefined),
+        site_name: new SelectionWrapper("site_name", "String", 0, {}, this, undefined),
+        site_name_long: new SelectionWrapper("site_name_long", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchSiteSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchSiteSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchSiteSelectionInput>
             >,
     } as const;
 }
-export const LaunchSiteSelection = makeSLFN(
-    makeLaunchSiteSelectionInput,
-    "LaunchSiteSelection",
-    "LaunchSite",
-    0,
-);
+export const LaunchSiteSelection = makeSLFN(makeLaunchSiteSelectionInput, "LaunchSiteSelection", "LaunchSite", 0);
 
 type ReturnTypeFromLaunchLinksSelection = {
     article_link: SelectionWrapper<"article_link", "String", 0, {}, undefined>;
-    flickr_images: SelectionWrapper<
-        "flickr_images",
-        "String",
-        1,
-        {},
-        undefined
-    >;
-    mission_patch: SelectionWrapper<
-        "mission_patch",
-        "String",
-        0,
-        {},
-        undefined
-    >;
-    mission_patch_small: SelectionWrapper<
-        "mission_patch_small",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    flickr_images: SelectionWrapper<"flickr_images", "String", 1, {}, undefined>;
+    mission_patch: SelectionWrapper<"mission_patch", "String", 0, {}, undefined>;
+    mission_patch_small: SelectionWrapper<"mission_patch_small", "String", 0, {}, undefined>;
     presskit: SelectionWrapper<"presskit", "String", 0, {}, undefined>;
-    reddit_campaign: SelectionWrapper<
-        "reddit_campaign",
-        "String",
-        0,
-        {},
-        undefined
-    >;
-    reddit_launch: SelectionWrapper<
-        "reddit_launch",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    reddit_campaign: SelectionWrapper<"reddit_campaign", "String", 0, {}, undefined>;
+    reddit_launch: SelectionWrapper<"reddit_launch", "String", 0, {}, undefined>;
     reddit_media: SelectionWrapper<"reddit_media", "String", 0, {}, undefined>;
-    reddit_recovery: SelectionWrapper<
-        "reddit_recovery",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    reddit_recovery: SelectionWrapper<"reddit_recovery", "String", 0, {}, undefined>;
     video_link: SelectionWrapper<"video_link", "String", 0, {}, undefined>;
     wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
 } & {
@@ -3136,127 +2169,37 @@ type ReturnTypeFromLaunchLinksSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchLinksSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchLinksSelectionInput>>;
 };
 
-export function makeLaunchLinksSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchLinksSelection {
+export function makeLaunchLinksSelectionInput(this: any): ReturnTypeFromLaunchLinksSelection {
     return {
-        article_link: new SelectionWrapper(
-            "article_link",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        flickr_images: new SelectionWrapper(
-            "flickr_images",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        mission_patch: new SelectionWrapper(
-            "mission_patch",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        mission_patch_small: new SelectionWrapper(
-            "mission_patch_small",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        presskit: new SelectionWrapper(
-            "presskit",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reddit_campaign: new SelectionWrapper(
-            "reddit_campaign",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reddit_launch: new SelectionWrapper(
-            "reddit_launch",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reddit_media: new SelectionWrapper(
-            "reddit_media",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reddit_recovery: new SelectionWrapper(
-            "reddit_recovery",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        video_link: new SelectionWrapper(
-            "video_link",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        article_link: new SelectionWrapper("article_link", "String", 0, {}, this, undefined),
+        flickr_images: new SelectionWrapper("flickr_images", "String", 1, {}, this, undefined),
+        mission_patch: new SelectionWrapper("mission_patch", "String", 0, {}, this, undefined),
+        mission_patch_small: new SelectionWrapper("mission_patch_small", "String", 0, {}, this, undefined),
+        presskit: new SelectionWrapper("presskit", "String", 0, {}, this, undefined),
+        reddit_campaign: new SelectionWrapper("reddit_campaign", "String", 0, {}, this, undefined),
+        reddit_launch: new SelectionWrapper("reddit_launch", "String", 0, {}, this, undefined),
+        reddit_media: new SelectionWrapper("reddit_media", "String", 0, {}, this, undefined),
+        reddit_recovery: new SelectionWrapper("reddit_recovery", "String", 0, {}, this, undefined),
+        video_link: new SelectionWrapper("video_link", "String", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchLinksSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchLinksSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchLinksSelectionInput>
             >,
     } as const;
 }
-export const LaunchLinksSelection = makeSLFN(
-    makeLaunchLinksSelectionInput,
-    "LaunchLinksSelection",
-    "LaunchLinks",
-    0,
-);
+export const LaunchLinksSelection = makeSLFN(makeLaunchLinksSelectionInput, "LaunchLinksSelection", "LaunchLinks", 0);
 
 type ReturnTypeFromLaunchRocketSelection = {
     fairings: ReturnType<
@@ -3318,14 +2261,10 @@ type ReturnTypeFromLaunchRocketSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchRocketSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchRocketSelectionInput>>;
 };
 
-export function makeLaunchRocketSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchRocketSelection {
+export function makeLaunchRocketSelectionInput(this: any): ReturnTypeFromLaunchRocketSelection {
     return {
         fairings: LaunchRocketFairingsSelection.bind({
             collector: this,
@@ -3336,22 +2275,8 @@ export function makeLaunchRocketSelectionInput(
             fieldName: "first_stage",
         }),
         rocket: RocketSelection.bind({ collector: this, fieldName: "rocket" }),
-        rocket_name: new SelectionWrapper(
-            "rocket_name",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rocket_type: new SelectionWrapper(
-            "rocket_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        rocket_name: new SelectionWrapper("rocket_name", "String", 0, {}, this, undefined),
+        rocket_type: new SelectionWrapper("rocket_type", "String", 0, {}, this, undefined),
         second_stage: LaunchRocketSecondStageSelection.bind({
             collector: this,
             fieldName: "second_stage",
@@ -3362,14 +2287,10 @@ export function makeLaunchRocketSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchRocketSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchRocketSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchRocketSelectionInput>
             >,
     } as const;
@@ -3383,13 +2304,7 @@ export const LaunchRocketSelection = makeSLFN(
 
 type ReturnTypeFromLaunchRocketFairingsSelection = {
     recovered: SelectionWrapper<"recovered", "Boolean", 0, {}, undefined>;
-    recovery_attempt: SelectionWrapper<
-        "recovery_attempt",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    recovery_attempt: SelectionWrapper<"recovery_attempt", "Boolean", 0, {}, undefined>;
     reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
     ship: SelectionWrapper<"ship", "String", 0, {}, undefined>;
 } & {
@@ -3397,39 +2312,14 @@ type ReturnTypeFromLaunchRocketFairingsSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchRocketFairingsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchRocketFairingsSelectionInput>>;
 };
 
-export function makeLaunchRocketFairingsSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchRocketFairingsSelection {
+export function makeLaunchRocketFairingsSelectionInput(this: any): ReturnTypeFromLaunchRocketFairingsSelection {
     return {
-        recovered: new SelectionWrapper(
-            "recovered",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        recovery_attempt: new SelectionWrapper(
-            "recovery_attempt",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reused: new SelectionWrapper(
-            "reused",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        recovered: new SelectionWrapper("recovered", "Boolean", 0, {}, this, undefined),
+        recovery_attempt: new SelectionWrapper("recovery_attempt", "Boolean", 0, {}, this, undefined),
+        reused: new SelectionWrapper("reused", "Boolean", 0, {}, this, undefined),
         ship: new SelectionWrapper("ship", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -3437,14 +2327,10 @@ export function makeLaunchRocketFairingsSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchRocketFairingsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchRocketFairingsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchRocketFairingsSelectionInput>
             >,
     } as const;
@@ -3460,9 +2346,7 @@ type ReturnTypeFromLaunchRocketFirstStageSelection = {
     cores: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeLaunchRocketFirstStageCoreArraySelectionInput
-            >,
+            ReturnType<typeof makeLaunchRocketFirstStageCoreArraySelectionInput>,
             "LaunchRocketFirstStageCoreArraySelection",
             "LaunchRocketFirstStageCore",
             1,
@@ -3478,9 +2362,7 @@ type ReturnTypeFromLaunchRocketFirstStageSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeLaunchRocketFirstStageSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchRocketFirstStageSelection {
+export function makeLaunchRocketFirstStageSelectionInput(this: any): ReturnTypeFromLaunchRocketFirstStageSelection {
     return {
         cores: LaunchRocketFirstStageCoreArraySelection.bind({
             collector: this,
@@ -3492,9 +2374,7 @@ export function makeLaunchRocketFirstStageSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const LaunchRocketFirstStageSelection = makeSLFN(
@@ -3522,21 +2402,9 @@ type ReturnTypeFromLaunchRocketFirstStageCoreArraySelection = {
     flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
     gridfins: SelectionWrapper<"gridfins", "Boolean", 0, {}, undefined>;
     land_success: SelectionWrapper<"land_success", "Boolean", 0, {}, undefined>;
-    landing_intent: SelectionWrapper<
-        "landing_intent",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    landing_intent: SelectionWrapper<"landing_intent", "Boolean", 0, {}, undefined>;
     landing_type: SelectionWrapper<"landing_type", "String", 0, {}, undefined>;
-    landing_vehicle: SelectionWrapper<
-        "landing_vehicle",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    landing_vehicle: SelectionWrapper<"landing_vehicle", "String", 0, {}, undefined>;
     legs: SelectionWrapper<"legs", "Boolean", 0, {}, undefined>;
     reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
 } & {
@@ -3544,9 +2412,7 @@ type ReturnTypeFromLaunchRocketFirstStageCoreArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchRocketFirstStageCoreArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchRocketFirstStageCoreArraySelectionInput>>;
 };
 
 export function makeLaunchRocketFirstStageCoreArraySelectionInput(
@@ -3556,72 +2422,24 @@ export function makeLaunchRocketFirstStageCoreArraySelectionInput(
         block: new SelectionWrapper("block", "Int", 0, {}, this, undefined),
         core: CoreSelection.bind({ collector: this, fieldName: "core" }),
         flight: new SelectionWrapper("flight", "Int", 0, {}, this, undefined),
-        gridfins: new SelectionWrapper(
-            "gridfins",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        land_success: new SelectionWrapper(
-            "land_success",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        landing_intent: new SelectionWrapper(
-            "landing_intent",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        landing_type: new SelectionWrapper(
-            "landing_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        landing_vehicle: new SelectionWrapper(
-            "landing_vehicle",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        gridfins: new SelectionWrapper("gridfins", "Boolean", 0, {}, this, undefined),
+        land_success: new SelectionWrapper("land_success", "Boolean", 0, {}, this, undefined),
+        landing_intent: new SelectionWrapper("landing_intent", "Boolean", 0, {}, this, undefined),
+        landing_type: new SelectionWrapper("landing_type", "String", 0, {}, this, undefined),
+        landing_vehicle: new SelectionWrapper("landing_vehicle", "String", 0, {}, this, undefined),
         legs: new SelectionWrapper("legs", "Boolean", 0, {}, this, undefined),
-        reused: new SelectionWrapper(
-            "reused",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        reused: new SelectionWrapper("reused", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchRocketFirstStageCoreArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
-                ReturnType<
-                    typeof makeLaunchRocketFirstStageCoreArraySelectionInput
-                >
+            selectScalars(makeLaunchRocketFirstStageCoreArraySelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeLaunchRocketFirstStageCoreArraySelectionInput>
             >,
     } as const;
 }
@@ -3636,13 +2454,7 @@ type ReturnTypeFromRocketSelection = {
     active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
     boosters: SelectionWrapper<"boosters", "Int", 0, {}, undefined>;
     company: SelectionWrapper<"company", "String", 0, {}, undefined>;
-    cost_per_launch: SelectionWrapper<
-        "cost_per_launch",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    cost_per_launch: SelectionWrapper<"cost_per_launch", "Int", 0, {}, undefined>;
     country: SelectionWrapper<"country", "String", 0, {}, undefined>;
     description: SelectionWrapper<"description", "String", 0, {}, undefined>;
     diameter: ReturnType<
@@ -3753,13 +2565,7 @@ type ReturnTypeFromRocketSelection = {
         >
     >;
     stages: SelectionWrapper<"stages", "Int", 0, {}, undefined>;
-    success_rate_pct: SelectionWrapper<
-        "success_rate_pct",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    success_rate_pct: SelectionWrapper<"success_rate_pct", "Int", 0, {}, undefined>;
     type: SelectionWrapper<"type", "String", 0, {}, undefined>;
     wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
 } & {
@@ -3767,63 +2573,17 @@ type ReturnTypeFromRocketSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketSelectionInput>>;
 };
 
-export function makeRocketSelectionInput(
-    this: any,
-): ReturnTypeFromRocketSelection {
+export function makeRocketSelectionInput(this: any): ReturnTypeFromRocketSelection {
     return {
-        active: new SelectionWrapper(
-            "active",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        boosters: new SelectionWrapper(
-            "boosters",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        company: new SelectionWrapper(
-            "company",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        cost_per_launch: new SelectionWrapper(
-            "cost_per_launch",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        country: new SelectionWrapper(
-            "country",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        description: new SelectionWrapper(
-            "description",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        active: new SelectionWrapper("active", "Boolean", 0, {}, this, undefined),
+        boosters: new SelectionWrapper("boosters", "Int", 0, {}, this, undefined),
+        company: new SelectionWrapper("company", "String", 0, {}, this, undefined),
+        cost_per_launch: new SelectionWrapper("cost_per_launch", "Int", 0, {}, this, undefined),
+        country: new SelectionWrapper("country", "String", 0, {}, this, undefined),
+        description: new SelectionWrapper("description", "String", 0, {}, this, undefined),
         diameter: DistanceSelection.bind({
             collector: this,
             fieldName: "diameter",
@@ -3832,14 +2592,7 @@ export function makeRocketSelectionInput(
             collector: this,
             fieldName: "engines",
         }),
-        first_flight: new SelectionWrapper(
-            "first_flight",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        first_flight: new SelectionWrapper("first_flight", "Date", 0, {}, this, undefined),
         first_stage: RocketFirstStageSelection.bind({
             collector: this,
             fieldName: "first_stage",
@@ -3864,54 +2617,27 @@ export function makeRocketSelectionInput(
             fieldName: "second_stage",
         }),
         stages: new SelectionWrapper("stages", "Int", 0, {}, this, undefined),
-        success_rate_pct: new SelectionWrapper(
-            "success_rate_pct",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        success_rate_pct: new SelectionWrapper("success_rate_pct", "Int", 0, {}, this, undefined),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeRocketSelectionInput>>,
+            selectScalars(makeRocketSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeRocketSelectionInput>
+            >,
     } as const;
 }
-export const RocketSelection = makeSLFN(
-    makeRocketSelectionInput,
-    "RocketSelection",
-    "Rocket",
-    0,
-);
+export const RocketSelection = makeSLFN(makeRocketSelectionInput, "RocketSelection", "Rocket", 0);
 
 type ReturnTypeFromRocketEnginesSelection = {
-    engine_loss_max: SelectionWrapper<
-        "engine_loss_max",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    engine_loss_max: SelectionWrapper<"engine_loss_max", "String", 0, {}, undefined>;
     layout: SelectionWrapper<"layout", "String", 0, {}, undefined>;
     number: SelectionWrapper<"number", "Int", 0, {}, undefined>;
     propellant_1: SelectionWrapper<"propellant_1", "String", 0, {}, undefined>;
@@ -3929,13 +2655,7 @@ type ReturnTypeFromRocketEnginesSelection = {
             "$lazy"
         >
     >;
-    thrust_to_weight: SelectionWrapper<
-        "thrust_to_weight",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    thrust_to_weight: SelectionWrapper<"thrust_to_weight", "Float", 0, {}, undefined>;
     thrust_vacuum: ReturnType<
         SLFN<
             {},
@@ -3956,87 +2676,37 @@ type ReturnTypeFromRocketEnginesSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketEnginesSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketEnginesSelectionInput>>;
 };
 
-export function makeRocketEnginesSelectionInput(
-    this: any,
-): ReturnTypeFromRocketEnginesSelection {
+export function makeRocketEnginesSelectionInput(this: any): ReturnTypeFromRocketEnginesSelection {
     return {
-        engine_loss_max: new SelectionWrapper(
-            "engine_loss_max",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        layout: new SelectionWrapper(
-            "layout",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        engine_loss_max: new SelectionWrapper("engine_loss_max", "String", 0, {}, this, undefined),
+        layout: new SelectionWrapper("layout", "String", 0, {}, this, undefined),
         number: new SelectionWrapper("number", "Int", 0, {}, this, undefined),
-        propellant_1: new SelectionWrapper(
-            "propellant_1",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        propellant_2: new SelectionWrapper(
-            "propellant_2",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        propellant_1: new SelectionWrapper("propellant_1", "String", 0, {}, this, undefined),
+        propellant_2: new SelectionWrapper("propellant_2", "String", 0, {}, this, undefined),
         thrust_sea_level: ForceSelection.bind({
             collector: this,
             fieldName: "thrust_sea_level",
         }),
-        thrust_to_weight: new SelectionWrapper(
-            "thrust_to_weight",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        thrust_to_weight: new SelectionWrapper("thrust_to_weight", "Float", 0, {}, this, undefined),
         thrust_vacuum: ForceSelection.bind({
             collector: this,
             fieldName: "thrust_vacuum",
         }),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
-        version: new SelectionWrapper(
-            "version",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        version: new SelectionWrapper("version", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketEnginesSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketEnginesSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketEnginesSelectionInput>
             >,
     } as const;
@@ -4051,13 +2721,7 @@ export const RocketEnginesSelection = makeSLFN(
 type ReturnTypeFromRocketFirstStageSelection = {
     burn_time_sec: SelectionWrapper<"burn_time_sec", "Int", 0, {}, undefined>;
     engines: SelectionWrapper<"engines", "Int", 0, {}, undefined>;
-    fuel_amount_tons: SelectionWrapper<
-        "fuel_amount_tons",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    fuel_amount_tons: SelectionWrapper<"fuel_amount_tons", "Float", 0, {}, undefined>;
     reusable: SelectionWrapper<"reusable", "Boolean", 0, {}, undefined>;
     thrust_sea_level: ReturnType<
         SLFN<
@@ -4090,40 +2754,15 @@ type ReturnTypeFromRocketFirstStageSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketFirstStageSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketFirstStageSelectionInput>>;
 };
 
-export function makeRocketFirstStageSelectionInput(
-    this: any,
-): ReturnTypeFromRocketFirstStageSelection {
+export function makeRocketFirstStageSelectionInput(this: any): ReturnTypeFromRocketFirstStageSelection {
     return {
-        burn_time_sec: new SelectionWrapper(
-            "burn_time_sec",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        burn_time_sec: new SelectionWrapper("burn_time_sec", "Int", 0, {}, this, undefined),
         engines: new SelectionWrapper("engines", "Int", 0, {}, this, undefined),
-        fuel_amount_tons: new SelectionWrapper(
-            "fuel_amount_tons",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reusable: new SelectionWrapper(
-            "reusable",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        fuel_amount_tons: new SelectionWrapper("fuel_amount_tons", "Float", 0, {}, this, undefined),
+        reusable: new SelectionWrapper("reusable", "Boolean", 0, {}, this, undefined),
         thrust_sea_level: ForceSelection.bind({
             collector: this,
             fieldName: "thrust_sea_level",
@@ -4138,14 +2777,10 @@ export function makeRocketFirstStageSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketFirstStageSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketFirstStageSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketFirstStageSelectionInput>
             >,
     } as const;
@@ -4165,23 +2800,12 @@ type ReturnTypeFromRocketLandingLegsSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketLandingLegsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketLandingLegsSelectionInput>>;
 };
 
-export function makeRocketLandingLegsSelectionInput(
-    this: any,
-): ReturnTypeFromRocketLandingLegsSelection {
+export function makeRocketLandingLegsSelectionInput(this: any): ReturnTypeFromRocketLandingLegsSelection {
     return {
-        material: new SelectionWrapper(
-            "material",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        material: new SelectionWrapper("material", "String", 0, {}, this, undefined),
         number: new SelectionWrapper("number", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -4189,14 +2813,10 @@ export function makeRocketLandingLegsSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketLandingLegsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketLandingLegsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketLandingLegsSelectionInput>
             >,
     } as const;
@@ -4218,14 +2838,10 @@ type ReturnTypeFromRocketPayloadWeightArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketPayloadWeightArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketPayloadWeightArraySelectionInput>>;
 };
 
-export function makeRocketPayloadWeightArraySelectionInput(
-    this: any,
-): ReturnTypeFromRocketPayloadWeightArraySelection {
+export function makeRocketPayloadWeightArraySelectionInput(this: any): ReturnTypeFromRocketPayloadWeightArraySelection {
     return {
         id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
         kg: new SelectionWrapper("kg", "Int", 0, {}, this, undefined),
@@ -4237,14 +2853,10 @@ export function makeRocketPayloadWeightArraySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketPayloadWeightArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketPayloadWeightArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketPayloadWeightArraySelectionInput>
             >,
     } as const;
@@ -4259,13 +2871,7 @@ export const RocketPayloadWeightArraySelection = makeSLFN(
 type ReturnTypeFromRocketSecondStageSelection = {
     burn_time_sec: SelectionWrapper<"burn_time_sec", "Int", 0, {}, undefined>;
     engines: SelectionWrapper<"engines", "Int", 0, {}, undefined>;
-    fuel_amount_tons: SelectionWrapper<
-        "fuel_amount_tons",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    fuel_amount_tons: SelectionWrapper<"fuel_amount_tons", "Float", 0, {}, undefined>;
     payloads: ReturnType<
         SLFN<
             {},
@@ -4297,32 +2903,14 @@ type ReturnTypeFromRocketSecondStageSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketSecondStageSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketSecondStageSelectionInput>>;
 };
 
-export function makeRocketSecondStageSelectionInput(
-    this: any,
-): ReturnTypeFromRocketSecondStageSelection {
+export function makeRocketSecondStageSelectionInput(this: any): ReturnTypeFromRocketSecondStageSelection {
     return {
-        burn_time_sec: new SelectionWrapper(
-            "burn_time_sec",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        burn_time_sec: new SelectionWrapper("burn_time_sec", "Int", 0, {}, this, undefined),
         engines: new SelectionWrapper("engines", "Int", 0, {}, this, undefined),
-        fuel_amount_tons: new SelectionWrapper(
-            "fuel_amount_tons",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        fuel_amount_tons: new SelectionWrapper("fuel_amount_tons", "Float", 0, {}, this, undefined),
         payloads: RocketSecondStagePayloadsSelection.bind({
             collector: this,
             fieldName: "payloads",
@@ -4334,14 +2922,10 @@ export function makeRocketSecondStageSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketSecondStageSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketSecondStageSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketSecondStageSelectionInput>
             >,
     } as const;
@@ -4357,9 +2941,7 @@ type ReturnTypeFromRocketSecondStagePayloadsSelection = {
     composite_fairing: ReturnType<
         SLFN<
             {},
-            ReturnType<
-                typeof makeRocketSecondStagePayloadCompositeFairingSelectionInput
-            >,
+            ReturnType<typeof makeRocketSecondStagePayloadCompositeFairingSelectionInput>,
             "RocketSecondStagePayloadCompositeFairingSelection",
             "RocketSecondStagePayloadCompositeFairing",
             0,
@@ -4375,42 +2957,28 @@ type ReturnTypeFromRocketSecondStagePayloadsSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketSecondStagePayloadsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketSecondStagePayloadsSelectionInput>>;
 };
 
 export function makeRocketSecondStagePayloadsSelectionInput(
     this: any,
 ): ReturnTypeFromRocketSecondStagePayloadsSelection {
     return {
-        composite_fairing:
-            RocketSecondStagePayloadCompositeFairingSelection.bind({
-                collector: this,
-                fieldName: "composite_fairing",
-            }),
-        option_1: new SelectionWrapper(
-            "option_1",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        composite_fairing: RocketSecondStagePayloadCompositeFairingSelection.bind({
+            collector: this,
+            fieldName: "composite_fairing",
+        }),
+        option_1: new SelectionWrapper("option_1", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketSecondStagePayloadsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketSecondStagePayloadsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketSecondStagePayloadsSelectionInput>
             >,
     } as const;
@@ -4473,9 +3041,7 @@ export function makeRocketSecondStagePayloadCompositeFairingSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const RocketSecondStagePayloadCompositeFairingSelection = makeSLFN(
@@ -4505,14 +3071,10 @@ type ReturnTypeFromLaunchRocketSecondStageSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchRocketSecondStageSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchRocketSecondStageSelectionInput>>;
 };
 
-export function makeLaunchRocketSecondStageSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchRocketSecondStageSelection {
+export function makeLaunchRocketSecondStageSelectionInput(this: any): ReturnTypeFromLaunchRocketSecondStageSelection {
     return {
         block: new SelectionWrapper("block", "Int", 0, {}, this, undefined),
         payloads: PayloadArraySelection.bind({
@@ -4525,14 +3087,10 @@ export function makeLaunchRocketSecondStageSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchRocketSecondStageSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchRocketSecondStageSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchRocketSecondStageSelectionInput>
             >,
     } as const;
@@ -4564,20 +3122,8 @@ type ReturnTypeFromPayloadArraySelection = {
             "$lazy"
         >
     >;
-    payload_mass_kg: SelectionWrapper<
-        "payload_mass_kg",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
-    payload_mass_lbs: SelectionWrapper<
-        "payload_mass_lbs",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    payload_mass_kg: SelectionWrapper<"payload_mass_kg", "Float", 0, {}, undefined>;
+    payload_mass_lbs: SelectionWrapper<"payload_mass_lbs", "Float", 0, {}, undefined>;
     payload_type: SelectionWrapper<"payload_type", "String", 0, {}, undefined>;
     reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
 } & {
@@ -4585,290 +3131,92 @@ type ReturnTypeFromPayloadArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makePayloadArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makePayloadArraySelectionInput>>;
 };
 
-export function makePayloadArraySelectionInput(
-    this: any,
-): ReturnTypeFromPayloadArraySelection {
+export function makePayloadArraySelectionInput(this: any): ReturnTypeFromPayloadArraySelection {
     return {
-        customers: new SelectionWrapper(
-            "customers",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+        customers: new SelectionWrapper("customers", "String", 1, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        manufacturer: new SelectionWrapper(
-            "manufacturer",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        nationality: new SelectionWrapper(
-            "nationality",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        norad_id: new SelectionWrapper(
-            "norad_id",
-            "Int",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+        manufacturer: new SelectionWrapper("manufacturer", "String", 0, {}, this, undefined),
+        nationality: new SelectionWrapper("nationality", "String", 0, {}, this, undefined),
+        norad_id: new SelectionWrapper("norad_id", "Int", 1, {}, this, undefined),
         orbit: new SelectionWrapper("orbit", "String", 0, {}, this, undefined),
         orbit_params: PayloadOrbitParamsSelection.bind({
             collector: this,
             fieldName: "orbit_params",
         }),
-        payload_mass_kg: new SelectionWrapper(
-            "payload_mass_kg",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        payload_mass_lbs: new SelectionWrapper(
-            "payload_mass_lbs",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        payload_type: new SelectionWrapper(
-            "payload_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reused: new SelectionWrapper(
-            "reused",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        payload_mass_kg: new SelectionWrapper("payload_mass_kg", "Float", 0, {}, this, undefined),
+        payload_mass_lbs: new SelectionWrapper("payload_mass_lbs", "Float", 0, {}, this, undefined),
+        payload_type: new SelectionWrapper("payload_type", "String", 0, {}, this, undefined),
+        reused: new SelectionWrapper("reused", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makePayloadArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makePayloadArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makePayloadArraySelectionInput>
             >,
     } as const;
 }
-export const PayloadArraySelection = makeSLFN(
-    makePayloadArraySelectionInput,
-    "PayloadArraySelection",
-    "Payload",
-    1,
-);
+export const PayloadArraySelection = makeSLFN(makePayloadArraySelectionInput, "PayloadArraySelection", "Payload", 1);
 
 type ReturnTypeFromPayloadOrbitParamsSelection = {
     apoapsis_km: SelectionWrapper<"apoapsis_km", "Float", 0, {}, undefined>;
-    arg_of_pericenter: SelectionWrapper<
-        "arg_of_pericenter",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    arg_of_pericenter: SelectionWrapper<"arg_of_pericenter", "Float", 0, {}, undefined>;
     eccentricity: SelectionWrapper<"eccentricity", "Float", 0, {}, undefined>;
     epoch: SelectionWrapper<"epoch", "Date", 0, {}, undefined>;
-    inclination_deg: SelectionWrapper<
-        "inclination_deg",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
-    lifespan_years: SelectionWrapper<
-        "lifespan_years",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    inclination_deg: SelectionWrapper<"inclination_deg", "Float", 0, {}, undefined>;
+    lifespan_years: SelectionWrapper<"lifespan_years", "Float", 0, {}, undefined>;
     longitude: SelectionWrapper<"longitude", "Float", 0, {}, undefined>;
     mean_anomaly: SelectionWrapper<"mean_anomaly", "Float", 0, {}, undefined>;
     mean_motion: SelectionWrapper<"mean_motion", "Float", 0, {}, undefined>;
     periapsis_km: SelectionWrapper<"periapsis_km", "Float", 0, {}, undefined>;
     period_min: SelectionWrapper<"period_min", "Float", 0, {}, undefined>;
     raan: SelectionWrapper<"raan", "Float", 0, {}, undefined>;
-    reference_system: SelectionWrapper<
-        "reference_system",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    reference_system: SelectionWrapper<"reference_system", "String", 0, {}, undefined>;
     regime: SelectionWrapper<"regime", "String", 0, {}, undefined>;
-    semi_major_axis_km: SelectionWrapper<
-        "semi_major_axis_km",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    semi_major_axis_km: SelectionWrapper<"semi_major_axis_km", "Float", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makePayloadOrbitParamsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makePayloadOrbitParamsSelectionInput>>;
 };
 
-export function makePayloadOrbitParamsSelectionInput(
-    this: any,
-): ReturnTypeFromPayloadOrbitParamsSelection {
+export function makePayloadOrbitParamsSelectionInput(this: any): ReturnTypeFromPayloadOrbitParamsSelection {
     return {
-        apoapsis_km: new SelectionWrapper(
-            "apoapsis_km",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        arg_of_pericenter: new SelectionWrapper(
-            "arg_of_pericenter",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        eccentricity: new SelectionWrapper(
-            "eccentricity",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        apoapsis_km: new SelectionWrapper("apoapsis_km", "Float", 0, {}, this, undefined),
+        arg_of_pericenter: new SelectionWrapper("arg_of_pericenter", "Float", 0, {}, this, undefined),
+        eccentricity: new SelectionWrapper("eccentricity", "Float", 0, {}, this, undefined),
         epoch: new SelectionWrapper("epoch", "Date", 0, {}, this, undefined),
-        inclination_deg: new SelectionWrapper(
-            "inclination_deg",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        lifespan_years: new SelectionWrapper(
-            "lifespan_years",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        longitude: new SelectionWrapper(
-            "longitude",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        mean_anomaly: new SelectionWrapper(
-            "mean_anomaly",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        mean_motion: new SelectionWrapper(
-            "mean_motion",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        periapsis_km: new SelectionWrapper(
-            "periapsis_km",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        period_min: new SelectionWrapper(
-            "period_min",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        inclination_deg: new SelectionWrapper("inclination_deg", "Float", 0, {}, this, undefined),
+        lifespan_years: new SelectionWrapper("lifespan_years", "Float", 0, {}, this, undefined),
+        longitude: new SelectionWrapper("longitude", "Float", 0, {}, this, undefined),
+        mean_anomaly: new SelectionWrapper("mean_anomaly", "Float", 0, {}, this, undefined),
+        mean_motion: new SelectionWrapper("mean_motion", "Float", 0, {}, this, undefined),
+        periapsis_km: new SelectionWrapper("periapsis_km", "Float", 0, {}, this, undefined),
+        period_min: new SelectionWrapper("period_min", "Float", 0, {}, this, undefined),
         raan: new SelectionWrapper("raan", "Float", 0, {}, this, undefined),
-        reference_system: new SelectionWrapper(
-            "reference_system",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        regime: new SelectionWrapper(
-            "regime",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        semi_major_axis_km: new SelectionWrapper(
-            "semi_major_axis_km",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        reference_system: new SelectionWrapper("reference_system", "String", 0, {}, this, undefined),
+        regime: new SelectionWrapper("regime", "String", 0, {}, this, undefined),
+        semi_major_axis_km: new SelectionWrapper("semi_major_axis_km", "Float", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makePayloadOrbitParamsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makePayloadOrbitParamsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makePayloadOrbitParamsSelectionInput>
             >,
     } as const;
@@ -4883,13 +3231,7 @@ export const PayloadOrbitParamsSelection = makeSLFN(
 type ReturnTypeFromShipArraySelection = {
     abs: SelectionWrapper<"abs", "Int", 0, {}, undefined>;
     active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    attempted_landings: SelectionWrapper<
-        "attempted_landings",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    attempted_landings: SelectionWrapper<"attempted_landings", "Int", 0, {}, undefined>;
     class: SelectionWrapper<"class", "Int", 0, {}, undefined>;
     course_deg: SelectionWrapper<"course_deg", "Int", 0, {}, undefined>;
     home_port: SelectionWrapper<"home_port", "String", 0, {}, undefined>;
@@ -4928,13 +3270,7 @@ type ReturnTypeFromShipArraySelection = {
     roles: SelectionWrapper<"roles", "String", 1, {}, undefined>;
     speed_kn: SelectionWrapper<"speed_kn", "Float", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
-        "successful_landings",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    successful_landings: SelectionWrapper<"successful_landings", "Int", 0, {}, undefined>;
     type: SelectionWrapper<"type", "String", 0, {}, undefined>;
     url: SelectionWrapper<"url", "String", 0, {}, undefined>;
     weight_kg: SelectionWrapper<"weight_kg", "Int", 0, {}, undefined>;
@@ -4945,49 +3281,17 @@ type ReturnTypeFromShipArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeShipArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeShipArraySelectionInput>>;
 };
 
-export function makeShipArraySelectionInput(
-    this: any,
-): ReturnTypeFromShipArraySelection {
+export function makeShipArraySelectionInput(this: any): ReturnTypeFromShipArraySelection {
     return {
         abs: new SelectionWrapper("abs", "Int", 0, {}, this, undefined),
-        active: new SelectionWrapper(
-            "active",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        attempted_landings: new SelectionWrapper(
-            "attempted_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        active: new SelectionWrapper("active", "Boolean", 0, {}, this, undefined),
+        attempted_landings: new SelectionWrapper("attempted_landings", "Int", 0, {}, this, undefined),
         class: new SelectionWrapper("class", "Int", 0, {}, this, undefined),
-        course_deg: new SelectionWrapper(
-            "course_deg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        home_port: new SelectionWrapper(
-            "home_port",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        course_deg: new SelectionWrapper("course_deg", "Int", 0, {}, this, undefined),
+        home_port: new SelectionWrapper("home_port", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         image: new SelectionWrapper("image", "String", 0, {}, this, undefined),
         imo: new SelectionWrapper("imo", "Int", 0, {}, this, undefined),
@@ -5003,80 +3307,29 @@ export function makeShipArraySelectionInput(
             fieldName: "position",
         }),
         roles: new SelectionWrapper("roles", "String", 1, {}, this, undefined),
-        speed_kn: new SelectionWrapper(
-            "speed_kn",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        successful_landings: new SelectionWrapper(
-            "successful_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        speed_kn: new SelectionWrapper("speed_kn", "Float", 0, {}, this, undefined),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        successful_landings: new SelectionWrapper("successful_landings", "Int", 0, {}, this, undefined),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
         url: new SelectionWrapper("url", "String", 0, {}, this, undefined),
-        weight_kg: new SelectionWrapper(
-            "weight_kg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        weight_lbs: new SelectionWrapper(
-            "weight_lbs",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        year_built: new SelectionWrapper(
-            "year_built",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        weight_kg: new SelectionWrapper("weight_kg", "Int", 0, {}, this, undefined),
+        weight_lbs: new SelectionWrapper("weight_lbs", "Int", 0, {}, this, undefined),
+        year_built: new SelectionWrapper("year_built", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeShipArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeShipArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeShipArraySelectionInput>
             >,
     } as const;
 }
-export const ShipArraySelection = makeSLFN(
-    makeShipArraySelectionInput,
-    "ShipArraySelection",
-    "Ship",
-    1,
-);
+export const ShipArraySelection = makeSLFN(makeShipArraySelectionInput, "ShipArraySelection", "Ship", 1);
 
 type ReturnTypeFromShipMissionArraySelection = {
     flight: SelectionWrapper<"flight", "String", 0, {}, undefined>;
@@ -5086,23 +3339,12 @@ type ReturnTypeFromShipMissionArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeShipMissionArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeShipMissionArraySelectionInput>>;
 };
 
-export function makeShipMissionArraySelectionInput(
-    this: any,
-): ReturnTypeFromShipMissionArraySelection {
+export function makeShipMissionArraySelectionInput(this: any): ReturnTypeFromShipMissionArraySelection {
     return {
-        flight: new SelectionWrapper(
-            "flight",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        flight: new SelectionWrapper("flight", "String", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -5110,14 +3352,10 @@ export function makeShipMissionArraySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeShipMissionArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeShipMissionArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeShipMissionArraySelectionInput>
             >,
     } as const;
@@ -5137,45 +3375,23 @@ type ReturnTypeFromShipLocationSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeShipLocationSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeShipLocationSelectionInput>>;
 };
 
-export function makeShipLocationSelectionInput(
-    this: any,
-): ReturnTypeFromShipLocationSelection {
+export function makeShipLocationSelectionInput(this: any): ReturnTypeFromShipLocationSelection {
     return {
-        latitude: new SelectionWrapper(
-            "latitude",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        longitude: new SelectionWrapper(
-            "longitude",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        latitude: new SelectionWrapper("latitude", "Float", 0, {}, this, undefined),
+        longitude: new SelectionWrapper("longitude", "Float", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeShipLocationSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeShipLocationSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeShipLocationSelectionInput>
             >,
     } as const;
@@ -5194,37 +3410,22 @@ type ReturnTypeFromLaunchTelemetrySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchTelemetrySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchTelemetrySelectionInput>>;
 };
 
-export function makeLaunchTelemetrySelectionInput(
-    this: any,
-): ReturnTypeFromLaunchTelemetrySelection {
+export function makeLaunchTelemetrySelectionInput(this: any): ReturnTypeFromLaunchTelemetrySelection {
     return {
-        flight_club: new SelectionWrapper(
-            "flight_club",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        flight_club: new SelectionWrapper("flight_club", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchTelemetrySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchTelemetrySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchTelemetrySelectionInput>
             >,
     } as const;
@@ -5245,76 +3446,34 @@ type ReturnTypeFromLinkSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLinkSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLinkSelectionInput>>;
 };
 
 export function makeLinkSelectionInput(this: any): ReturnTypeFromLinkSelection {
     return {
-        article: new SelectionWrapper(
-            "article",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reddit: new SelectionWrapper(
-            "reddit",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        article: new SelectionWrapper("article", "String", 0, {}, this, undefined),
+        reddit: new SelectionWrapper("reddit", "String", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLinkSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeLinkSelectionInput>>,
+            selectScalars(makeLinkSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeLinkSelectionInput>
+            >,
     } as const;
 }
-export const LinkSelection = makeSLFN(
-    makeLinkSelectionInput,
-    "LinkSelection",
-    "Link",
-    0,
-);
+export const LinkSelection = makeSLFN(makeLinkSelectionInput, "LinkSelection", "Link", 0);
 
 type ReturnTypeFromHistoryArraySelection = {
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    event_date_unix: SelectionWrapper<
-        "event_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    event_date_utc: SelectionWrapper<
-        "event_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    event_date_unix: SelectionWrapper<"event_date_unix", "Date", 0, {}, undefined>;
+    event_date_utc: SelectionWrapper<"event_date_utc", "Date", 0, {}, undefined>;
     flight: ReturnType<
         SLFN<
             {},
@@ -5348,39 +3507,14 @@ type ReturnTypeFromHistoryArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeHistoryArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeHistoryArraySelectionInput>>;
 };
 
-export function makeHistoryArraySelectionInput(
-    this: any,
-): ReturnTypeFromHistoryArraySelection {
+export function makeHistoryArraySelectionInput(this: any): ReturnTypeFromHistoryArraySelection {
     return {
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        event_date_unix: new SelectionWrapper(
-            "event_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        event_date_utc: new SelectionWrapper(
-            "event_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
+        event_date_unix: new SelectionWrapper("event_date_unix", "Date", 0, {}, this, undefined),
+        event_date_utc: new SelectionWrapper("event_date_utc", "Date", 0, {}, this, undefined),
         flight: LaunchSelection.bind({ collector: this, fieldName: "flight" }),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         links: LinkSelection.bind({ collector: this, fieldName: "links" }),
@@ -5391,24 +3525,15 @@ export function makeHistoryArraySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeHistoryArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeHistoryArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeHistoryArraySelectionInput>
             >,
     } as const;
 }
-export const HistoryArraySelection = makeSLFN(
-    makeHistoryArraySelectionInput,
-    "HistoryArraySelection",
-    "History",
-    1,
-);
+export const HistoryArraySelection = makeSLFN(makeHistoryArraySelectionInput, "HistoryArraySelection", "History", 1);
 
 type ReturnTypeFromResultSelection = {
     totalCount: SelectionWrapper<"totalCount", "Int", 0, {}, undefined>;
@@ -5417,45 +3542,27 @@ type ReturnTypeFromResultSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeResultSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeResultSelectionInput>>;
 };
 
-export function makeResultSelectionInput(
-    this: any,
-): ReturnTypeFromResultSelection {
+export function makeResultSelectionInput(this: any): ReturnTypeFromResultSelection {
     return {
-        totalCount: new SelectionWrapper(
-            "totalCount",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        totalCount: new SelectionWrapper("totalCount", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeResultSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeResultSelectionInput>>,
+            selectScalars(makeResultSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeResultSelectionInput>
+            >,
     } as const;
 }
-export const ResultSelection = makeSLFN(
-    makeResultSelectionInput,
-    "ResultSelection",
-    "Result",
-    0,
-);
+export const ResultSelection = makeSLFN(makeResultSelectionInput, "ResultSelection", "Result", 0);
 
 type ReturnTypeFromHistoriesResultSelection = {
     data: ReturnType<
@@ -5490,9 +3597,7 @@ type ReturnTypeFromHistoriesResultSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeHistoriesResultSelectionInput(
-    this: any,
-): ReturnTypeFromHistoriesResultSelection {
+export function makeHistoriesResultSelectionInput(this: any): ReturnTypeFromHistoriesResultSelection {
     return {
         data: HistoryArraySelection.bind({
             collector: this,
@@ -5505,9 +3610,7 @@ export function makeHistoriesResultSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const HistoriesResultSelection = makeSLFN(
@@ -5519,20 +3622,8 @@ export const HistoriesResultSelection = makeSLFN(
 
 type ReturnTypeFromHistorySelection = {
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    event_date_unix: SelectionWrapper<
-        "event_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    event_date_utc: SelectionWrapper<
-        "event_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    event_date_unix: SelectionWrapper<"event_date_unix", "Date", 0, {}, undefined>;
+    event_date_utc: SelectionWrapper<"event_date_utc", "Date", 0, {}, undefined>;
     flight: ReturnType<
         SLFN<
             {},
@@ -5566,39 +3657,14 @@ type ReturnTypeFromHistorySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeHistorySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeHistorySelectionInput>>;
 };
 
-export function makeHistorySelectionInput(
-    this: any,
-): ReturnTypeFromHistorySelection {
+export function makeHistorySelectionInput(this: any): ReturnTypeFromHistorySelection {
     return {
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        event_date_unix: new SelectionWrapper(
-            "event_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        event_date_utc: new SelectionWrapper(
-            "event_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
+        event_date_unix: new SelectionWrapper("event_date_unix", "Date", 0, {}, this, undefined),
+        event_date_utc: new SelectionWrapper("event_date_utc", "Date", 0, {}, this, undefined),
         flight: LaunchSelection.bind({ collector: this, fieldName: "flight" }),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         links: LinkSelection.bind({ collector: this, fieldName: "links" }),
@@ -5609,24 +3675,15 @@ export function makeHistorySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeHistorySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeHistorySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeHistorySelectionInput>
             >,
     } as const;
 }
-export const HistorySelection = makeSLFN(
-    makeHistorySelectionInput,
-    "HistorySelection",
-    "History",
-    0,
-);
+export const HistorySelection = makeSLFN(makeHistorySelectionInput, "HistorySelection", "History", 0);
 
 type ReturnTypeFromLocationSelection = {
     latitude: SelectionWrapper<"latitude", "Float", 0, {}, undefined>;
@@ -5638,73 +3695,33 @@ type ReturnTypeFromLocationSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLocationSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLocationSelectionInput>>;
 };
 
-export function makeLocationSelectionInput(
-    this: any,
-): ReturnTypeFromLocationSelection {
+export function makeLocationSelectionInput(this: any): ReturnTypeFromLocationSelection {
     return {
-        latitude: new SelectionWrapper(
-            "latitude",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        longitude: new SelectionWrapper(
-            "longitude",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        latitude: new SelectionWrapper("latitude", "Float", 0, {}, this, undefined),
+        longitude: new SelectionWrapper("longitude", "Float", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        region: new SelectionWrapper(
-            "region",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        region: new SelectionWrapper("region", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLocationSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLocationSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLocationSelectionInput>
             >,
     } as const;
 }
-export const LocationSelection = makeSLFN(
-    makeLocationSelectionInput,
-    "LocationSelection",
-    "Location",
-    0,
-);
+export const LocationSelection = makeSLFN(makeLocationSelectionInput, "LocationSelection", "Location", 0);
 
 type ReturnTypeFromLandpadSelection = {
-    attempted_landings: SelectionWrapper<
-        "attempted_landings",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    attempted_landings: SelectionWrapper<"attempted_landings", "String", 0, {}, undefined>;
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
     full_name: SelectionWrapper<"full_name", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
@@ -5723,122 +3740,48 @@ type ReturnTypeFromLandpadSelection = {
         >
     >;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
-        "successful_landings",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    successful_landings: SelectionWrapper<"successful_landings", "String", 0, {}, undefined>;
     wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLandpadSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLandpadSelectionInput>>;
 };
 
-export function makeLandpadSelectionInput(
-    this: any,
-): ReturnTypeFromLandpadSelection {
+export function makeLandpadSelectionInput(this: any): ReturnTypeFromLandpadSelection {
     return {
-        attempted_landings: new SelectionWrapper(
-            "attempted_landings",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        full_name: new SelectionWrapper(
-            "full_name",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        attempted_landings: new SelectionWrapper("attempted_landings", "String", 0, {}, this, undefined),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
+        full_name: new SelectionWrapper("full_name", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        landing_type: new SelectionWrapper(
-            "landing_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        landing_type: new SelectionWrapper("landing_type", "String", 0, {}, this, undefined),
         location: LocationSelection.bind({
             collector: this,
             fieldName: "location",
         }),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        successful_landings: new SelectionWrapper(
-            "successful_landings",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        successful_landings: new SelectionWrapper("successful_landings", "String", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLandpadSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLandpadSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLandpadSelectionInput>
             >,
     } as const;
 }
-export const LandpadSelection = makeSLFN(
-    makeLandpadSelectionInput,
-    "LandpadSelection",
-    "Landpad",
-    0,
-);
+export const LandpadSelection = makeSLFN(makeLandpadSelectionInput, "LandpadSelection", "Landpad", 0);
 
 type ReturnTypeFromLandpadArraySelection = {
-    attempted_landings: SelectionWrapper<
-        "attempted_landings",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    attempted_landings: SelectionWrapper<"attempted_landings", "String", 0, {}, undefined>;
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
     full_name: SelectionWrapper<"full_name", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
@@ -5857,139 +3800,53 @@ type ReturnTypeFromLandpadArraySelection = {
         >
     >;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
-        "successful_landings",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    successful_landings: SelectionWrapper<"successful_landings", "String", 0, {}, undefined>;
     wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLandpadArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLandpadArraySelectionInput>>;
 };
 
-export function makeLandpadArraySelectionInput(
-    this: any,
-): ReturnTypeFromLandpadArraySelection {
+export function makeLandpadArraySelectionInput(this: any): ReturnTypeFromLandpadArraySelection {
     return {
-        attempted_landings: new SelectionWrapper(
-            "attempted_landings",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        full_name: new SelectionWrapper(
-            "full_name",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        attempted_landings: new SelectionWrapper("attempted_landings", "String", 0, {}, this, undefined),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
+        full_name: new SelectionWrapper("full_name", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        landing_type: new SelectionWrapper(
-            "landing_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        landing_type: new SelectionWrapper("landing_type", "String", 0, {}, this, undefined),
         location: LocationSelection.bind({
             collector: this,
             fieldName: "location",
         }),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        successful_landings: new SelectionWrapper(
-            "successful_landings",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        successful_landings: new SelectionWrapper("successful_landings", "String", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLandpadArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLandpadArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLandpadArraySelectionInput>
             >,
     } as const;
 }
-export const LandpadArraySelection = makeSLFN(
-    makeLandpadArraySelectionInput,
-    "LandpadArraySelection",
-    "Landpad",
-    1,
-);
+export const LandpadArraySelection = makeSLFN(makeLandpadArraySelectionInput, "LandpadArraySelection", "Landpad", 1);
 
 type ReturnTypeFromLaunchArraySelection = {
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
     is_tentative: SelectionWrapper<"is_tentative", "Boolean", 0, {}, undefined>;
-    launch_date_local: SelectionWrapper<
-        "launch_date_local",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    launch_date_unix: SelectionWrapper<
-        "launch_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    launch_date_utc: SelectionWrapper<
-        "launch_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    launch_date_local: SelectionWrapper<"launch_date_local", "Date", 0, {}, undefined>;
+    launch_date_unix: SelectionWrapper<"launch_date_unix", "Date", 0, {}, undefined>;
+    launch_date_utc: SelectionWrapper<"launch_date_utc", "Date", 0, {}, undefined>;
     launch_site: ReturnType<
         SLFN<
             {},
@@ -6003,13 +3860,7 @@ type ReturnTypeFromLaunchArraySelection = {
             "$lazy"
         >
     >;
-    launch_success: SelectionWrapper<
-        "launch_success",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    launch_success: SelectionWrapper<"launch_success", "Boolean", 0, {}, undefined>;
     launch_year: SelectionWrapper<"launch_year", "String", 0, {}, undefined>;
     links: ReturnType<
         SLFN<
@@ -6052,20 +3903,8 @@ type ReturnTypeFromLaunchArraySelection = {
             "$lazy"
         >
     >;
-    static_fire_date_unix: SelectionWrapper<
-        "static_fire_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    static_fire_date_utc: SelectionWrapper<
-        "static_fire_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    static_fire_date_unix: SelectionWrapper<"static_fire_date_unix", "Date", 0, {}, undefined>;
+    static_fire_date_utc: SelectionWrapper<"static_fire_date_utc", "Date", 0, {}, undefined>;
     telemetry: ReturnType<
         SLFN<
             {},
@@ -6079,174 +3918,64 @@ type ReturnTypeFromLaunchArraySelection = {
             "$lazy"
         >
     >;
-    tentative_max_precision: SelectionWrapper<
-        "tentative_max_precision",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    tentative_max_precision: SelectionWrapper<"tentative_max_precision", "String", 0, {}, undefined>;
     upcoming: SelectionWrapper<"upcoming", "Boolean", 0, {}, undefined>;
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchArraySelectionInput>>;
 };
 
-export function makeLaunchArraySelectionInput(
-    this: any,
-): ReturnTypeFromLaunchArraySelection {
+export function makeLaunchArraySelectionInput(this: any): ReturnTypeFromLaunchArraySelection {
     return {
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        is_tentative: new SelectionWrapper(
-            "is_tentative",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_local: new SelectionWrapper(
-            "launch_date_local",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_unix: new SelectionWrapper(
-            "launch_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_utc: new SelectionWrapper(
-            "launch_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        is_tentative: new SelectionWrapper("is_tentative", "Boolean", 0, {}, this, undefined),
+        launch_date_local: new SelectionWrapper("launch_date_local", "Date", 0, {}, this, undefined),
+        launch_date_unix: new SelectionWrapper("launch_date_unix", "Date", 0, {}, this, undefined),
+        launch_date_utc: new SelectionWrapper("launch_date_utc", "Date", 0, {}, this, undefined),
         launch_site: LaunchSiteSelection.bind({
             collector: this,
             fieldName: "launch_site",
         }),
-        launch_success: new SelectionWrapper(
-            "launch_success",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_year: new SelectionWrapper(
-            "launch_year",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        launch_success: new SelectionWrapper("launch_success", "Boolean", 0, {}, this, undefined),
+        launch_year: new SelectionWrapper("launch_year", "String", 0, {}, this, undefined),
         links: LaunchLinksSelection.bind({
             collector: this,
             fieldName: "links",
         }),
-        mission_id: new SelectionWrapper(
-            "mission_id",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        mission_name: new SelectionWrapper(
-            "mission_name",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        mission_id: new SelectionWrapper("mission_id", "String", 1, {}, this, undefined),
+        mission_name: new SelectionWrapper("mission_name", "String", 0, {}, this, undefined),
         rocket: LaunchRocketSelection.bind({
             collector: this,
             fieldName: "rocket",
         }),
         ships: ShipArraySelection.bind({ collector: this, fieldName: "ships" }),
-        static_fire_date_unix: new SelectionWrapper(
-            "static_fire_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        static_fire_date_utc: new SelectionWrapper(
-            "static_fire_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        static_fire_date_unix: new SelectionWrapper("static_fire_date_unix", "Date", 0, {}, this, undefined),
+        static_fire_date_utc: new SelectionWrapper("static_fire_date_utc", "Date", 0, {}, this, undefined),
         telemetry: LaunchTelemetrySelection.bind({
             collector: this,
             fieldName: "telemetry",
         }),
-        tentative_max_precision: new SelectionWrapper(
-            "tentative_max_precision",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        upcoming: new SelectionWrapper(
-            "upcoming",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        tentative_max_precision: new SelectionWrapper("tentative_max_precision", "String", 0, {}, this, undefined),
+        upcoming: new SelectionWrapper("upcoming", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchArraySelectionInput>
             >,
     } as const;
 }
-export const LaunchArraySelection = makeSLFN(
-    makeLaunchArraySelectionInput,
-    "LaunchArraySelection",
-    "Launch",
-    1,
-);
+export const LaunchArraySelection = makeSLFN(makeLaunchArraySelectionInput, "LaunchArraySelection", "Launch", 1);
 
 type ReturnTypeFromLaunchesPastResultSelection = {
     data: ReturnType<
@@ -6281,9 +4010,7 @@ type ReturnTypeFromLaunchesPastResultSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeLaunchesPastResultSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchesPastResultSelection {
+export function makeLaunchesPastResultSelectionInput(this: any): ReturnTypeFromLaunchesPastResultSelection {
     return {
         data: LaunchArraySelection.bind({ collector: this, fieldName: "data" }),
         result: ResultSelection.bind({ collector: this, fieldName: "result" }),
@@ -6293,9 +4020,7 @@ export function makeLaunchesPastResultSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const LaunchesPastResultSelection = makeSLFN(
@@ -6309,13 +4034,7 @@ type ReturnTypeFromRocketArraySelection = {
     active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
     boosters: SelectionWrapper<"boosters", "Int", 0, {}, undefined>;
     company: SelectionWrapper<"company", "String", 0, {}, undefined>;
-    cost_per_launch: SelectionWrapper<
-        "cost_per_launch",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    cost_per_launch: SelectionWrapper<"cost_per_launch", "Int", 0, {}, undefined>;
     country: SelectionWrapper<"country", "String", 0, {}, undefined>;
     description: SelectionWrapper<"description", "String", 0, {}, undefined>;
     diameter: ReturnType<
@@ -6426,13 +4145,7 @@ type ReturnTypeFromRocketArraySelection = {
         >
     >;
     stages: SelectionWrapper<"stages", "Int", 0, {}, undefined>;
-    success_rate_pct: SelectionWrapper<
-        "success_rate_pct",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    success_rate_pct: SelectionWrapper<"success_rate_pct", "Int", 0, {}, undefined>;
     type: SelectionWrapper<"type", "String", 0, {}, undefined>;
     wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
 } & {
@@ -6440,63 +4153,17 @@ type ReturnTypeFromRocketArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketArraySelectionInput>>;
 };
 
-export function makeRocketArraySelectionInput(
-    this: any,
-): ReturnTypeFromRocketArraySelection {
+export function makeRocketArraySelectionInput(this: any): ReturnTypeFromRocketArraySelection {
     return {
-        active: new SelectionWrapper(
-            "active",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        boosters: new SelectionWrapper(
-            "boosters",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        company: new SelectionWrapper(
-            "company",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        cost_per_launch: new SelectionWrapper(
-            "cost_per_launch",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        country: new SelectionWrapper(
-            "country",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        description: new SelectionWrapper(
-            "description",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        active: new SelectionWrapper("active", "Boolean", 0, {}, this, undefined),
+        boosters: new SelectionWrapper("boosters", "Int", 0, {}, this, undefined),
+        company: new SelectionWrapper("company", "String", 0, {}, this, undefined),
+        cost_per_launch: new SelectionWrapper("cost_per_launch", "Int", 0, {}, this, undefined),
+        country: new SelectionWrapper("country", "String", 0, {}, this, undefined),
+        description: new SelectionWrapper("description", "String", 0, {}, this, undefined),
         diameter: DistanceSelection.bind({
             collector: this,
             fieldName: "diameter",
@@ -6505,14 +4172,7 @@ export function makeRocketArraySelectionInput(
             collector: this,
             fieldName: "engines",
         }),
-        first_flight: new SelectionWrapper(
-            "first_flight",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        first_flight: new SelectionWrapper("first_flight", "Date", 0, {}, this, undefined),
         first_stage: RocketFirstStageSelection.bind({
             collector: this,
             fieldName: "first_stage",
@@ -6537,56 +4197,27 @@ export function makeRocketArraySelectionInput(
             fieldName: "second_stage",
         }),
         stages: new SelectionWrapper("stages", "Int", 0, {}, this, undefined),
-        success_rate_pct: new SelectionWrapper(
-            "success_rate_pct",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        success_rate_pct: new SelectionWrapper("success_rate_pct", "Int", 0, {}, this, undefined),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketArraySelectionInput>
             >,
     } as const;
 }
-export const RocketArraySelection = makeSLFN(
-    makeRocketArraySelectionInput,
-    "RocketArraySelection",
-    "Rocket",
-    1,
-);
+export const RocketArraySelection = makeSLFN(makeRocketArraySelectionInput, "RocketArraySelection", "Rocket", 1);
 
 type ReturnTypeFromLaunchpadSelection = {
-    attempted_launches: SelectionWrapper<
-        "attempted_launches",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    attempted_launches: SelectionWrapper<"attempted_launches", "Int", 0, {}, undefined>;
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
     location: ReturnType<
@@ -6604,13 +4235,7 @@ type ReturnTypeFromLaunchpadSelection = {
     >;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_launches: SelectionWrapper<
-        "successful_launches",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    successful_launches: SelectionWrapper<"successful_launches", "Int", 0, {}, undefined>;
     vehicles_launched: ReturnType<
         SLFN<
             {},
@@ -6630,98 +4255,44 @@ type ReturnTypeFromLaunchpadSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchpadSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchpadSelectionInput>>;
 };
 
-export function makeLaunchpadSelectionInput(
-    this: any,
-): ReturnTypeFromLaunchpadSelection {
+export function makeLaunchpadSelectionInput(this: any): ReturnTypeFromLaunchpadSelection {
     return {
-        attempted_launches: new SelectionWrapper(
-            "attempted_launches",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        attempted_launches: new SelectionWrapper("attempted_launches", "Int", 0, {}, this, undefined),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         location: LocationSelection.bind({
             collector: this,
             fieldName: "location",
         }),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        successful_launches: new SelectionWrapper(
-            "successful_launches",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        successful_launches: new SelectionWrapper("successful_launches", "Int", 0, {}, this, undefined),
         vehicles_launched: RocketArraySelection.bind({
             collector: this,
             fieldName: "vehicles_launched",
         }),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchpadSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchpadSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchpadSelectionInput>
             >,
     } as const;
 }
-export const LaunchpadSelection = makeSLFN(
-    makeLaunchpadSelectionInput,
-    "LaunchpadSelection",
-    "Launchpad",
-    0,
-);
+export const LaunchpadSelection = makeSLFN(makeLaunchpadSelectionInput, "LaunchpadSelection", "Launchpad", 0);
 
 type ReturnTypeFromLaunchpadArraySelection = {
-    attempted_launches: SelectionWrapper<
-        "attempted_launches",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    attempted_launches: SelectionWrapper<"attempted_launches", "Int", 0, {}, undefined>;
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
     location: ReturnType<
@@ -6739,13 +4310,7 @@ type ReturnTypeFromLaunchpadArraySelection = {
     >;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_launches: SelectionWrapper<
-        "successful_launches",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    successful_launches: SelectionWrapper<"successful_launches", "Int", 0, {}, undefined>;
     vehicles_launched: ReturnType<
         SLFN<
             {},
@@ -6765,79 +4330,36 @@ type ReturnTypeFromLaunchpadArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchpadArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchpadArraySelectionInput>>;
 };
 
-export function makeLaunchpadArraySelectionInput(
-    this: any,
-): ReturnTypeFromLaunchpadArraySelection {
+export function makeLaunchpadArraySelectionInput(this: any): ReturnTypeFromLaunchpadArraySelection {
     return {
-        attempted_launches: new SelectionWrapper(
-            "attempted_launches",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        attempted_launches: new SelectionWrapper("attempted_launches", "Int", 0, {}, this, undefined),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         location: LocationSelection.bind({
             collector: this,
             fieldName: "location",
         }),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        successful_launches: new SelectionWrapper(
-            "successful_launches",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        successful_launches: new SelectionWrapper("successful_launches", "Int", 0, {}, this, undefined),
         vehicles_launched: RocketArraySelection.bind({
             collector: this,
             fieldName: "vehicles_launched",
         }),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchpadArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchpadArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchpadArraySelectionInput>
             >,
     } as const;
@@ -6852,13 +4374,7 @@ export const LaunchpadArraySelection = makeSLFN(
 type ReturnTypeFromMissionSelection = {
     description: SelectionWrapper<"description", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    manufacturers: SelectionWrapper<
-        "manufacturers",
-        "String",
-        1,
-        {},
-        undefined
-    >;
+    manufacturers: SelectionWrapper<"manufacturers", "String", 1, {}, undefined>;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
     payloads: ReturnType<
         SLFN<
@@ -6881,96 +4397,42 @@ type ReturnTypeFromMissionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeMissionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeMissionSelectionInput>>;
 };
 
-export function makeMissionSelectionInput(
-    this: any,
-): ReturnTypeFromMissionSelection {
+export function makeMissionSelectionInput(this: any): ReturnTypeFromMissionSelection {
     return {
-        description: new SelectionWrapper(
-            "description",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        description: new SelectionWrapper("description", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        manufacturers: new SelectionWrapper(
-            "manufacturers",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+        manufacturers: new SelectionWrapper("manufacturers", "String", 1, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
         payloads: PayloadArraySelection.bind({
             collector: this,
             fieldName: "payloads",
         }),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        website: new SelectionWrapper(
-            "website",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
+        website: new SelectionWrapper("website", "String", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeMissionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeMissionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeMissionSelectionInput>
             >,
     } as const;
 }
-export const MissionSelection = makeSLFN(
-    makeMissionSelectionInput,
-    "MissionSelection",
-    "Mission",
-    0,
-);
+export const MissionSelection = makeSLFN(makeMissionSelectionInput, "MissionSelection", "Mission", 0);
 
 type ReturnTypeFromMissionArraySelection = {
     description: SelectionWrapper<"description", "String", 0, {}, undefined>;
     id: SelectionWrapper<"id", "ID", 0, {}, undefined>;
-    manufacturers: SelectionWrapper<
-        "manufacturers",
-        "String",
-        1,
-        {},
-        undefined
-    >;
+    manufacturers: SelectionWrapper<"manufacturers", "String", 1, {}, undefined>;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
     payloads: ReturnType<
         SLFN<
@@ -6993,85 +4455,37 @@ type ReturnTypeFromMissionArraySelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeMissionArraySelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeMissionArraySelectionInput>>;
 };
 
-export function makeMissionArraySelectionInput(
-    this: any,
-): ReturnTypeFromMissionArraySelection {
+export function makeMissionArraySelectionInput(this: any): ReturnTypeFromMissionArraySelection {
     return {
-        description: new SelectionWrapper(
-            "description",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        description: new SelectionWrapper("description", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        manufacturers: new SelectionWrapper(
-            "manufacturers",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+        manufacturers: new SelectionWrapper("manufacturers", "String", 1, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
         payloads: PayloadArraySelection.bind({
             collector: this,
             fieldName: "payloads",
         }),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        website: new SelectionWrapper(
-            "website",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
+        website: new SelectionWrapper("website", "String", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeMissionArraySelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeMissionArraySelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeMissionArraySelectionInput>
             >,
     } as const;
 }
-export const MissionArraySelection = makeSLFN(
-    makeMissionArraySelectionInput,
-    "MissionArraySelection",
-    "Mission",
-    1,
-);
+export const MissionArraySelection = makeSLFN(makeMissionArraySelectionInput, "MissionArraySelection", "Mission", 1);
 
 type ReturnTypeFromMissionResultSelection = {
     data: ReturnType<
@@ -7106,9 +4520,7 @@ type ReturnTypeFromMissionResultSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeMissionResultSelectionInput(
-    this: any,
-): ReturnTypeFromMissionResultSelection {
+export function makeMissionResultSelectionInput(this: any): ReturnTypeFromMissionResultSelection {
     return {
         data: MissionArraySelection.bind({
             collector: this,
@@ -7121,9 +4533,7 @@ export function makeMissionResultSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const MissionResultSelection = makeSLFN(
@@ -7153,20 +4563,8 @@ type ReturnTypeFromPayloadSelection = {
             "$lazy"
         >
     >;
-    payload_mass_kg: SelectionWrapper<
-        "payload_mass_kg",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
-    payload_mass_lbs: SelectionWrapper<
-        "payload_mass_lbs",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    payload_mass_kg: SelectionWrapper<"payload_mass_kg", "Float", 0, {}, undefined>;
+    payload_mass_lbs: SelectionWrapper<"payload_mass_lbs", "Float", 0, {}, undefined>;
     payload_type: SelectionWrapper<"payload_type", "String", 0, {}, undefined>;
     reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
 } & {
@@ -7174,180 +4572,63 @@ type ReturnTypeFromPayloadSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makePayloadSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makePayloadSelectionInput>>;
 };
 
-export function makePayloadSelectionInput(
-    this: any,
-): ReturnTypeFromPayloadSelection {
+export function makePayloadSelectionInput(this: any): ReturnTypeFromPayloadSelection {
     return {
-        customers: new SelectionWrapper(
-            "customers",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+        customers: new SelectionWrapper("customers", "String", 1, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
-        manufacturer: new SelectionWrapper(
-            "manufacturer",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        nationality: new SelectionWrapper(
-            "nationality",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        norad_id: new SelectionWrapper(
-            "norad_id",
-            "Int",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+        manufacturer: new SelectionWrapper("manufacturer", "String", 0, {}, this, undefined),
+        nationality: new SelectionWrapper("nationality", "String", 0, {}, this, undefined),
+        norad_id: new SelectionWrapper("norad_id", "Int", 1, {}, this, undefined),
         orbit: new SelectionWrapper("orbit", "String", 0, {}, this, undefined),
         orbit_params: PayloadOrbitParamsSelection.bind({
             collector: this,
             fieldName: "orbit_params",
         }),
-        payload_mass_kg: new SelectionWrapper(
-            "payload_mass_kg",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        payload_mass_lbs: new SelectionWrapper(
-            "payload_mass_lbs",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        payload_type: new SelectionWrapper(
-            "payload_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        reused: new SelectionWrapper(
-            "reused",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        payload_mass_kg: new SelectionWrapper("payload_mass_kg", "Float", 0, {}, this, undefined),
+        payload_mass_lbs: new SelectionWrapper("payload_mass_lbs", "Float", 0, {}, this, undefined),
+        payload_type: new SelectionWrapper("payload_type", "String", 0, {}, this, undefined),
+        reused: new SelectionWrapper("reused", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makePayloadSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makePayloadSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makePayloadSelectionInput>
             >,
     } as const;
 }
-export const PayloadSelection = makeSLFN(
-    makePayloadSelectionInput,
-    "PayloadSelection",
-    "Payload",
-    0,
-);
+export const PayloadSelection = makeSLFN(makePayloadSelectionInput, "PayloadSelection", "Payload", 0);
 
 type ReturnTypeFromRoadsterSelection = {
     apoapsis_au: SelectionWrapper<"apoapsis_au", "Float", 0, {}, undefined>;
     details: SelectionWrapper<"details", "String", 0, {}, undefined>;
-    earth_distance_km: SelectionWrapper<
-        "earth_distance_km",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
-    earth_distance_mi: SelectionWrapper<
-        "earth_distance_mi",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    earth_distance_km: SelectionWrapper<"earth_distance_km", "Float", 0, {}, undefined>;
+    earth_distance_mi: SelectionWrapper<"earth_distance_mi", "Float", 0, {}, undefined>;
     eccentricity: SelectionWrapper<"eccentricity", "Float", 0, {}, undefined>;
     epoch_jd: SelectionWrapper<"epoch_jd", "Float", 0, {}, undefined>;
     inclination: SelectionWrapper<"inclination", "Float", 0, {}, undefined>;
-    launch_date_unix: SelectionWrapper<
-        "launch_date_unix",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
-    launch_date_utc: SelectionWrapper<
-        "launch_date_utc",
-        "Date",
-        0,
-        {},
-        undefined
-    >;
+    launch_date_unix: SelectionWrapper<"launch_date_unix", "Date", 0, {}, undefined>;
+    launch_date_utc: SelectionWrapper<"launch_date_utc", "Date", 0, {}, undefined>;
     launch_mass_kg: SelectionWrapper<"launch_mass_kg", "Int", 0, {}, undefined>;
-    launch_mass_lbs: SelectionWrapper<
-        "launch_mass_lbs",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    launch_mass_lbs: SelectionWrapper<"launch_mass_lbs", "Int", 0, {}, undefined>;
     longitude: SelectionWrapper<"longitude", "Float", 0, {}, undefined>;
-    mars_distance_km: SelectionWrapper<
-        "mars_distance_km",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
-    mars_distance_mi: SelectionWrapper<
-        "mars_distance_mi",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    mars_distance_km: SelectionWrapper<"mars_distance_km", "Float", 0, {}, undefined>;
+    mars_distance_mi: SelectionWrapper<"mars_distance_mi", "Float", 0, {}, undefined>;
     name: SelectionWrapper<"name", "String", 0, {}, undefined>;
     norad_id: SelectionWrapper<"norad_id", "Int", 0, {}, undefined>;
     orbit_type: SelectionWrapper<"orbit_type", "Float", 0, {}, undefined>;
     periapsis_arg: SelectionWrapper<"periapsis_arg", "Float", 0, {}, undefined>;
     periapsis_au: SelectionWrapper<"periapsis_au", "Float", 0, {}, undefined>;
     period_days: SelectionWrapper<"period_days", "Float", 0, {}, undefined>;
-    semi_major_axis_au: SelectionWrapper<
-        "semi_major_axis_au",
-        "Float",
-        0,
-        {},
-        undefined
-    >;
+    semi_major_axis_au: SelectionWrapper<"semi_major_axis_au", "Float", 0, {}, undefined>;
     speed_kph: SelectionWrapper<"speed_kph", "Float", 0, {}, undefined>;
     speed_mph: SelectionWrapper<"speed_mph", "Float", 0, {}, undefined>;
     wikipedia: SelectionWrapper<"wikipedia", "String", 0, {}, undefined>;
@@ -7356,224 +4637,50 @@ type ReturnTypeFromRoadsterSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRoadsterSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRoadsterSelectionInput>>;
 };
 
-export function makeRoadsterSelectionInput(
-    this: any,
-): ReturnTypeFromRoadsterSelection {
+export function makeRoadsterSelectionInput(this: any): ReturnTypeFromRoadsterSelection {
     return {
-        apoapsis_au: new SelectionWrapper(
-            "apoapsis_au",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        details: new SelectionWrapper(
-            "details",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        earth_distance_km: new SelectionWrapper(
-            "earth_distance_km",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        earth_distance_mi: new SelectionWrapper(
-            "earth_distance_mi",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        eccentricity: new SelectionWrapper(
-            "eccentricity",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        epoch_jd: new SelectionWrapper(
-            "epoch_jd",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        inclination: new SelectionWrapper(
-            "inclination",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_unix: new SelectionWrapper(
-            "launch_date_unix",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_date_utc: new SelectionWrapper(
-            "launch_date_utc",
-            "Date",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_mass_kg: new SelectionWrapper(
-            "launch_mass_kg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        launch_mass_lbs: new SelectionWrapper(
-            "launch_mass_lbs",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        longitude: new SelectionWrapper(
-            "longitude",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        mars_distance_km: new SelectionWrapper(
-            "mars_distance_km",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        mars_distance_mi: new SelectionWrapper(
-            "mars_distance_mi",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        apoapsis_au: new SelectionWrapper("apoapsis_au", "Float", 0, {}, this, undefined),
+        details: new SelectionWrapper("details", "String", 0, {}, this, undefined),
+        earth_distance_km: new SelectionWrapper("earth_distance_km", "Float", 0, {}, this, undefined),
+        earth_distance_mi: new SelectionWrapper("earth_distance_mi", "Float", 0, {}, this, undefined),
+        eccentricity: new SelectionWrapper("eccentricity", "Float", 0, {}, this, undefined),
+        epoch_jd: new SelectionWrapper("epoch_jd", "Float", 0, {}, this, undefined),
+        inclination: new SelectionWrapper("inclination", "Float", 0, {}, this, undefined),
+        launch_date_unix: new SelectionWrapper("launch_date_unix", "Date", 0, {}, this, undefined),
+        launch_date_utc: new SelectionWrapper("launch_date_utc", "Date", 0, {}, this, undefined),
+        launch_mass_kg: new SelectionWrapper("launch_mass_kg", "Int", 0, {}, this, undefined),
+        launch_mass_lbs: new SelectionWrapper("launch_mass_lbs", "Int", 0, {}, this, undefined),
+        longitude: new SelectionWrapper("longitude", "Float", 0, {}, this, undefined),
+        mars_distance_km: new SelectionWrapper("mars_distance_km", "Float", 0, {}, this, undefined),
+        mars_distance_mi: new SelectionWrapper("mars_distance_mi", "Float", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        norad_id: new SelectionWrapper(
-            "norad_id",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        orbit_type: new SelectionWrapper(
-            "orbit_type",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        periapsis_arg: new SelectionWrapper(
-            "periapsis_arg",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        periapsis_au: new SelectionWrapper(
-            "periapsis_au",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        period_days: new SelectionWrapper(
-            "period_days",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        semi_major_axis_au: new SelectionWrapper(
-            "semi_major_axis_au",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        speed_kph: new SelectionWrapper(
-            "speed_kph",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        speed_mph: new SelectionWrapper(
-            "speed_mph",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        wikipedia: new SelectionWrapper(
-            "wikipedia",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        norad_id: new SelectionWrapper("norad_id", "Int", 0, {}, this, undefined),
+        orbit_type: new SelectionWrapper("orbit_type", "Float", 0, {}, this, undefined),
+        periapsis_arg: new SelectionWrapper("periapsis_arg", "Float", 0, {}, this, undefined),
+        periapsis_au: new SelectionWrapper("periapsis_au", "Float", 0, {}, this, undefined),
+        period_days: new SelectionWrapper("period_days", "Float", 0, {}, this, undefined),
+        semi_major_axis_au: new SelectionWrapper("semi_major_axis_au", "Float", 0, {}, this, undefined),
+        speed_kph: new SelectionWrapper("speed_kph", "Float", 0, {}, this, undefined),
+        speed_mph: new SelectionWrapper("speed_mph", "Float", 0, {}, this, undefined),
+        wikipedia: new SelectionWrapper("wikipedia", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRoadsterSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRoadsterSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRoadsterSelectionInput>
             >,
     } as const;
 }
-export const RoadsterSelection = makeSLFN(
-    makeRoadsterSelectionInput,
-    "RoadsterSelection",
-    "Roadster",
-    0,
-);
+export const RoadsterSelection = makeSLFN(makeRoadsterSelectionInput, "RoadsterSelection", "Roadster", 0);
 
 type ReturnTypeFromRocketsResultSelection = {
     data: ReturnType<
@@ -7608,9 +4715,7 @@ type ReturnTypeFromRocketsResultSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeRocketsResultSelectionInput(
-    this: any,
-): ReturnTypeFromRocketsResultSelection {
+export function makeRocketsResultSelectionInput(this: any): ReturnTypeFromRocketsResultSelection {
     return {
         data: RocketArraySelection.bind({ collector: this, fieldName: "data" }),
         result: ResultSelection.bind({ collector: this, fieldName: "result" }),
@@ -7620,9 +4725,7 @@ export function makeRocketsResultSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const RocketsResultSelection = makeSLFN(
@@ -7635,13 +4738,7 @@ export const RocketsResultSelection = makeSLFN(
 type ReturnTypeFromShipSelection = {
     abs: SelectionWrapper<"abs", "Int", 0, {}, undefined>;
     active: SelectionWrapper<"active", "Boolean", 0, {}, undefined>;
-    attempted_landings: SelectionWrapper<
-        "attempted_landings",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    attempted_landings: SelectionWrapper<"attempted_landings", "Int", 0, {}, undefined>;
     class: SelectionWrapper<"class", "Int", 0, {}, undefined>;
     course_deg: SelectionWrapper<"course_deg", "Int", 0, {}, undefined>;
     home_port: SelectionWrapper<"home_port", "String", 0, {}, undefined>;
@@ -7680,13 +4777,7 @@ type ReturnTypeFromShipSelection = {
     roles: SelectionWrapper<"roles", "String", 1, {}, undefined>;
     speed_kn: SelectionWrapper<"speed_kn", "Float", 0, {}, undefined>;
     status: SelectionWrapper<"status", "String", 0, {}, undefined>;
-    successful_landings: SelectionWrapper<
-        "successful_landings",
-        "Int",
-        0,
-        {},
-        undefined
-    >;
+    successful_landings: SelectionWrapper<"successful_landings", "Int", 0, {}, undefined>;
     type: SelectionWrapper<"type", "String", 0, {}, undefined>;
     url: SelectionWrapper<"url", "String", 0, {}, undefined>;
     weight_kg: SelectionWrapper<"weight_kg", "Int", 0, {}, undefined>;
@@ -7697,47 +4788,17 @@ type ReturnTypeFromShipSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeShipSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeShipSelectionInput>>;
 };
 
 export function makeShipSelectionInput(this: any): ReturnTypeFromShipSelection {
     return {
         abs: new SelectionWrapper("abs", "Int", 0, {}, this, undefined),
-        active: new SelectionWrapper(
-            "active",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        attempted_landings: new SelectionWrapper(
-            "attempted_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        active: new SelectionWrapper("active", "Boolean", 0, {}, this, undefined),
+        attempted_landings: new SelectionWrapper("attempted_landings", "Int", 0, {}, this, undefined),
         class: new SelectionWrapper("class", "Int", 0, {}, this, undefined),
-        course_deg: new SelectionWrapper(
-            "course_deg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        home_port: new SelectionWrapper(
-            "home_port",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        course_deg: new SelectionWrapper("course_deg", "Int", 0, {}, this, undefined),
+        home_port: new SelectionWrapper("home_port", "String", 0, {}, this, undefined),
         id: new SelectionWrapper("id", "ID", 0, {}, this, undefined),
         image: new SelectionWrapper("image", "String", 0, {}, this, undefined),
         imo: new SelectionWrapper("imo", "Int", 0, {}, this, undefined),
@@ -7753,78 +4814,29 @@ export function makeShipSelectionInput(this: any): ReturnTypeFromShipSelection {
             fieldName: "position",
         }),
         roles: new SelectionWrapper("roles", "String", 1, {}, this, undefined),
-        speed_kn: new SelectionWrapper(
-            "speed_kn",
-            "Float",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        status: new SelectionWrapper(
-            "status",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        successful_landings: new SelectionWrapper(
-            "successful_landings",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        speed_kn: new SelectionWrapper("speed_kn", "Float", 0, {}, this, undefined),
+        status: new SelectionWrapper("status", "String", 0, {}, this, undefined),
+        successful_landings: new SelectionWrapper("successful_landings", "Int", 0, {}, this, undefined),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
         url: new SelectionWrapper("url", "String", 0, {}, this, undefined),
-        weight_kg: new SelectionWrapper(
-            "weight_kg",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        weight_lbs: new SelectionWrapper(
-            "weight_lbs",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        year_built: new SelectionWrapper(
-            "year_built",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        weight_kg: new SelectionWrapper("weight_kg", "Int", 0, {}, this, undefined),
+        weight_lbs: new SelectionWrapper("weight_lbs", "Int", 0, {}, this, undefined),
+        year_built: new SelectionWrapper("year_built", "Int", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeShipSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeShipSelectionInput>>,
+            selectScalars(makeShipSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeShipSelectionInput>
+            >,
     } as const;
 }
-export const ShipSelection = makeSLFN(
-    makeShipSelectionInput,
-    "ShipSelection",
-    "Ship",
-    0,
-);
+export const ShipSelection = makeSLFN(makeShipSelectionInput, "ShipSelection", "Ship", 0);
 
 type ReturnTypeFromShipsResultSelection = {
     data: ReturnType<
@@ -7859,9 +4871,7 @@ type ReturnTypeFromShipsResultSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeShipsResultSelectionInput(
-    this: any,
-): ReturnTypeFromShipsResultSelection {
+export function makeShipsResultSelectionInput(this: any): ReturnTypeFromShipsResultSelection {
     return {
         data: ShipArraySelection.bind({ collector: this, fieldName: "data" }),
         result: ResultSelection.bind({ collector: this, fieldName: "result" }),
@@ -7871,17 +4881,10 @@ export function makeShipsResultSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const ShipsResultSelection = makeSLFN(
-    makeShipsResultSelectionInput,
-    "ShipsResultSelection",
-    "ShipsResult",
-    0,
-);
+export const ShipsResultSelection = makeSLFN(makeShipsResultSelectionInput, "ShipsResultSelection", "ShipsResult", 0);
 
 type ReturnTypeFromusersNotNullArrayNotNullSelection = {
     id: SelectionWrapper<"id", "uuid", 0, {}, undefined>;
@@ -7894,55 +4897,26 @@ type ReturnTypeFromusersNotNullArrayNotNullSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeusersNotNullArrayNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeusersNotNullArrayNotNullSelectionInput>>;
 };
 
-export function makeusersNotNullArrayNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromusersNotNullArrayNotNullSelection {
+export function makeusersNotNullArrayNotNullSelectionInput(this: any): ReturnTypeFromusersNotNullArrayNotNullSelection {
     return {
         id: new SelectionWrapper("id", "uuid", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        rocket: new SelectionWrapper(
-            "rocket",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        timestamp: new SelectionWrapper(
-            "timestamp",
-            "timestamptz",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        rocket: new SelectionWrapper("rocket", "String", 0, {}, this, undefined),
+        timestamp: new SelectionWrapper("timestamp", "timestamptz", 0, {}, this, undefined),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeusersNotNullArrayNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeusersNotNullArrayNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeusersNotNullArrayNotNullSelectionInput>
             >,
     } as const;
@@ -7957,13 +4931,7 @@ export const usersNotNullArrayNotNullSelection = makeSLFN(
 type ReturnTypeFromusers_aggregate_fieldsSelection = {
     count: (
         args: users_aggregate_fieldsCountArgs,
-    ) => SelectionWrapper<
-        "count",
-        "Int",
-        0,
-        {},
-        users_aggregate_fieldsCountArgs
-    >;
+    ) => SelectionWrapper<"count", "Int", 0, {}, users_aggregate_fieldsCountArgs>;
     max: ReturnType<
         SLFN<
             {},
@@ -7995,26 +4963,13 @@ type ReturnTypeFromusers_aggregate_fieldsSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeusers_aggregate_fieldsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeusers_aggregate_fieldsSelectionInput>>;
 };
 
-export function makeusers_aggregate_fieldsSelectionInput(
-    this: any,
-): ReturnTypeFromusers_aggregate_fieldsSelection {
+export function makeusers_aggregate_fieldsSelectionInput(this: any): ReturnTypeFromusers_aggregate_fieldsSelection {
     return {
         count: (args: users_aggregate_fieldsCountArgs) =>
-            new SelectionWrapper(
-                "count",
-                "Int",
-                0,
-                {},
-                this,
-                undefined,
-                args,
-                users_aggregate_fieldsCountArgsMeta,
-            ),
+            new SelectionWrapper("count", "Int", 0, {}, this, undefined, args, users_aggregate_fieldsCountArgsMeta),
         max: users_max_fieldsSelection.bind({
             collector: this,
             fieldName: "max",
@@ -8029,14 +4984,10 @@ export function makeusers_aggregate_fieldsSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeusers_aggregate_fieldsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeusers_aggregate_fieldsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeusers_aggregate_fieldsSelectionInput>
             >,
     } as const;
@@ -8058,54 +5009,25 @@ type ReturnTypeFromusers_max_fieldsSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeusers_max_fieldsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeusers_max_fieldsSelectionInput>>;
 };
 
-export function makeusers_max_fieldsSelectionInput(
-    this: any,
-): ReturnTypeFromusers_max_fieldsSelection {
+export function makeusers_max_fieldsSelectionInput(this: any): ReturnTypeFromusers_max_fieldsSelection {
     return {
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        rocket: new SelectionWrapper(
-            "rocket",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        timestamp: new SelectionWrapper(
-            "timestamp",
-            "timestamptz",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        rocket: new SelectionWrapper("rocket", "String", 0, {}, this, undefined),
+        timestamp: new SelectionWrapper("timestamp", "timestamptz", 0, {}, this, undefined),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeusers_max_fieldsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeusers_max_fieldsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeusers_max_fieldsSelectionInput>
             >,
     } as const;
@@ -8127,54 +5049,25 @@ type ReturnTypeFromusers_min_fieldsSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeusers_min_fieldsSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeusers_min_fieldsSelectionInput>>;
 };
 
-export function makeusers_min_fieldsSelectionInput(
-    this: any,
-): ReturnTypeFromusers_min_fieldsSelection {
+export function makeusers_min_fieldsSelectionInput(this: any): ReturnTypeFromusers_min_fieldsSelection {
     return {
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        rocket: new SelectionWrapper(
-            "rocket",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        timestamp: new SelectionWrapper(
-            "timestamp",
-            "timestamptz",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        rocket: new SelectionWrapper("rocket", "String", 0, {}, this, undefined),
+        timestamp: new SelectionWrapper("timestamp", "timestamptz", 0, {}, this, undefined),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeusers_min_fieldsSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeusers_min_fieldsSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeusers_min_fieldsSelectionInput>
             >,
     } as const;
@@ -8219,9 +5112,7 @@ type ReturnTypeFromusers_aggregateNotNullSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeusers_aggregateNotNullSelectionInput(
-    this: any,
-): ReturnTypeFromusers_aggregateNotNullSelection {
+export function makeusers_aggregateNotNullSelectionInput(this: any): ReturnTypeFromusers_aggregateNotNullSelection {
     return {
         aggregate: users_aggregate_fieldsSelection.bind({
             collector: this,
@@ -8237,9 +5128,7 @@ export function makeusers_aggregateNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const users_aggregateNotNullSelection = makeSLFN(
@@ -8260,63 +5149,31 @@ type ReturnTypeFromusersSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeusersSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeusersSelectionInput>>;
 };
 
-export function makeusersSelectionInput(
-    this: any,
-): ReturnTypeFromusersSelection {
+export function makeusersSelectionInput(this: any): ReturnTypeFromusersSelection {
     return {
         id: new SelectionWrapper("id", "uuid", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        rocket: new SelectionWrapper(
-            "rocket",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        timestamp: new SelectionWrapper(
-            "timestamp",
-            "timestamptz",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        twitter: new SelectionWrapper(
-            "twitter",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        rocket: new SelectionWrapper("rocket", "String", 0, {}, this, undefined),
+        timestamp: new SelectionWrapper("timestamp", "timestamptz", 0, {}, this, undefined),
+        twitter: new SelectionWrapper("twitter", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeusersSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<ReturnType<typeof makeusersSelectionInput>>,
+            selectScalars(makeusersSelectionInput.bind(this)()) as SLWsFromSelection<
+                ReturnType<typeof makeusersSelectionInput>
+            >,
     } as const;
 }
-export const usersSelection = makeSLFN(
-    makeusersSelectionInput,
-    "usersSelection",
-    "users",
-    0,
-);
+export const usersSelection = makeSLFN(makeusersSelectionInput, "usersSelection", "users", 0);
 
 type ReturnTypeFrom_ServiceNotNullSelection = {
     sdl: SelectionWrapper<"sdl", "String", 0, {}, undefined>;
@@ -8325,14 +5182,10 @@ type ReturnTypeFrom_ServiceNotNullSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof make_ServiceNotNullSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof make_ServiceNotNullSelectionInput>>;
 };
 
-export function make_ServiceNotNullSelectionInput(
-    this: any,
-): ReturnTypeFrom_ServiceNotNullSelection {
+export function make_ServiceNotNullSelectionInput(this: any): ReturnTypeFrom_ServiceNotNullSelection {
     return {
         sdl: new SelectionWrapper("sdl", "String", 0, {}, this, undefined),
 
@@ -8341,14 +5194,10 @@ export function make_ServiceNotNullSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                make_ServiceNotNullSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(make_ServiceNotNullSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof make_ServiceNotNullSelectionInput>
             >,
     } as const;
@@ -8380,23 +5229,12 @@ type ReturnTypeFromusers_mutation_responseSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeusers_mutation_responseSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeusers_mutation_responseSelectionInput>>;
 };
 
-export function makeusers_mutation_responseSelectionInput(
-    this: any,
-): ReturnTypeFromusers_mutation_responseSelection {
+export function makeusers_mutation_responseSelectionInput(this: any): ReturnTypeFromusers_mutation_responseSelection {
     return {
-        affected_rows: new SelectionWrapper(
-            "affected_rows",
-            "Int",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        affected_rows: new SelectionWrapper("affected_rows", "Int", 0, {}, this, undefined),
         returning: usersNotNullArrayNotNullSelection.bind({
             collector: this,
             fieldName: "returning",
@@ -8407,14 +5245,10 @@ export function makeusers_mutation_responseSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeusers_mutation_responseSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeusers_mutation_responseSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeusers_mutation_responseSelectionInput>
             >,
     } as const;
@@ -8434,14 +5268,10 @@ type ReturnTypeFromCapsuleMissionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCapsuleMissionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCapsuleMissionSelectionInput>>;
 };
 
-export function makeCapsuleMissionSelectionInput(
-    this: any,
-): ReturnTypeFromCapsuleMissionSelection {
+export function makeCapsuleMissionSelectionInput(this: any): ReturnTypeFromCapsuleMissionSelection {
     return {
         flight: new SelectionWrapper("flight", "Int", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
@@ -8451,14 +5281,10 @@ export function makeCapsuleMissionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCapsuleMissionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeCapsuleMissionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeCapsuleMissionSelectionInput>
             >,
     } as const;
@@ -8478,14 +5304,10 @@ type ReturnTypeFromCoreMissionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeCoreMissionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeCoreMissionSelectionInput>>;
 };
 
-export function makeCoreMissionSelectionInput(
-    this: any,
-): ReturnTypeFromCoreMissionSelection {
+export function makeCoreMissionSelectionInput(this: any): ReturnTypeFromCoreMissionSelection {
     return {
         flight: new SelectionWrapper("flight", "Int", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
@@ -8495,24 +5317,15 @@ export function makeCoreMissionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeCoreMissionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeCoreMissionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeCoreMissionSelectionInput>
             >,
     } as const;
 }
-export const CoreMissionSelection = makeSLFN(
-    makeCoreMissionSelectionInput,
-    "CoreMissionSelection",
-    "CoreMission",
-    0,
-);
+export const CoreMissionSelection = makeSLFN(makeCoreMissionSelectionInput, "CoreMissionSelection", "CoreMission", 0);
 
 type ReturnTypeFromDragonThrustSelection = {
     amount: SelectionWrapper<"amount", "Int", 0, {}, undefined>;
@@ -8538,32 +5351,14 @@ type ReturnTypeFromDragonThrustSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeDragonThrustSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeDragonThrustSelectionInput>>;
 };
 
-export function makeDragonThrustSelectionInput(
-    this: any,
-): ReturnTypeFromDragonThrustSelection {
+export function makeDragonThrustSelectionInput(this: any): ReturnTypeFromDragonThrustSelection {
     return {
         amount: new SelectionWrapper("amount", "Int", 0, {}, this, undefined),
-        fuel_1: new SelectionWrapper(
-            "fuel_1",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        fuel_2: new SelectionWrapper(
-            "fuel_2",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        fuel_1: new SelectionWrapper("fuel_1", "String", 0, {}, this, undefined),
+        fuel_2: new SelectionWrapper("fuel_2", "String", 0, {}, this, undefined),
         pods: new SelectionWrapper("pods", "Int", 0, {}, this, undefined),
         thrust: ForceSelection.bind({ collector: this, fieldName: "thrust" }),
         type: new SelectionWrapper("type", "String", 0, {}, this, undefined),
@@ -8573,14 +5368,10 @@ export function makeDragonThrustSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeDragonThrustSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeDragonThrustSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeDragonThrustSelectionInput>
             >,
     } as const;
@@ -8610,21 +5401,9 @@ type ReturnTypeFromLaunchRocketFirstStageCoreSelection = {
     flight: SelectionWrapper<"flight", "Int", 0, {}, undefined>;
     gridfins: SelectionWrapper<"gridfins", "Boolean", 0, {}, undefined>;
     land_success: SelectionWrapper<"land_success", "Boolean", 0, {}, undefined>;
-    landing_intent: SelectionWrapper<
-        "landing_intent",
-        "Boolean",
-        0,
-        {},
-        undefined
-    >;
+    landing_intent: SelectionWrapper<"landing_intent", "Boolean", 0, {}, undefined>;
     landing_type: SelectionWrapper<"landing_type", "String", 0, {}, undefined>;
-    landing_vehicle: SelectionWrapper<
-        "landing_vehicle",
-        "String",
-        0,
-        {},
-        undefined
-    >;
+    landing_vehicle: SelectionWrapper<"landing_vehicle", "String", 0, {}, undefined>;
     legs: SelectionWrapper<"legs", "Boolean", 0, {}, undefined>;
     reused: SelectionWrapper<"reused", "Boolean", 0, {}, undefined>;
 } & {
@@ -8632,9 +5411,7 @@ type ReturnTypeFromLaunchRocketFirstStageCoreSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeLaunchRocketFirstStageCoreSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeLaunchRocketFirstStageCoreSelectionInput>>;
 };
 
 export function makeLaunchRocketFirstStageCoreSelectionInput(
@@ -8644,69 +5421,23 @@ export function makeLaunchRocketFirstStageCoreSelectionInput(
         block: new SelectionWrapper("block", "Int", 0, {}, this, undefined),
         core: CoreSelection.bind({ collector: this, fieldName: "core" }),
         flight: new SelectionWrapper("flight", "Int", 0, {}, this, undefined),
-        gridfins: new SelectionWrapper(
-            "gridfins",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        land_success: new SelectionWrapper(
-            "land_success",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        landing_intent: new SelectionWrapper(
-            "landing_intent",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        landing_type: new SelectionWrapper(
-            "landing_type",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        landing_vehicle: new SelectionWrapper(
-            "landing_vehicle",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        gridfins: new SelectionWrapper("gridfins", "Boolean", 0, {}, this, undefined),
+        land_success: new SelectionWrapper("land_success", "Boolean", 0, {}, this, undefined),
+        landing_intent: new SelectionWrapper("landing_intent", "Boolean", 0, {}, this, undefined),
+        landing_type: new SelectionWrapper("landing_type", "String", 0, {}, this, undefined),
+        landing_vehicle: new SelectionWrapper("landing_vehicle", "String", 0, {}, this, undefined),
         legs: new SelectionWrapper("legs", "Boolean", 0, {}, this, undefined),
-        reused: new SelectionWrapper(
-            "reused",
-            "Boolean",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        reused: new SelectionWrapper("reused", "Boolean", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeLaunchRocketFirstStageCoreSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeLaunchRocketFirstStageCoreSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeLaunchRocketFirstStageCoreSelectionInput>
             >,
     } as const;
@@ -8764,9 +5495,7 @@ type ReturnTypeFromMutationSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeMutationSelectionInput(
-    this: any,
-): ReturnTypeFromMutationSelection {
+export function makeMutationSelectionInput(this: any): ReturnTypeFromMutationSelection {
     return {
         delete_users: (args: MutationDelete_usersArgs) =>
             users_mutation_responseSelection.bind({
@@ -8795,17 +5524,10 @@ export function makeMutationSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const MutationSelection = makeSLFN(
-    makeMutationSelectionInput,
-    "MutationSelection",
-    "Mutation",
-    0,
-);
+export const MutationSelection = makeSLFN(makeMutationSelectionInput, "MutationSelection", "Mutation", 0);
 
 type ReturnTypeFromQuerySelection = {
     capsule: (args: QueryCapsuleArgs) => ReturnType<
@@ -9347,9 +6069,7 @@ type ReturnTypeFromQuerySelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeQuerySelectionInput(
-    this: any,
-): ReturnTypeFromQuerySelection {
+export function makeQuerySelectionInput(this: any): ReturnTypeFromQuerySelection {
     return {
         capsule: (args: QueryCapsuleArgs) =>
             CapsuleSelection.bind({
@@ -9632,17 +6352,10 @@ export function makeQuerySelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
-export const QuerySelection = makeSLFN(
-    makeQuerySelectionInput,
-    "QuerySelection",
-    "Query",
-    0,
-);
+export const QuerySelection = makeSLFN(makeQuerySelectionInput, "QuerySelection", "Query", 0);
 
 type ReturnTypeFromRocketPayloadWeightSelection = {
     id: SelectionWrapper<"id", "String", 0, {}, undefined>;
@@ -9654,14 +6367,10 @@ type ReturnTypeFromRocketPayloadWeightSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeRocketPayloadWeightSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeRocketPayloadWeightSelectionInput>>;
 };
 
-export function makeRocketPayloadWeightSelectionInput(
-    this: any,
-): ReturnTypeFromRocketPayloadWeightSelection {
+export function makeRocketPayloadWeightSelectionInput(this: any): ReturnTypeFromRocketPayloadWeightSelection {
     return {
         id: new SelectionWrapper("id", "String", 0, {}, this, undefined),
         kg: new SelectionWrapper("kg", "Int", 0, {}, this, undefined),
@@ -9673,14 +6382,10 @@ export function makeRocketPayloadWeightSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeRocketPayloadWeightSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeRocketPayloadWeightSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeRocketPayloadWeightSelectionInput>
             >,
     } as const;
@@ -9700,23 +6405,12 @@ type ReturnTypeFromShipMissionSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof makeShipMissionSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof makeShipMissionSelectionInput>>;
 };
 
-export function makeShipMissionSelectionInput(
-    this: any,
-): ReturnTypeFromShipMissionSelection {
+export function makeShipMissionSelectionInput(this: any): ReturnTypeFromShipMissionSelection {
     return {
-        flight: new SelectionWrapper(
-            "flight",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        flight: new SelectionWrapper("flight", "String", 0, {}, this, undefined),
         name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -9724,24 +6418,15 @@ export function makeShipMissionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                makeShipMissionSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(makeShipMissionSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof makeShipMissionSelectionInput>
             >,
     } as const;
 }
-export const ShipMissionSelection = makeSLFN(
-    makeShipMissionSelectionInput,
-    "ShipMissionSelection",
-    "ShipMission",
-    0,
-);
+export const ShipMissionSelection = makeSLFN(makeShipMissionSelectionInput, "ShipMissionSelection", "ShipMission", 0);
 
 type ReturnTypeFromSubscriptionSelection = {
     users: (args: SubscriptionUsersArgs) => ReturnType<
@@ -9789,9 +6474,7 @@ type ReturnTypeFromSubscriptionSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeSubscriptionSelectionInput(
-    this: any,
-): ReturnTypeFromSubscriptionSelection {
+export function makeSubscriptionSelectionInput(this: any): ReturnTypeFromSubscriptionSelection {
     return {
         users: (args: SubscriptionUsersArgs) =>
             usersNotNullArrayNotNullSelection.bind({
@@ -9820,9 +6503,7 @@ export function makeSubscriptionSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const SubscriptionSelection = makeSLFN(
@@ -9865,9 +6546,7 @@ type ReturnTypeFromusers_aggregateSelection = {
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 };
 
-export function makeusers_aggregateSelectionInput(
-    this: any,
-): ReturnTypeFromusers_aggregateSelection {
+export function makeusers_aggregateSelectionInput(this: any): ReturnTypeFromusers_aggregateSelection {
     return {
         aggregate: users_aggregate_fieldsSelection.bind({
             collector: this,
@@ -9883,9 +6562,7 @@ export function makeusers_aggregateSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
     } as const;
 }
 export const users_aggregateSelection = makeSLFN(
@@ -9902,14 +6579,10 @@ type ReturnTypeFrom_ServiceSelection = {
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
 
-    $scalars: () => SLWsFromSelection<
-        ReturnType<typeof make_ServiceSelectionInput>
-    >;
+    $scalars: () => SLWsFromSelection<ReturnType<typeof make_ServiceSelectionInput>>;
 };
 
-export function make_ServiceSelectionInput(
-    this: any,
-): ReturnTypeFrom_ServiceSelection {
+export function make_ServiceSelectionInput(this: any): ReturnTypeFrom_ServiceSelection {
     return {
         sdl: new SelectionWrapper("sdl", "String", 0, {}, this, undefined),
 
@@ -9918,24 +6591,15 @@ export function make_ServiceSelectionInput(
                 collector: this,
                 fieldName: "",
                 isFragment: f.name,
-            }) as (
-                ...args: ArgumentsTypeFromFragment<F>
-            ) => ReturnTypeFromFragment<F>,
+            }) as (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>,
 
         $scalars: () =>
-            selectScalars(
-                make_ServiceSelectionInput.bind(this)(),
-            ) as SLWsFromSelection<
+            selectScalars(make_ServiceSelectionInput.bind(this)()) as SLWsFromSelection<
                 ReturnType<typeof make_ServiceSelectionInput>
             >,
     } as const;
 }
-export const _ServiceSelection = makeSLFN(
-    make_ServiceSelectionInput,
-    "_ServiceSelection",
-    "_Service",
-    0,
-);
+export const _ServiceSelection = makeSLFN(make_ServiceSelectionInput, "_ServiceSelection", "_Service", 0);
 
 export const _directive_include =
     (args: Directive_includeArgs) =>
@@ -9978,27 +6642,16 @@ export function _makeRootOperationInput(this: any) {
     } as const;
 }
 
-function __client__<
-    T extends object,
-    F extends ReturnType<typeof _makeRootOperationInput>,
->(this: any, s: (selection: F) => T) {
-    const root = new OperationSelectionCollector(
-        undefined,
-        undefined,
-        new RootOperation(),
-    );
+function __client__<T extends object, F extends ReturnType<typeof _makeRootOperationInput>>(
+    this: any,
+    s: (selection: F) => T,
+) {
+    const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
     const rootRef = { ref: root };
     const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
 
     const r = s(selection);
-    const _result = new SelectionWrapper(
-        undefined,
-        undefined,
-        undefined,
-        r,
-        root,
-        undefined,
-    ) as unknown as T;
+    const _result = new SelectionWrapper(undefined, undefined, undefined, r, root, undefined) as unknown as T;
     Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
     const result = _result as {
         [k in keyof T]: T[k] extends (...args: infer A) => any
@@ -10024,13 +6677,9 @@ function __client__<
 const __init__ = (options: {
     headers?: { [key: string]: string };
     scalars?: {
-        [key in keyof ScalarTypeMapDefault]?: (
-            v: string,
-        ) => ScalarTypeMapDefault[key];
+        [key in keyof ScalarTypeMapDefault]?: (v: string) => ScalarTypeMapDefault[key];
     } & {
-        [key in keyof ScalarTypeMapWithCustom]?: (
-            v: string,
-        ) => ScalarTypeMapWithCustom[key];
+        [key in keyof ScalarTypeMapWithCustom]?: (v: string) => ScalarTypeMapWithCustom[key];
     };
 }) => {
     if (options.headers) {

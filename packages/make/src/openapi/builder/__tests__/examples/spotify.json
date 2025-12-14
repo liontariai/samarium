@@ -1047,15 +1047,7 @@
                             "description": "A comma-separated list of item types to search across. Search results include hits\nfrom all the specified item types. For example: `q=abacab&type=album,track` returns\nboth albums and tracks matching \"abacab\".\n",
                             "items": {
                                 "type": "string",
-                                "enum": [
-                                    "album",
-                                    "artist",
-                                    "playlist",
-                                    "track",
-                                    "show",
-                                    "episode",
-                                    "audiobook"
-                                ]
+                                "enum": ["album", "artist", "playlist", "track", "show", "episode", "audiobook"]
                             },
                             "type": "array"
                         }
@@ -1261,10 +1253,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             }
@@ -1397,10 +1386,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             },
@@ -1479,10 +1465,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             },
@@ -1541,10 +1524,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             }
@@ -1963,10 +1943,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "user-library-read",
-                            "user-read-playback-position"
-                        ]
+                        "oauth_2_0": ["user-library-read", "user-read-playback-position"]
                     }
                 ]
             },
@@ -2380,10 +2357,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-read-private",
-                            "playlist-read-collaborative"
-                        ]
+                        "oauth_2_0": ["playlist-read-private", "playlist-read-collaborative"]
                     }
                 ]
             },
@@ -2447,10 +2421,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             }
@@ -2501,10 +2472,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             },
@@ -2534,10 +2502,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             }
@@ -2809,11 +2774,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "ugc-image-upload",
-                            "playlist-modify-public",
-                            "playlist-modify-private"
-                        ]
+                        "oauth_2_0": ["ugc-image-upload", "playlist-modify-public", "playlist-modify-private"]
                     }
                 ]
             }
@@ -4554,10 +4515,7 @@
                 },
                 "security": [
                     {
-                        "oauth_2_0": [
-                            "user-read-currently-playing",
-                            "user-read-playback-state"
-                        ]
+                        "oauth_2_0": ["user-read-currently-playing", "user-read-playback-state"]
                     }
                 ]
             },
@@ -6761,15 +6719,7 @@
             "PagingObject": {
                 "type": "object",
                 "x-spotify-docs-type": "PagingObject",
-                "required": [
-                    "href",
-                    "items",
-                    "limit",
-                    "next",
-                    "offset",
-                    "previous",
-                    "total"
-                ],
+                "required": ["href", "items", "limit", "next", "offset", "previous", "total"],
                 "properties": {
                     "href": {
                         "type": "string",
@@ -8241,12 +8191,7 @@
                         "properties": {
                             "album_group": {
                                 "type": "string",
-                                "enum": [
-                                    "album",
-                                    "single",
-                                    "compilation",
-                                    "appears_on"
-                                ],
+                                "enum": ["album", "single", "compilation", "appears_on"],
                                 "example": "compilation",
                                 "description": "This field describes the relationship between the artist and the album.\n"
                             }
@@ -8436,15 +8381,7 @@
             },
             "AlbumObject": {
                 "x-spotify-docs-type": "AlbumObject",
-                "required": [
-                    "artists",
-                    "tracks",
-                    "copyrights",
-                    "external_ids",
-                    "genres",
-                    "label",
-                    "popularity"
-                ],
+                "required": ["artists", "tracks", "copyrights", "external_ids", "genres", "label", "popularity"],
                 "allOf": [
                     {
                         "$ref": "#/components/schemas/AlbumBase"

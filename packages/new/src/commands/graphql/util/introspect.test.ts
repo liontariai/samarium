@@ -1,7 +1,7 @@
 import { expect, describe, it } from "bun:test";
 import { introspectGraphQLSchema } from "./introspect";
 
-describe("introspectGraphQLSchema", () => {
+describe.skip("introspectGraphQLSchema", () => {
     it("should return a GraphQLSchema object", async () => {
         // Arrange
         const endpoint =

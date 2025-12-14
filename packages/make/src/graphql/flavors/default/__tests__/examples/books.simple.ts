@@ -4,22 +4,10 @@ import { makeSLFN } from "../utils";
 export function makeBookArraySelectionInput(this: any) {
     return {
         title: new SelectionWrapper("title", "String", 0, {}, this, undefined),
-        author: new SelectionWrapper(
-            "author",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
+        author: new SelectionWrapper("author", "String", 0, {}, this, undefined),
     } as const;
 }
-export const BookArraySelection = makeSLFN(
-    makeBookArraySelectionInput,
-    "BookArraySelection",
-    "Book",
-    1,
-);
+export const BookArraySelection = makeSLFN(makeBookArraySelectionInput, "BookArraySelection", "Book", 1);
 export function makeQuerySelectionInput(this: any) {
     return {
         books: BookArraySelection.bind({
@@ -28,12 +16,7 @@ export function makeQuerySelectionInput(this: any) {
         }),
     } as const;
 }
-export const QuerySelection = makeSLFN(
-    makeQuerySelectionInput,
-    "QuerySelection",
-    "Query",
-    0,
-);
+export const QuerySelection = makeSLFN(makeQuerySelectionInput, "QuerySelection", "Query", 0);
 export type MutationCreateBooksArgs = {
     titles: string[];
     authors: string[];
@@ -53,12 +36,7 @@ export function makeMutationSelectionInput(this: any) {
             }),
     } as const;
 }
-export const MutationSelection = makeSLFN(
-    makeMutationSelectionInput,
-    "MutationSelection",
-    "Mutation",
-    0,
-);
+export const MutationSelection = makeSLFN(makeMutationSelectionInput, "MutationSelection", "Mutation", 0);
 
 export function _makeRootOperationInput(this: any) {
     return {
