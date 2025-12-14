@@ -767,7 +767,9 @@ export class SelectionWrapper<
             ),
             (() => {
                 const getCache = (t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>) =>
-                    t[ROOT_OP_COLLECTOR]!.ref.cache;
+                    t[SLW_OP_RESULT_DATA_OVERRIDE]
+                        ? { data: new Map(), proxiedArray: new Map() }
+                        : t[ROOT_OP_COLLECTOR]!.ref.cache;
 
                 const getResultDataForTarget = (
                     t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>,
@@ -1037,13 +1039,18 @@ export class SelectionWrapper<
                                     const proxiedData =
                                         cache.proxiedArray.get(target[SLW_OP_PATH]!) ??
                                         Array.from({ length: data.length }, (_, i) =>
-                                            proxify(
-                                                data[i],
-                                                target[SLW_CLONE]({
-                                                    SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
-                                                    OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                                }),
-                                            ),
+                                            typeof data[i] === "object"
+                                                ? proxify(
+                                                      data[i],
+                                                      target[SLW_CLONE]({
+                                                          SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                                          OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                      }),
+                                                  )
+                                                : target[SLW_CLONE]({
+                                                      SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                                      OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                  }),
                                         );
 
                                     if (!cache.proxiedArray.has(path)) {
