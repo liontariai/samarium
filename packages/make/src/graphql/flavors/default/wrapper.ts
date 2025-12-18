@@ -17,10 +17,10 @@ function proxify(data: any, slw: any): any & ArrayLike<any> {
             return Reflect.deleteProperty(slw, prop);
         },
         ownKeys(target: any[]): ArrayLike<string | symbol> {
-            return Reflect.ownKeys(slw);
+            return Reflect.ownKeys(target);
         },
         getOwnPropertyDescriptor(target: any[], prop: PropertyKey): PropertyDescriptor | undefined {
-            return Reflect.getOwnPropertyDescriptor(slw, prop);
+            return Reflect.getOwnPropertyDescriptor(target, prop);
         },
         getPrototypeOf(target: any[]): object | null {
             // Return Array.prototype for better array-like behavior (e.g., instanceof Array)
@@ -792,10 +792,16 @@ export class SelectionWrapper<
 
                 return {
                     // implement ProxyHandler methods
-                    ownKeys() {
+                    ownKeys(target) {
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.ownKeys(new Array(target[SLW_FIELD_ARR_DEPTH]));
+                        }
                         return Reflect.ownKeys(value ?? {});
                     },
                     getOwnPropertyDescriptor(target, prop) {
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.getOwnPropertyDescriptor(new Array(target[SLW_FIELD_ARR_DEPTH]), prop);
+                        }
                         return Reflect.getOwnPropertyDescriptor(value ?? {}, prop);
                     },
                     has(target, prop) {
@@ -804,6 +810,9 @@ export class SelectionWrapper<
                             const dataArr = getResultDataForTarget(target);
                             if (Array.isArray(dataArr)) return true;
                             if (dataArr === undefined || dataArr === null) return false;
+                        }
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.has(new Array(target[SLW_FIELD_ARR_DEPTH]), prop);
                         }
 
                         return Reflect.has(value ?? {}, prop);
