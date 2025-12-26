@@ -944,7 +944,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${field.type.isNonNull ? "!" : ""}",
             ${field.type.isList ?? 0},
             {},
-            this,
+            that,
             undefined,
             ${field.hasArgs ? `args, ${argsTypeName}Meta` : ""})`;
     }
@@ -980,7 +980,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             this.collector.addSelectionFunction(fieldType, selectionFunction);
 
-            return `${field.name}: ${selectionFunction}`;
+            return `get ${field.name}() { return ${selectionFunction} }`;
         } else if (fieldType.ofType) {
             const selectionFunction = new GeneratorSelectionTypeFlavorDefault(
                 fieldType.ofType.name,
@@ -991,9 +991,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName } = collectArgMeta();
 
-                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
+                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
             }
-            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" }) as any`;
+            return `${field.name}: ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}" }) as any`;
         } else {
             console.error(fieldType);
             throw new Error(`Unknown type for field ${field.name}: ${fieldType.name}`);
@@ -1106,7 +1106,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ${this.typeMeta.possibleTypes
                     .map(
                         (t) => `${t.name}: ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
-                        collector: this,
+                        collector: that,
                         fieldName: "",
                         onTypeFragment: "${t.name}",
                     }),`,
@@ -1118,7 +1118,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             helperFunctions = `
             $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
                 f.bind({
-                    collector: this,
+                    collector: that,
                     fieldName: "",
                     isFragment: f.name,
                 }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
@@ -1127,7 +1127,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ? `
             $scalars: () =>
                 selectScalars(
-                        make${selectionFunctionName}Input.bind(this)(),
+                        make${selectionFunctionName}Input.bind(that)(),
                     ) as SLWsFromSelection<
                         ReturnType<typeof make${selectionFunctionName}Input>
                     >,
@@ -1136,7 +1136,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }
             $all: (opts?: any, collector = undefined) =>
                 selectAll(
-                    make${selectionFunctionName}Input.bind(this)() as any,
+                    make${selectionFunctionName}Input.bind(that)() as any,
                     "${tsTypeName}",
                     opts as any,
                     collector
@@ -1147,6 +1147,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
         const selectionFunction = `
             export function make${selectionFunctionName}Input(this: any) ${this.typeMeta.isUnion ? "" : `: ReturnTypeFrom${selectionFunctionName}`} {
+                const that = this;
                 return {
                     ${this.typeMeta.fields
                         .map(
