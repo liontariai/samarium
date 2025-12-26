@@ -823,7 +823,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                       .replaceAll("]", "")}"]`
                                 : (this.ScalarTypeMap().get(
                                       arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
-                                  ) ?? "any");
+                                  ) ?? "any") +
+                                  (arg.type.isList ? Array.from({ length: arg.type.isList }).fill("[]").join("") : "");
                         } else if (isInput || isEnum) {
                             argType = this.originalTypeNameToTypescriptTypeName(arg.type.name);
                         }
@@ -1028,7 +1029,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                   .replaceAll("]", "")}"]`
                             : (this.ScalarTypeMap().get(
                                   arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
-                              ) ?? "any");
+                              ) ?? "any") +
+                              (arg.type.isList ? Array.from({ length: arg.type.isList }).fill("[]").join("") : "");
                     } else if (isInput || isEnum) {
                         argType = this.originalTypeNameToTypescriptTypeName(arg.type.name);
                     }
