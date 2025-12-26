@@ -226,9 +226,79 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             : EE[k];
     };
 
+    type SLFNReturned<
+        T extends object,
+        F extends object,
+        E extends { [key: string | number | symbol]: any },
+        TAD extends number,
+        AS_PROMISE,
+        AS_ASYNC_ITER,
+        REP extends string | number | symbol,
+    > =
+        // Overload 1: No 's' provided -> return full transformed F
+        (() => Prettify<
+            ConvertToPromise<
+                ConvertToAsyncIter<
+                    ToTArrayWithDepth<
+                        Prettify<"$all" extends keyof F ? (F["$all"] extends (...args: any) => any ? ReturnType<F["$all"]> : never) : never>,
+                        TAD
+                    >,
+                    AS_ASYNC_ITER
+                >,
+                AS_PROMISE
+            > &
+                ReplacePlaceHoldersWithTNested<
+                    ConvertToAsyncIter<
+                        ToTArrayWithDepth<
+                            Prettify<"$all" extends keyof F ? (F["$all"] extends (...args: any) => any ? ReturnType<F["$all"]> : never) : never>,
+                            TAD
+                        >,
+                        AS_ASYNC_ITER
+                    >,
+                    E,
+                    REP
+                >
+        >) &
+            // Overload 2: With 's' provided -> infer result from selection
+            (<
+                TT = T,
+                FF = F,
+                EE = E,
+                inferedResult = {
+                    [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                        infer FN,
+                        infer TTNP,
+                        infer TTAD,
+                        infer VT,
+                        infer AT
+                    >
+                        ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                        : TT[K];
+                },
+            >(
+                this: any,
+                s: (selection: FF) => TT,
+            ) => Prettify<
+                ConvertToPromise<
+                    ConvertToAsyncIter<
+                        ToTArrayWithDepth<inferedResult, TAD>,
+                        AS_ASYNC_ITER
+                    >,
+                    AS_PROMISE
+                > &
+                    ReplacePlaceHoldersWithTNested<
+                        ConvertToAsyncIter<
+                            ToTArrayWithDepth<inferedResult, TAD>,
+                            AS_ASYNC_ITER
+                        >,
+                        EE,
+                        REP
+                    >
+            >);
+
     export type SLFN<
         T extends object,
-        F,
+        F extends object,
         N extends string,
         TNP extends string,
         TAD extends number,
@@ -241,35 +311,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         SLFN_name: N,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
-    ) => <
-        TT = T,
-        FF = F,
-        EE = E,
-        inferedResult = {
-            [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                infer FN,
-                infer TTNP,
-                infer TTAD,
-                infer VT,
-                infer AT
-            >
-                ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                : TT[K];
-        },
-    >(
-        this: any,
-        s: (selection: FF) => TT,
-    ) => Prettify<
-            ConvertToPromise<
-                ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>,
-                AS_PROMISE
-            > &
-            ReplacePlaceHoldersWithTNested<
-                ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>,
-                EE,
-                REP
-            >
-        >;
+    ) => SLFNReturned<T, F, E, TAD, AS_PROMISE, AS_ASYNC_ITER, REP>;
     `;
     public static readonly HelperFunctions = `
     const selectScalars = (selection: Record<string, any>) =>
@@ -498,7 +540,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     const selectAll = <
         S,
         TNP extends string,
-        SUB extends ReturnType<SLFN<{}, unknown, string, string, number>>,
+        SUB extends ReturnType<SLFN<{}, object, string, string, number>>,
         V extends
             | (SelectionWrapperImpl<any, any, any> | SUB)
             | ((args: any) => SelectionWrapperImpl<any, any, any> | SUB),
@@ -528,6 +570,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     opts.cyclic as Record<string, string>,
                 )
                     .filter(([k, v]) => v !== "exclude")
+                    .filter(([k, v]) =>
+                        v.match(new RegExp(\`$\{selectCyclicFieldsOptsStr\}(.*)\`)),
+                    )
                     .map((e) => {
                         const levels = parseInt(
                             e[1]
@@ -583,7 +628,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
     const makeSLFN = <
         T extends object,
-        F,
+        F extends object,
         N extends string,
         TNP extends string,
         TAD extends number,
@@ -595,12 +640,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     ) => {
         function _SLFN<TT extends T, FF extends F>(
             this: any,
-            s: (selection: FF) => TT,
+            _s?: (selection: FF) => TT,
         ) {
             let parent: SelectionFnParent = this ?? {
                 collector: new OperationSelectionCollector(),
             };
             function innerFn(this: any) {
+                const s =
+                    _s ??
+                    ((selection: FF) =>
+                        (selection as any)["$all"]({ cyclic: "exclude" }) as TT);
+
                 const selection: FF = makeSLFNInput.bind(this)() as any;
                 const r = s(selection);
                 const _result = new SelectionWrapper(
@@ -942,7 +992,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                 return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
             }
-            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" })`;
+            return `${field.name}: ${selectionFunction}.bind({ collector: this, fieldName: "${field.name}" }) as any`;
         } else {
             console.error(fieldType);
             throw new Error(`Unknown type for field ${field.name}: ${fieldType.name}`);
