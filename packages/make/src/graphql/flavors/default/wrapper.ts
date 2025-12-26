@@ -40,6 +40,7 @@ type FnOrPromisOrPrimitive =
     | { [key: string]: string };
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
+export const PLUGINS = Symbol("PLUGINS");
 export class RootOperation {
     public static authHeaderName = "[AUTH_HEADER_NAME]";
     private resolveFnOrPromisOrPrimitiveHeaders = (arg?: FnOrPromisOrPrimitive) => {
@@ -105,6 +106,20 @@ export class RootOperation {
             JSON: (value: string) => JSON.parse(value),
         },
     };
+
+    public static [PLUGINS]: {
+        onSLWConstruct?: (slw: SelectionWrapperImpl<any, any, any, any, any>) => void;
+        onSLWSetTrap?: (
+            target: SelectionWrapperImpl<any, any, any, any, any>,
+            p: PropertyKey,
+            newValue: any,
+            receiver: any,
+        ) => void;
+        onGetResultData?: (t: SelectionWrapperImpl<any, any, any, any, any>, path?: string) => void;
+    }[] = [];
+    public static setPlugins(plugins: (typeof RootOperation)[typeof PLUGINS]) {
+        RootOperation[PLUGINS] = plugins;
+    }
 
     private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
         path.reduce((o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}), obj);
@@ -659,6 +674,8 @@ export class SelectionWrapperImpl<
         if (reCreateValueCallback) {
             this[SLW_RECREATE_VALUE_CALLBACK] = reCreateValueCallback;
         }
+
+        RootOperation[PLUGINS].forEach((plugin) => plugin.onSLWConstruct?.(this));
     }
 
     [SLW_OP_PATH]?: string;
@@ -778,6 +795,9 @@ export class SelectionWrapper<
                     const cache = getCache(t);
 
                     const path = overrideOpPath ?? t[SLW_OP_PATH] ?? undefined;
+
+                    RootOperation[PLUGINS].forEach((plugin) => plugin.onGetResultData?.(t, path));
+
                     if (path && cache.data.has(path) && !t[SLW_NEEDS_CLONE]) return cache.data.get(path);
 
                     const data = t[ROOT_OP_COLLECTOR]!.ref.getOperationResultPath<valueT>(
@@ -818,6 +838,10 @@ export class SelectionWrapper<
                         return Reflect.has(value ?? {}, prop);
                     },
                     set(target, p, newValue, receiver) {
+                        RootOperation[PLUGINS].forEach((plugin) =>
+                            plugin.onSLWSetTrap?.(target, p, newValue, receiver),
+                        );
+
                         const pstr = String(p);
                         if (
                             typeof p === "symbol" &&
@@ -825,6 +849,7 @@ export class SelectionWrapper<
                         ) {
                             return Reflect.set(target, p, newValue, receiver);
                         }
+
                         return Reflect.set(
                             target,
                             SLW_SETTER_DATA_OVERRIDE,
