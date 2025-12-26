@@ -225,7 +225,7 @@ export class RootOperation {
                     variables: query.variables,
                 }),
             })) as [string | URL | Request, RequestInit];
-            const response = await fetch(url, {
+            const response = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
                 ...options,
                 headers: {
                     ...options?.headers,
