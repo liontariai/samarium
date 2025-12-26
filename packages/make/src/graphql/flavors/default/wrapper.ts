@@ -1002,23 +1002,28 @@ export class SelectionWrapper<
                                     any,
                                     any
                                 >;
+                                const isScalar = target[SLW_PARENT_COLLECTOR] === undefined;
 
                                 return function () {
                                     return {
                                         next() {
                                             return asyncGen.next().then((val) => {
+                                                const clonedSlw = target[SLW_CLONE]({
+                                                    SLW_OP_PATH: asyncGenRootPath,
+                                                    OP_RESULT_DATA: isScalar
+                                                        ? { [asyncGenRootPath!]: val.value }
+                                                        : val.value,
+
+                                                    // this is only for subscriptions
+                                                    SLW_NEEDS_CLONE: true,
+                                                });
+                                                const ret =
+                                                    typeof val.value === "object"
+                                                        ? proxify(val.value, clonedSlw)
+                                                        : clonedSlw;
                                                 return {
                                                     done: val.done,
-                                                    value: proxify(
-                                                        val.value,
-                                                        target[SLW_CLONE]({
-                                                            SLW_OP_PATH: asyncGenRootPath,
-                                                            OP_RESULT_DATA: val.value,
-
-                                                            // this is only for subscriptions
-                                                            SLW_NEEDS_CLONE: true,
-                                                        }),
-                                                    ),
+                                                    value: isScalar ? ret[asyncGenRootPath!] : ret,
                                                 };
                                             });
                                         },

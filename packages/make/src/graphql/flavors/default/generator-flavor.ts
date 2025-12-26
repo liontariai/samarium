@@ -1567,42 +1567,41 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                 if (typeof fieldFn === "function") {
                     const makeSubSelectionFn =
-                        (
-                            opFnArgs?: Exclude<
-                                Parameters<Extract<typeof fieldFn, (args: any) => any>>[0],
-                                (args: any) => any
-                            >,
-                        ) =>
-                        (opFnSelectionCb: (selection: unknown) => unknown) => {
-                            const fieldSLFN =
-                                opFnArgs === undefined
-                                    ? fieldFn
-                                    : (
-                                        fieldFn as (
-                                            args: typeof opFnArgs,
-                                        ) => (s: typeof opFnSelectionCb) => unknown
-                                    )(opFnArgs);
+                        (opFnArgs?: Exclude<Parameters<Extract<typeof fieldFn, (args: any) => any>>[0], (args: any) => any>) =>
+                        (opFnSelectionCb?: (selection: unknown) => unknown) => {
+                            let fieldSLFN:
+                                | ((s: typeof opFnSelectionCb) => SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>)
+                                | SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>;
+                            if (opFnArgs === undefined) {
+                                fieldSLFN = fieldFn as Extract<typeof fieldFn, () => SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>>;
+                            } else {
+                                fieldSLFN = (
+                                    fieldFn as unknown as (
+                                        args: typeof opFnArgs,
+                                    ) =>
+                                        | ((s: typeof opFnSelectionCb) => SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>)
+                                        | SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>
+                                )(opFnArgs);
+                            }
 
-                            const fieldSlw = (fieldSLFN as Extract<typeof fieldSLFN, (args: any) => any>)(
-                                opFnSelectionCb as any,
-                            ) as unknown as SelectionWrapperImpl<
-                                typeof field,
-                                string,
-                                number,
-                                any,
-                                typeof opFnArgs
-                            >;
+                            let fieldSlw: SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>;
+                            if (typeof fieldSLFN === "function") {
+                                fieldSlw = (fieldSLFN as (s: typeof opFnSelectionCb) => SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>)(
+                                    opFnSelectionCb,
+                                );
+                            } else {
+                                fieldSlw = fieldSLFN;
+                            }
+
                             const opSlw = new SelectionWrapper(
                                 undefined,
                                 undefined,
                                 undefined,
                                 { [field]: fieldSlw },
-                                new OperationSelectionCollector(
-                                    operation + "Selection",
-                                    root,
-                                ),
+                                new OperationSelectionCollector(operation + "Selection", root),
                                 root,
                             );
+                            fieldSlw[ROOT_OP_COLLECTOR] = rootRef;
                             fieldSlw[SLW_PARENT_SLW] = opSlw;
                             opSlw[SLW_IS_ROOT_TYPE] = operation;
                             opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
@@ -1669,13 +1668,20 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     if (fieldFn.name.startsWith("bound ")) {
                         return makeSubSelectionFn();
                     }
-                    return (
-                        opFnArgs: Exclude<
-                            Parameters<Extract<typeof fieldFn, (args: any) => any>>[0],
-                            (args: any) => any
-                        >,
-                    ) => {
-                        return makeSubSelectionFn(opFnArgs);
+                    return (opFnArgs: Exclude<Parameters<Extract<typeof fieldFn, (args: any) => any>>[0], (args: any) => any>) => {
+                        const inner = (
+                            fieldFn as unknown as (
+                                args: typeof opFnArgs,
+                            ) =>
+                                | ((s: unknown) => SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>)
+                                | SelectionWrapperImpl<typeof field, string, number, any, typeof opFnArgs>
+                        )(opFnArgs);
+
+                        if (typeof inner === "function") {
+                            return makeSubSelectionFn(opFnArgs);
+                        }
+
+                        return makeSubSelectionFn(opFnArgs)();
                     };
                 } else {
                     const fieldSlw = fieldFn as SelectionWrapperImpl<any, any, any>;
