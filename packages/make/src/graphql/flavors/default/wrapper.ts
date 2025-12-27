@@ -107,7 +107,7 @@ export class RootOperation {
         },
     };
 
-    public static [PLUGINS]: {
+    private static [PLUGINS]: {
         onSLWConstruct?: (slw: SelectionWrapperImpl<any, any, any, any, any>) => void;
         onSLWSetTrap?: (
             target: SelectionWrapperImpl<any, any, any, any, any>,
@@ -117,8 +117,20 @@ export class RootOperation {
         ) => void;
         onGetResultData?: (t: SelectionWrapperImpl<any, any, any, any, any>, path?: string) => void;
     }[] = [];
+    private static hasPlugins = false;
     public static setPlugins(plugins: (typeof RootOperation)[typeof PLUGINS]) {
         RootOperation[PLUGINS] = plugins;
+        RootOperation.hasPlugins = plugins.length > 0;
+    }
+    public static runPlugins<N extends keyof (typeof RootOperation)[typeof PLUGINS][number]>(
+        name: N,
+        ...args: Parameters<NonNullable<(typeof RootOperation)[typeof PLUGINS][number][N]>>
+    ) {
+        if (!RootOperation.hasPlugins) return;
+        for (const plugin of RootOperation[PLUGINS]) {
+            const fn = plugin[name as keyof typeof plugin];
+            if (fn) (fn as (...args: any[]) => any).apply(undefined, args);
+        }
     }
 
     private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
@@ -675,7 +687,7 @@ export class SelectionWrapperImpl<
             this[SLW_RECREATE_VALUE_CALLBACK] = reCreateValueCallback;
         }
 
-        RootOperation[PLUGINS].forEach((plugin) => plugin.onSLWConstruct?.(this));
+        RootOperation.runPlugins("onSLWConstruct", this);
     }
 
     [SLW_OP_PATH]?: string;
@@ -791,12 +803,13 @@ export class SelectionWrapper<
                 const getResultDataForTarget = (
                     t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>,
                     overrideOpPath?: string,
+                    skipPlugins?: boolean,
                 ): valueT | undefined => {
                     const cache = getCache(t);
 
                     const path = overrideOpPath ?? t[SLW_OP_PATH] ?? undefined;
 
-                    RootOperation[PLUGINS].forEach((plugin) => plugin.onGetResultData?.(t, path));
+                    if (!skipPlugins) RootOperation.runPlugins("onGetResultData", t, path);
 
                     if (path && cache.data.has(path) && !t[SLW_NEEDS_CLONE]) return cache.data.get(path);
 
@@ -827,7 +840,7 @@ export class SelectionWrapper<
                     has(target, prop) {
                         if (prop === Symbol.for("nodejs.util.inspect.custom")) return true;
                         if (prop === Symbol.iterator && typeArrDepth) {
-                            const dataArr = getResultDataForTarget(target);
+                            const dataArr = getResultDataForTarget(target, undefined, true);
                             if (Array.isArray(dataArr)) return true;
                             if (dataArr === undefined || dataArr === null) return false;
                         }
@@ -838,9 +851,7 @@ export class SelectionWrapper<
                         return Reflect.has(value ?? {}, prop);
                     },
                     set(target, p, newValue, receiver) {
-                        RootOperation[PLUGINS].forEach((plugin) =>
-                            plugin.onSLWSetTrap?.(target, p, newValue, receiver),
-                        );
+                        RootOperation.runPlugins("onSLWSetTrap", target, p, newValue, receiver);
 
                         const pstr = String(p);
                         if (
@@ -1022,11 +1033,11 @@ export class SelectionWrapper<
                         if (target[ROOT_OP_COLLECTOR]?.ref.isExecuted) {
                             if (prop === Symbol.asyncIterator) {
                                 const asyncGenRootPath = target[SLW_OP_PATH]?.split(".")?.[0];
-                                const asyncGen = getResultDataForTarget(target, asyncGenRootPath) as AsyncGenerator<
-                                    valueT,
-                                    any,
-                                    any
-                                >;
+                                const asyncGen = getResultDataForTarget(
+                                    target,
+                                    asyncGenRootPath,
+                                    true,
+                                ) as AsyncGenerator<valueT, any, any>;
                                 const isScalar = target[SLW_PARENT_COLLECTOR] === undefined;
 
                                 return function () {
@@ -1158,7 +1169,10 @@ export class SelectionWrapper<
                             }
 
                             if (slw instanceof SelectionWrapperImpl && slw[SLW_FIELD_ARR_DEPTH]) {
-                                const dataArr = getResultDataForTarget(slw) as unknown[] | undefined | null;
+                                const dataArr = getResultDataForTarget(slw, undefined, true) as
+                                    | unknown[]
+                                    | undefined
+                                    | null;
                                 if (dataArr === undefined) return undefined;
                                 if (dataArr === null) return null;
                                 if (!dataArr?.length) {
@@ -1169,7 +1183,7 @@ export class SelectionWrapper<
                                     return proxify(dataArr, slw);
                                 }
                             } else if (slw instanceof SelectionWrapperImpl) {
-                                const data = getResultDataForTarget(slw) as unknown | undefined | null;
+                                const data = getResultDataForTarget(slw, undefined, true) as unknown | undefined | null;
                                 if (data === undefined) return undefined;
                                 if (data === null) return null;
 
