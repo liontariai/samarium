@@ -615,6 +615,10 @@ export class SelectionWrapperImpl<
             slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
         }
 
+        if (this[ROOT_OP_COLLECTOR]) {
+            slw[ROOT_OP_COLLECTOR] = this[ROOT_OP_COLLECTOR];
+        }
+
         return slw;
     }
 
