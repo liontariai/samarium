@@ -944,6 +944,8 @@ export class SelectionWrapper<
 
                                 newRootOpCollectorRef.ref.registerSelection(newThat[SLW_FIELD_NAME]!, newThat);
 
+                                const isScalar = newThat[SLW_PARENT_COLLECTOR] === undefined;
+
                                 const resultProxy = new Proxy(
                                     {},
                                     {
@@ -960,10 +962,25 @@ export class SelectionWrapper<
                                                             return resolve(newThat);
                                                         }
                                                         if (typeof d === "object" && d && fieldName in d) {
-                                                            return resolve(proxify(d[fieldName], newThat as any));
+                                                            const retval = d[fieldName];
+                                                            if (retval === undefined || retval === null) {
+                                                                return resolve(retval);
+                                                            }
+                                                            const ret = isScalar
+                                                                ? getResultDataForTarget(
+                                                                      newThat as SelectionWrapper<
+                                                                          fieldName,
+                                                                          typeNamePure,
+                                                                          typeArrDepth,
+                                                                          valueT,
+                                                                          argsT
+                                                                      >,
+                                                                  )
+                                                                : proxify(retval, newThat);
+                                                            return resolve(ret);
                                                         }
 
-                                                        return resolve(proxify(d, newThat as any));
+                                                        return resolve(newThat);
                                                     });
                                             });
                                             if (String(_prop) === "then") {
