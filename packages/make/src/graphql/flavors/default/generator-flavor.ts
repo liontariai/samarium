@@ -1642,7 +1642,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                         const slw = (rootSlw as any)[field] as any;
                                                         if (typeof d === "object" && d && field in d) {
                                                             const retval = d[field];
-                                                            const ret = retval === null || retval === undefined || typeof retval !== "object" ? slw : proxify(retval, slw);
+                                                            if (retval === undefined || retval === null) {
+                                                                return resolve(retval);
+                                                            }
+                                                            const ret = typeof retval !== "object" ? slw : proxify(retval, slw);
                                                             return resolve(ret);
                                                         }
                                                         return resolve(slw);
@@ -1746,7 +1749,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 const slw = (rootSlw as any)[field] as any;
                                                 if (typeof d === "object" && d && field in d) {
                                                     const retval = d[field];
-                                                    const ret = retval === null || retval === undefined || typeof retval !== "object" ? slw : proxify(retval, slw);
+                                                    if (retval === undefined || retval === null) {
+                                                        return resolve(retval);
+                                                    }
+                                                    const ret = typeof retval !== "object" ? slw : proxify(retval, slw);
                                                     return resolve(ret);
                                                 }
                                                 return resolve(slw);
