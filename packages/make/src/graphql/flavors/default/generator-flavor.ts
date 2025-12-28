@@ -1632,8 +1632,20 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                             const result = new Promise((resolve, reject) => {
                                                 root.execute()
                                                     .catch(reject)
-                                                    .then(() => {
-                                                        resolve((rootSlw as any)[field]);
+                                                    .then((_data) => {
+                                                        const d = _data[field];
+
+                                                        if (Symbol.asyncIterator in d) {
+                                                            return resolve(fieldSlw as any);
+                                                        }
+
+                                                        const slw = (rootSlw as any)[field] as any;
+                                                        if (typeof d === "object" && d && field in d) {
+                                                            const retval = d[field];
+                                                            const ret = retval === null || retval === undefined || typeof retval !== "object" ? slw : proxify(retval, slw);
+                                                            return resolve(ret);
+                                                        }
+                                                        return resolve(slw);
                                                     });
                                             });
                                             if (String(_prop) === "then") {
@@ -1724,8 +1736,20 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     const result = new Promise((resolve, reject) => {
                                         root.execute()
                                             .catch(reject)
-                                            .then(() => {
-                                                resolve((rootSlw as any)[field]);
+                                            .then((_data) => {
+                                                const d = _data[field];
+
+                                                if (Symbol.asyncIterator in d) {
+                                                    return resolve(fieldSlw as any);
+                                                }
+
+                                                const slw = (rootSlw as any)[field] as any;
+                                                if (typeof d === "object" && d && field in d) {
+                                                    const retval = d[field];
+                                                    const ret = retval === null || retval === undefined || typeof retval !== "object" ? slw : proxify(retval, slw);
+                                                    return resolve(ret);
+                                                }
+                                                return resolve(slw);
                                             });
                                     });
                                     if (String(_prop) === "then") {
