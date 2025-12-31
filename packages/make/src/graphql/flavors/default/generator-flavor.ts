@@ -804,7 +804,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const collectArgTypes = () => {
             const hasAtLeastOneNonNullArg = field.args.some((arg) => arg.type.isNonNull);
 
-            const argsTypeName = `${parents.join()}${field.name.slice(0, 1).toUpperCase()}${field.name.slice(1)}Args`;
+            const argsTypeName = this.makeArgsTypeName(field, parents);
 
             if (!this.collector.hasArgumentType(argsTypeName)) {
                 const argsTypeBody = field.args
@@ -937,7 +937,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     }
 
     protected makeSelectionFunctionInputObjectValueForFieldWrapper(field: FieldMeta, parents: string[]): string {
-        const argsTypeName = `${parents.join()}${field.name.slice(0, 1).toUpperCase()}${field.name.slice(1)}Args`;
+        const argsTypeName = this.makeArgsTypeName(field, parents);
 
         return `${field.hasArgs ? `(args: ${argsTypeName}) => ` : ""}new SelectionWrapper(
             "${field.name}",
@@ -949,9 +949,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ${field.hasArgs ? `args, ${argsTypeName}Meta` : ""})`;
     }
 
+    private makeArgsTypeName(field: FieldMeta, parents: string[]): string {
+        return `${parents.map((p) => p.replaceAll("NotNull", "").replaceAll("Array", "")).join()}${field.name.slice(0, 1).toUpperCase()}${field.name.slice(1)}Args`;
+    }
+
     protected makeSelectionFunctionInputObjectValueForField(field: FieldMeta, parents: string[]): string {
         const collectArgMeta = () => {
-            const argsTypeName = `${parents.join()}${field.name.slice(0, 1).toUpperCase()}${field.name.slice(1)}Args`;
+            const argsTypeName = this.makeArgsTypeName(field, parents);
 
             if (!this.collector.hasArgumentMeta(argsTypeName)) {
                 const argsMetaBody = field.args
@@ -991,7 +995,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName } = collectArgMeta();
 
-                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta })`;
+                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta }) as any`;
             }
             return `${field.name}: ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}" }) as any`;
         } else {
@@ -1011,7 +1015,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             return directiveFunctionName;
         }
 
-        const argsTypeName = `${this.typeName}Args`;
+        const argsTypeName = `${this.typeName.replaceAll("NotNull", "").replaceAll("Array", "")}Args`;
         if (!this.collector.hasArgumentType(argsTypeName)) {
             const argsTypeBody = this.typeMeta.isDirective.args
                 .map((arg) => {
@@ -1163,21 +1167,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         .map(([field, fieldSlfn]) => {
                             const lazyModiferType = `
                             $lazy: (
-                                ${
-                                    field.hasArgs
-                                        ? `args: ${this.typeName}${field.name
-                                              .slice(0, 1)
-                                              .toUpperCase()}${field.name.slice(1)}Args`
-                                        : ""
-                                }
+                                ${field.hasArgs ? `args: ${this.makeArgsTypeName(field, [this.typeName])}` : ""}
                             ) => Promise<"T">`;
                             makeSelectionFunctionInputReturnTypeParts.set(field.name, [
                                 `${
                                     field.hasArgs
                                         ? `(
-                                        args: ${this.typeName}${field.name
-                                            .slice(0, 1)
-                                            .toUpperCase()}${field.name.slice(1)}Args
+                                        args: ${this.makeArgsTypeName(field, [this.typeName])}
                                     ) =>`
                                         : ""
                                 }`,
@@ -1185,9 +1181,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     field.type.isScalar || field.type.isEnum
                                         ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${field.type.isNonNull ? "!" : ""}", ${field.type.isList}, {}, ${
                                               field.hasArgs
-                                                  ? `${this.typeName}${field.name
-                                                        .slice(0, 1)
-                                                        .toUpperCase()}${field.name.slice(1)}Args`
+                                                  ? this.makeArgsTypeName(field, [this.typeName])
                                                   : "undefined"
                                           }>`
                                         : `ReturnType<
