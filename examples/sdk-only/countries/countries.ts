@@ -22,13 +22,13 @@ function proxify(data: any, slw: any): any & ArrayLike<any> {
             return Reflect.deleteProperty(slw, prop);
         },
         ownKeys(target: any[]): ArrayLike<string | symbol> {
-            return Reflect.ownKeys(slw);
+            return Reflect.ownKeys(target);
         },
         getOwnPropertyDescriptor(
             target: any[],
             prop: PropertyKey,
         ): PropertyDescriptor | undefined {
-            return Reflect.getOwnPropertyDescriptor(slw, prop);
+            return Reflect.getOwnPropertyDescriptor(target, prop);
         },
         getPrototypeOf(target: any[]): object | null {
             // Return Array.prototype for better array-like behavior (e.g., instanceof Array)
@@ -48,6 +48,7 @@ type FnOrPromisOrPrimitive =
     | { [key: string]: string };
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
+export const PLUGINS = Symbol("PLUGINS");
 export class RootOperation {
     public static authHeaderName = "[AUTH_HEADER_NAME]";
     private resolveFnOrPromisOrPrimitiveHeaders = (
@@ -118,6 +119,41 @@ export class RootOperation {
             JSON: (value: string) => JSON.parse(value),
         },
     };
+
+    private static [PLUGINS]: {
+        onSLWConstruct?: (
+            slw: SelectionWrapperImpl<any, any, any, any, any>,
+        ) => void;
+        onSLWSetTrap?: (
+            target: SelectionWrapperImpl<any, any, any, any, any>,
+            p: PropertyKey,
+            newValue: any,
+            receiver: any,
+        ) => void;
+        onGetResultData?: (
+            t: SelectionWrapperImpl<any, any, any, any, any>,
+            path?: string,
+        ) => void;
+    }[] = [];
+    private static hasPlugins = false;
+    public static setPlugins(plugins: (typeof RootOperation)[typeof PLUGINS]) {
+        RootOperation[PLUGINS] = plugins;
+        RootOperation.hasPlugins = plugins.length > 0;
+    }
+    public static runPlugins<
+        N extends keyof (typeof RootOperation)[typeof PLUGINS][number],
+    >(
+        name: N,
+        ...args: Parameters<
+            NonNullable<(typeof RootOperation)[typeof PLUGINS][number][N]>
+        >
+    ) {
+        if (!RootOperation.hasPlugins) return;
+        for (const plugin of RootOperation[PLUGINS]) {
+            const fn = plugin[name as keyof typeof plugin];
+            if (fn) (fn as (...args: any[]) => any).apply(undefined, args);
+        }
+    }
 
     private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
         path.reduce(
@@ -256,7 +292,9 @@ export class RootOperation {
                     variables: query.variables,
                 }),
             })) as [string | URL | Request, RequestInit];
-            const response = await fetch(url, {
+            const response = await (
+                RootOperation[OPTIONS].fetcher ?? globalThis.fetch
+            )(url, {
                 ...options,
                 headers: {
                     ...options?.headers,
@@ -685,6 +723,10 @@ export class SelectionWrapperImpl<
             slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
         }
 
+        if (this[ROOT_OP_COLLECTOR]) {
+            slw[ROOT_OP_COLLECTOR] = this[ROOT_OP_COLLECTOR];
+        }
+
         return slw;
     }
 
@@ -758,6 +800,8 @@ export class SelectionWrapperImpl<
         if (reCreateValueCallback) {
             this[SLW_RECREATE_VALUE_CALLBACK] = reCreateValueCallback;
         }
+
+        RootOperation.runPlugins("onSLWConstruct", this);
     }
 
     [SLW_OP_PATH]?: string;
@@ -775,10 +819,7 @@ export class SelectionWrapperImpl<
             for (const key of Object.keys(args)) {
                 let varName = key;
                 if (opVars[key] !== undefined) {
-                    varName = `${key}_${
-                        Object.keys(opVars).filter((k) => k.startsWith(key))
-                            .length
-                    }`;
+                    varName = `${key}_${Object.keys(opVars).filter((k) => k.startsWith(key)).length}`;
                     argToVarMap[varName] = varName;
                     args[varName] = args[key];
                     argsMeta[varName] = argsMeta[key];
@@ -897,7 +938,10 @@ export class SelectionWrapper<
                         valueT,
                         argsT
                     >,
-                ) => t[ROOT_OP_COLLECTOR]!.ref.cache;
+                ) =>
+                    t[SLW_OP_RESULT_DATA_OVERRIDE]
+                        ? { data: new Map(), proxiedArray: new Map() }
+                        : t[ROOT_OP_COLLECTOR]!.ref.cache;
 
                 const getResultDataForTarget = (
                     t: SelectionWrapperImpl<
@@ -908,11 +952,16 @@ export class SelectionWrapper<
                         argsT
                     >,
                     overrideOpPath?: string,
+                    skipPlugins?: boolean,
                 ): valueT | undefined => {
                     const cache = getCache(t);
 
-                    const path = overrideOpPath ?? t[SLW_OP_PATH] ?? "";
-                    if (cache.data.has(path) && !t[SLW_NEEDS_CLONE])
+                    const path = overrideOpPath ?? t[SLW_OP_PATH] ?? undefined;
+
+                    if (!skipPlugins)
+                        RootOperation.runPlugins("onGetResultData", t, path);
+
+                    if (path && cache.data.has(path) && !t[SLW_NEEDS_CLONE])
                         return cache.data.get(path);
 
                     const data = t[
@@ -925,16 +974,27 @@ export class SelectionWrapper<
                         t[SLW_OP_RESULT_DATA_OVERRIDE],
                     );
 
-                    cache.data.set(path, data);
+                    if (path) cache.data.set(path, data);
                     return data;
                 };
 
                 return {
                     // implement ProxyHandler methods
-                    ownKeys() {
+                    ownKeys(target) {
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.ownKeys(
+                                new Array(target[SLW_FIELD_ARR_DEPTH]),
+                            );
+                        }
                         return Reflect.ownKeys(value ?? {});
                     },
                     getOwnPropertyDescriptor(target, prop) {
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.getOwnPropertyDescriptor(
+                                new Array(target[SLW_FIELD_ARR_DEPTH]),
+                                prop,
+                            );
+                        }
                         return Reflect.getOwnPropertyDescriptor(
                             value ?? {},
                             prop,
@@ -944,15 +1004,33 @@ export class SelectionWrapper<
                         if (prop === Symbol.for("nodejs.util.inspect.custom"))
                             return true;
                         if (prop === Symbol.iterator && typeArrDepth) {
-                            const dataArr = getResultDataForTarget(target);
+                            const dataArr = getResultDataForTarget(
+                                target,
+                                undefined,
+                                true,
+                            );
                             if (Array.isArray(dataArr)) return true;
                             if (dataArr === undefined || dataArr === null)
                                 return false;
+                        }
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.has(
+                                new Array(target[SLW_FIELD_ARR_DEPTH]),
+                                prop,
+                            );
                         }
 
                         return Reflect.has(value ?? {}, prop);
                     },
                     set(target, p, newValue, receiver) {
+                        RootOperation.runPlugins(
+                            "onSLWSetTrap",
+                            target,
+                            p,
+                            newValue,
+                            receiver,
+                        );
+
                         const pstr = String(p);
                         if (
                             typeof p === "symbol" &&
@@ -961,6 +1039,7 @@ export class SelectionWrapper<
                         ) {
                             return Reflect.set(target, p, newValue, receiver);
                         }
+
                         return Reflect.set(
                             target,
                             SLW_SETTER_DATA_OVERRIDE,
@@ -1067,6 +1146,9 @@ export class SelectionWrapper<
                                     newThat,
                                 );
 
+                                const isScalar =
+                                    newThat[SLW_PARENT_COLLECTOR] === undefined;
+
                                 const resultProxy = new Proxy(
                                     {},
                                     {
@@ -1077,22 +1159,65 @@ export class SelectionWrapper<
                                                         .execute()
                                                         .catch(reject)
                                                         .then((_data) => {
-                                                            const data =
+                                                            const fieldName =
+                                                                newThat[
+                                                                    SLW_FIELD_NAME
+                                                                ]!;
+                                                            const d =
                                                                 _data[
-                                                                    newThat[
-                                                                        SLW_FIELD_NAME
-                                                                    ]
-                                                                ][
-                                                                    newThat[
-                                                                        SLW_FIELD_NAME
-                                                                    ]
+                                                                    fieldName
                                                                 ];
 
-                                                            resolve(
-                                                                proxify(
-                                                                    data,
-                                                                    newThat as any,
-                                                                ),
+                                                            if (
+                                                                Symbol.asyncIterator in
+                                                                d
+                                                            ) {
+                                                                return resolve(
+                                                                    newThat,
+                                                                );
+                                                            }
+                                                            if (
+                                                                typeof d ===
+                                                                    "object" &&
+                                                                d &&
+                                                                fieldName in d
+                                                            ) {
+                                                                const retval =
+                                                                    d[
+                                                                        fieldName
+                                                                    ];
+                                                                if (
+                                                                    retval ===
+                                                                        undefined ||
+                                                                    retval ===
+                                                                        null
+                                                                ) {
+                                                                    return resolve(
+                                                                        retval,
+                                                                    );
+                                                                }
+                                                                const ret =
+                                                                    isScalar
+                                                                        ? getResultDataForTarget(
+                                                                              newThat as SelectionWrapper<
+                                                                                  fieldName,
+                                                                                  typeNamePure,
+                                                                                  typeArrDepth,
+                                                                                  valueT,
+                                                                                  argsT
+                                                                              >,
+                                                                          )
+                                                                        : proxify(
+                                                                              retval,
+                                                                              newThat,
+                                                                          );
+                                                                return resolve(
+                                                                    ret,
+                                                                );
+                                                            }
+
+                                                            return resolve(
+                                                                newThat,
                                                             );
                                                         });
                                                 },
@@ -1183,7 +1308,10 @@ export class SelectionWrapper<
                                 const asyncGen = getResultDataForTarget(
                                     target,
                                     asyncGenRootPath,
+                                    true,
                                 ) as AsyncGenerator<valueT, any, any>;
+                                const isScalar =
+                                    target[SLW_PARENT_COLLECTOR] === undefined;
 
                                 return function () {
                                     return {
@@ -1191,20 +1319,36 @@ export class SelectionWrapper<
                                             return asyncGen
                                                 .next()
                                                 .then((val) => {
+                                                    const clonedSlw = target[
+                                                        SLW_CLONE
+                                                    ]({
+                                                        SLW_OP_PATH:
+                                                            asyncGenRootPath,
+                                                        OP_RESULT_DATA: isScalar
+                                                            ? {
+                                                                  [asyncGenRootPath!]:
+                                                                      val.value,
+                                                              }
+                                                            : val.value,
+
+                                                        // this is only for subscriptions
+                                                        SLW_NEEDS_CLONE: true,
+                                                    });
+                                                    const ret =
+                                                        typeof val.value ===
+                                                        "object"
+                                                            ? proxify(
+                                                                  val.value,
+                                                                  clonedSlw,
+                                                              )
+                                                            : clonedSlw;
                                                     return {
                                                         done: val.done,
-                                                        value: proxify(
-                                                            val.value,
-                                                            target[SLW_CLONE]({
-                                                                SLW_OP_PATH:
-                                                                    asyncGenRootPath,
-                                                                OP_RESULT_DATA:
-                                                                    val.value,
-
-                                                                // this is only for subscriptions
-                                                                SLW_NEEDS_CLONE: true,
-                                                            }),
-                                                        ),
+                                                        value: isScalar
+                                                            ? ret[
+                                                                  asyncGenRootPath!
+                                                              ]
+                                                            : ret,
                                                     };
                                                 });
                                         },
@@ -1245,21 +1389,34 @@ export class SelectionWrapper<
                                         Array.from(
                                             { length: data.length },
                                             (_, i) =>
-                                                proxify(
-                                                    data[i],
-                                                    target[SLW_CLONE]({
-                                                        SLW_OP_PATH:
-                                                            target[
-                                                                SLW_OP_PATH
-                                                            ] +
-                                                            "." +
-                                                            String(i),
-                                                        OP_RESULT_DATA:
-                                                            target[
-                                                                SLW_OP_RESULT_DATA_OVERRIDE
-                                                            ],
-                                                    }),
-                                                ),
+                                                typeof data[i] === "object"
+                                                    ? proxify(
+                                                          data[i],
+                                                          target[SLW_CLONE]({
+                                                              SLW_OP_PATH:
+                                                                  target[
+                                                                      SLW_OP_PATH
+                                                                  ] +
+                                                                  "." +
+                                                                  String(i),
+                                                              OP_RESULT_DATA:
+                                                                  target[
+                                                                      SLW_OP_RESULT_DATA_OVERRIDE
+                                                                  ],
+                                                          }),
+                                                      )
+                                                    : target[SLW_CLONE]({
+                                                          SLW_OP_PATH:
+                                                              target[
+                                                                  SLW_OP_PATH
+                                                              ] +
+                                                              "." +
+                                                              String(i),
+                                                          OP_RESULT_DATA:
+                                                              target[
+                                                                  SLW_OP_RESULT_DATA_OVERRIDE
+                                                              ],
+                                                      }),
                                         );
 
                                     if (!cache.proxiedArray.has(path)) {
@@ -1347,10 +1504,11 @@ export class SelectionWrapper<
                                 slw instanceof SelectionWrapperImpl &&
                                 slw[SLW_FIELD_ARR_DEPTH]
                             ) {
-                                const dataArr = getResultDataForTarget(slw) as
-                                    | unknown[]
-                                    | undefined
-                                    | null;
+                                const dataArr = getResultDataForTarget(
+                                    slw,
+                                    undefined,
+                                    true,
+                                ) as unknown[] | undefined | null;
                                 if (dataArr === undefined) return undefined;
                                 if (dataArr === null) return null;
                                 if (!dataArr?.length) {
@@ -1361,10 +1519,11 @@ export class SelectionWrapper<
                                     return proxify(dataArr, slw);
                                 }
                             } else if (slw instanceof SelectionWrapperImpl) {
-                                const data = getResultDataForTarget(slw) as
-                                    | unknown
-                                    | undefined
-                                    | null;
+                                const data = getResultDataForTarget(
+                                    slw,
+                                    undefined,
+                                    true,
+                                ) as unknown | undefined | null;
                                 if (data === undefined) return undefined;
                                 if (data === null) return null;
 
@@ -1428,6 +1587,7 @@ export interface ScalarTypeMapDefault {
     ID: string;
     Date: Date;
     DateTime: Date;
+    DateTimeISO: Date;
     Time: Date;
     JSON: Record<string, any>;
 }
@@ -1450,9 +1610,11 @@ type SelectionFnParent =
 type CleanupNever<A> = Omit<A, keyof A> & {
     [K in keyof A as A[K] extends never ? never : K]: A[K];
 };
-type Prettify<T> = {
-    [K in keyof T]: T[K];
-} & {};
+type Prettify<T> = (T extends Array<infer U>
+    ? U[]
+    : {
+          [K in keyof T]: T[K];
+      }) & {};
 
 type SLWsFromSelection<
     S,
@@ -1479,97 +1641,490 @@ type ArgumentsTypeFromFragment<T> = T extends (
     ? A
     : never;
 
-type ReplaceReturnType<T, R> = T extends (...a: any) => any
+type ReplaceReturnType<T, R, E = unknown> = T extends (
+    ...a: any
+) => (...a: any) => any
     ? (
           ...a: Parameters<T>
-      ) => ReturnType<T> extends Promise<any> ? Promise<R> : R
-    : never;
-type SLW_TPN_ToType<TNP> = TNP extends keyof ScalarTypeMapWithCustom
-    ? ScalarTypeMapWithCustom[TNP]
-    : TNP extends keyof ScalarTypeMapDefault
-      ? ScalarTypeMapDefault[TNP]
+      ) => ReturnType<ReturnType<T>> extends Promise<any>
+          ? Promise<R> & E
+          : R & E
+    : T extends (...a: any) => any
+      ? (
+            ...a: Parameters<T>
+        ) => ReturnType<T> extends Promise<any> ? Promise<R> & E : R & E
       : never;
+type SLW_TPN_ToType<
+    TNP extends string,
+    TNP_TYPE = TNP extends `${infer _TNP}!` ? _TNP : TNP,
+    IS_NULLABLE = TNP extends `${infer _TNP}!` ? false : true,
+    RESULT = TNP_TYPE extends keyof ScalarTypeMapWithCustom
+        ? ScalarTypeMapWithCustom[TNP_TYPE]
+        : TNP_TYPE extends keyof ScalarTypeMapDefault
+          ? ScalarTypeMapDefault[TNP_TYPE]
+          : TNP_TYPE extends keyof EnumTypesMapped
+            ? EnumTypesMapped[TNP_TYPE]
+            : never,
+> = IS_NULLABLE extends true ? RESULT | null : RESULT;
 type Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
 type ToTArrayWithDepth<T, D extends number> = D extends 0
     ? T
     : ToTArrayWithDepth<T[], Prev[D]>;
+type ConvertToPromise<T, skip = 1> = skip extends 0 ? T : Promise<T>;
+type ConvertToAsyncIter<T, skip = 1> = skip extends 0 ? T : AsyncIterable<T>;
+type ReplacePlaceHoldersWithTNested<
+    inferedResult,
+    EE,
+    REP extends string | number | symbol,
+> = {
+    [k in keyof EE]: k extends REP
+        ? EE[k] extends (...args: any) => infer R
+            ? ReplaceReturnType<
+                  EE[k],
+                  inferedResult,
+                  {
+                      [kk in Exclude<REP, k>]: kk extends keyof R
+                          ? ReplaceReturnType<R[kk], inferedResult>
+                          : never;
+                  }
+              >
+            : inferedResult
+        : EE[k];
+};
+
+type SLFNReturned<
+    T extends object,
+    F extends object,
+    E extends { [key: string | number | symbol]: any },
+    TAD extends number,
+    AS_PROMISE,
+    AS_ASYNC_ITER,
+    REP extends string | number | symbol,
+> =
+    // Overload 1: No 's' provided -> return full transformed F
+    (() => Prettify<
+        ConvertToPromise<
+            ConvertToAsyncIter<
+                ToTArrayWithDepth<
+                    Prettify<
+                        "$all" extends keyof F
+                            ? F["$all"] extends (...args: any) => any
+                                ? ReturnType<F["$all"]>
+                                : never
+                            : never
+                    >,
+                    TAD
+                >,
+                AS_ASYNC_ITER
+            >,
+            AS_PROMISE
+        > &
+            ReplacePlaceHoldersWithTNested<
+                ConvertToAsyncIter<
+                    ToTArrayWithDepth<
+                        Prettify<
+                            "$all" extends keyof F
+                                ? F["$all"] extends (...args: any) => any
+                                    ? ReturnType<F["$all"]>
+                                    : never
+                                : never
+                        >,
+                        TAD
+                    >,
+                    AS_ASYNC_ITER
+                >,
+                E,
+                REP
+            >
+    >) &
+        // Overload 2: With 's' provided -> infer result from selection
+        (<
+            TT = T,
+            FF = F,
+            EE = E,
+            inferedResult = {
+                [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
+                    infer FN,
+                    infer TTNP,
+                    infer TTAD,
+                    infer VT,
+                    infer AT
+                >
+                    ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                    : TT[K];
+            },
+        >(
+            this: any,
+            s: (selection: FF) => TT,
+        ) => Prettify<
+            ConvertToPromise<
+                ConvertToAsyncIter<
+                    ToTArrayWithDepth<inferedResult, TAD>,
+                    AS_ASYNC_ITER
+                >,
+                AS_PROMISE
+            > &
+                ReplacePlaceHoldersWithTNested<
+                    ConvertToAsyncIter<
+                        ToTArrayWithDepth<inferedResult, TAD>,
+                        AS_ASYNC_ITER
+                    >,
+                    EE,
+                    REP
+                >
+        >);
 
 export type SLFN<
     T extends object,
-    F,
+    F extends object,
     N extends string,
     TNP extends string,
     TAD extends number,
     E extends { [key: string | number | symbol]: any } = {},
     REP extends string | number | symbol = never,
+    AS_PROMISE = 0,
+    AS_ASYNC_ITER = 0,
 > = (
     makeSLFNInput: () => F,
     SLFN_name: N,
     SLFN_typeNamePure: TNP,
     SLFN_typeArrDepth: TAD,
-) => <TT = T, FF = F, EE = E>(
-    this: any,
-    s: (selection: FF) => TT,
-) => ToTArrayWithDepth<
-    {
-        [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-            infer FN,
-            infer TTNP,
-            infer TTAD,
-            infer VT,
-            infer AT
-        >
-            ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-            : TT[K];
-    },
-    TAD
-> & {
-    [k in keyof EE]: k extends REP
-        ? EE[k] extends (...args: any) => any
-            ? ReplaceReturnType<
-                  EE[k],
-                  ToTArrayWithDepth<
-                      {
-                          [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                              infer FN,
-                              infer TTNP,
-                              infer TTAD,
-                              infer VT,
-                              infer AT
-                          >
-                              ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                              : TT[K];
-                      },
-                      TAD
-                  >
-              >
-            : ToTArrayWithDepth<
-                  {
-                      [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                          infer FN,
-                          infer TTNP,
-                          infer TTAD,
-                          infer VT,
-                          infer AT
-                      >
-                          ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                          : TT[K];
-                  },
-                  TAD
-              >
-        : EE[k];
-};
+) => SLFNReturned<T, F, E, TAD, AS_PROMISE, AS_ASYNC_ITER, REP>;
 
-const selectScalars = <S>(selection: Record<string, any>) =>
+const selectScalars = (selection: Record<string, any>) =>
     Object.fromEntries(
         Object.entries(selection).filter(
             ([k, v]) => v instanceof SelectionWrapperImpl,
         ),
-    ) as S;
+    );
+
+type AllNonFuncFieldsFromType<
+    TRaw,
+    T = TRaw extends Array<infer A> ? A : TRaw,
+> = Pick<
+    T,
+    { [k in keyof T]: T[k] extends (args: any) => any ? never : k }[keyof T]
+>;
+
+type SetNestedFieldNever<
+    T,
+    Path extends string,
+> = Path extends `${infer Key}.${infer Rest}`
+    ? Key extends keyof T
+        ? {
+              [K in keyof T]: K extends Key
+                  ? SetNestedFieldNever<T[K], Rest>
+                  : T[K];
+          }
+        : T
+    : { [K in keyof T]: K extends Path ? never : T[K] };
+
+type primitives =
+    | string
+    | number
+    | boolean
+    | Record<string | number | symbol, unknown>;
+type isScalar<T> =
+    T extends Exclude<
+        ScalarTypeMapDefault[keyof ScalarTypeMapDefault],
+        primitives
+    >
+        ? true
+        : T extends Exclude<
+                ScalarTypeMapWithCustom[keyof ScalarTypeMapWithCustom],
+                primitives
+            >
+          ? true
+          : false;
+
+// Utility type to get all possible dot-notation paths
+type Paths<T, Visited = never, Depth extends Prev[number] = 9> =
+    isScalar<T> extends true
+        ? never
+        : Depth extends never
+          ? never
+          : T extends object
+            ? T extends Visited
+                ? never // Stop recursion if type is cyclic
+                : {
+                      [K in keyof T]: T[K] extends Array<infer U>
+                          ? K extends string | number
+                              ?
+                                    | `${K}`
+                                    | `${K}.${Paths<U, Visited | T, Prev[Depth]>}`
+                              : never
+                          : K extends string | number
+                            ? T[K] extends object
+                                ?
+                                      | `${K}`
+                                      | `${K}.${Paths<T[K], Visited | T, Prev[Depth]>}`
+                                : `${K}`
+                            : never;
+                  }[keyof T]
+            : never;
+
+// Utility type to get only cyclic paths
+type CyclicPaths<
+    T,
+    Visited = never,
+    Depth extends Prev[number] = 9,
+    Prefix extends string = "",
+> =
+    isScalar<T> extends true
+        ? never
+        : Depth extends never
+          ? never
+          : T extends object
+            ? {
+                  [K in keyof T]: T[K] extends Array<infer U>
+                      ? K extends string | number
+                          ? U extends Visited
+                              ? `${Prefix}${K}` // Cyclic path found for array element
+                              : CyclicPaths<
+                                    U,
+                                    Visited | T,
+                                    Prev[Depth],
+                                    `${Prefix}${K}.`
+                                >
+                          : never
+                      : K extends string | number
+                        ? T[K] extends Visited
+                            ? `${Prefix}${K}` // Cyclic path found
+                            : T[K] extends object
+                              ? CyclicPaths<
+                                    T[K],
+                                    Visited | T,
+                                    Prev[Depth],
+                                    `${Prefix}${K}.`
+                                >
+                              : never
+                        : never;
+              }[keyof T]
+            : never;
+
+// Utility type to exclude multiple paths
+type OmitMultiplePaths<T, Paths extends string> = Paths extends any
+    ? SetNestedFieldNever<T, Paths>
+    : T;
+type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (
+    x: infer I,
+) => void
+    ? I
+    : never;
+type MergeUnion<T> = UnionToIntersection<T>;
+type TurnToArray<T, yes extends boolean> = yes extends true ? T[] : T;
+type OmitNever<
+    TRaw,
+    TisArray extends boolean = TRaw extends Array<any> ? true : false,
+    T = TRaw extends Array<infer A> ? A : TRaw,
+> =
+    isScalar<T> extends true
+        ? TurnToArray<T, TisArray>
+        : T extends object
+          ? TurnToArray<
+                {
+                    [K in keyof T as T[K] extends never
+                        ? never
+                        : T[K] extends never[]
+                          ? never
+                          : K]: isScalar<T[K]> extends true
+                        ? T[K]
+                        : T[K] extends object
+                          ? OmitNever<T[K]>
+                          : T[K];
+                },
+                TisArray
+            >
+          : TurnToArray<T, TisArray>;
+
+const selectCyclicFieldsOptsStr = "select cyclic levels: ";
+type selectCyclicFieldsOptsStrType = typeof selectCyclicFieldsOptsStr;
+type cyclicOpts<
+    S,
+    CP = CyclicPaths<S>,
+    kOpts = "exclude" | `${selectCyclicFieldsOptsStrType}${1 | 2 | 3 | 4 | 5}`,
+> = CP extends never
+    ? never
+    : {
+          [k in CP & string]: kOpts;
+      };
+
+type Next = [1, 2, 3, 4, 5, 6, 7, 8, 9, ...0[]];
+type StringToNumber<S extends string> = S extends `${infer N extends number}`
+    ? N
+    : never;
+
+type getNumberNestedLevels<str extends string> =
+    str extends `${selectCyclicFieldsOptsStrType}${infer n}`
+        ? StringToNumber<n>
+        : never;
+
+type selectAllOpts<S> =
+    | {
+          exclude?: Paths<S>[];
+      }
+    | {
+          exclude?: Paths<S>[];
+          cyclic: cyclicOpts<S>;
+      };
+type RepeatString<
+    S extends string,
+    N extends number,
+    Splitter extends string = "",
+    Acc extends string = "",
+    Count extends number = N,
+> = Count extends 0
+    ? Acc
+    : RepeatString<
+          S,
+          N,
+          Splitter,
+          `${Acc}${Acc extends "" ? "" : Splitter}${S}`,
+          Prev[Count]
+      >;
+
+type GetSuffix<
+    Str extends string,
+    Prefix extends string,
+> = Str extends `${Prefix}${infer Suffix}` ? Suffix : never;
+
+type selectAllFunc<T, TNP extends string> = <
+    const P = Paths<T>,
+    const CP_WITH_TNP = cyclicOpts<T, `${TNP}.${CyclicPaths<T>}`>,
+>(
+    opts: CyclicPaths<T> extends never
+        ? {
+              exclude?: `${TNP}.${P & string}`[];
+          }
+        : {
+              exclude?: `${TNP}.${P & string}`[];
+              cyclic: CP_WITH_TNP;
+          },
+) => OmitNever<
+    MergeUnion<
+        OmitMultiplePaths<
+            T,
+            | (Exclude<Paths<T>, P> extends never ? "" : P & string)
+            | (CP_WITH_TNP extends never
+                  ? ""
+                  : {
+                        [k in keyof CP_WITH_TNP]: "exclude" extends CP_WITH_TNP[k]
+                            ? GetSuffix<k & string, `${TNP}.`>
+                            : RepeatString<
+                                  GetSuffix<k & string, `${TNP}.`>,
+                                  Next[getNumberNestedLevels<
+                                      CP_WITH_TNP[k] & string
+                                  >],
+                                  "."
+                              >;
+                    }[keyof CP_WITH_TNP])
+        >
+    >
+>;
+
+const selectAll = <
+    S,
+    TNP extends string,
+    SUB extends ReturnType<SLFN<{}, object, string, string, number>>,
+    V extends
+        | (SelectionWrapperImpl<any, any, any> | SUB)
+        | ((args: any) => SelectionWrapperImpl<any, any, any> | SUB),
+>(
+    selection: Record<string, V>,
+    typeNamePure: TNP,
+    opts: selectAllOpts<S>,
+    collector?: { parents: string[]; path?: string },
+) => {
+    // let's not make the type too complicated, it's basically a
+    // nested map of string to either SLW or again
+    // a map of string to SLW
+    const s: Record<string, any> = {};
+    const entries = Object.entries(selection);
+    for (const [k, v] of entries) {
+        const tk = collector?.path
+            ? `${collector.path}.${k}`
+            : `${typeNamePure}.${k}`;
+        let excludePaths = opts?.exclude ?? ([] as string[]);
+        if ("cyclic" in opts) {
+            const exclude = Object.entries(
+                opts.cyclic as Record<string, string>,
+            )
+                .filter(([k, v]) => v === "exclude")
+                .map((e) => e[0]);
+            const cyclicLevels = Object.entries(
+                opts.cyclic as Record<string, string>,
+            )
+                .filter(([k, v]) => v !== "exclude")
+                .filter(([k, v]) =>
+                    v.match(new RegExp(`${selectCyclicFieldsOptsStr}(.*)`)),
+                )
+                .map((e) => {
+                    const levels =
+                        parseInt(
+                            e[1]
+                                .match(
+                                    new RegExp(
+                                        `${selectCyclicFieldsOptsStr}(.*)`,
+                                    ),
+                                )!
+                                .at(1)![0],
+                        ) + 1;
+                    const pathFragment = e[0].split(".").slice(1).join(".");
+                    return `${e[0].split(".")[0]}.${Array.from({ length: levels }).fill(pathFragment).join(".")}`;
+                });
+            excludePaths.push(...exclude, ...cyclicLevels);
+        }
+        if (excludePaths.includes(tk as any)) continue;
+
+        if (typeof v === "function") {
+            if (v.name.startsWith("bound ")) {
+                // if (collector?.parents?.includes(tk)) continue;
+                const col = {
+                    parents: [...(collector?.parents ?? []), tk],
+                    path: tk,
+                };
+                s[k] = v(
+                    (sub_s: {
+                        $on?: {
+                            [k: string]: (
+                                utype_sub: (utype_sub_s: {
+                                    $all: (_opts?: {}, collector?: {}) => any;
+                                }) => any,
+                            ) => any;
+                        };
+                        $all?: (_opts?: {}, collector?: {}) => any;
+                    }) => {
+                        if (sub_s.$all) {
+                            return sub_s.$all(opts, col);
+                        }
+                        if (sub_s.$on) {
+                            return Object.values(sub_s.$on).reduce(
+                                (sel, tselfn) => ({
+                                    ...sel,
+                                    ...tselfn((utype_sub_s) => {
+                                        return utype_sub_s.$all(opts, col);
+                                    }),
+                                }),
+                                {},
+                            );
+                        }
+                    },
+                );
+            } else if (!k.startsWith("$")) {
+                console.warn(
+                    `Cannot use $all on fields with args: ${k}: ${v.toString()}`,
+                );
+            }
+        } else {
+            s[k] = v;
+        }
+    }
+    return s;
+};
 
 const makeSLFN = <
     T extends object,
-    F,
+    F extends object,
     N extends string,
     TNP extends string,
     TAD extends number,
@@ -1581,12 +2136,17 @@ const makeSLFN = <
 ) => {
     function _SLFN<TT extends T, FF extends F>(
         this: any,
-        s: (selection: FF) => TT,
+        _s?: (selection: FF) => TT,
     ) {
         let parent: SelectionFnParent = this ?? {
             collector: new OperationSelectionCollector(),
         };
         function innerFn(this: any) {
+            const s =
+                _s ??
+                ((selection: FF) =>
+                    (selection as any)["$all"]({ cyclic: "exclude" }) as TT);
+
             const selection: FF = makeSLFNInput.bind(this)() as any;
             const r = s(selection);
             const _result = new SelectionWrapper(
@@ -1637,12 +2197,6 @@ export type Directive_skipArgs = {
     /** Skipped when true. */
     if: boolean;
 };
-export type CountryNotNullArrayNotNullNameArgs = {
-    lang?: string;
-};
-export type CountryNotNullNameArgs = {
-    lang?: string;
-};
 export type CountryNameArgs = {
     lang?: string;
 };
@@ -1666,10 +2220,6 @@ export type QueryLanguagesArgs = {
 };
 export const Directive_includeArgsMeta = { if: "Boolean!" } as const;
 export const Directive_skipArgsMeta = { if: "Boolean!" } as const;
-export const CountryNotNullArrayNotNullNameArgsMeta = {
-    lang: "String",
-} as const;
-export const CountryNotNullNameArgsMeta = { lang: "String" } as const;
 export const CountryNameArgsMeta = { lang: "String" } as const;
 export const QueryContinentArgsMeta = { code: "ID!" } as const;
 export const QueryContinentsArgsMeta = {
@@ -1705,62 +2255,145 @@ export type LanguageFilterInput = {
     code?: StringQueryOperatorInput;
 };
 
+export type Continent = {
+    code: string;
+    countries: Country[];
+    name: string;
+};
+
+export type Country = {
+    awsRegion: string;
+    capital?: string;
+    code: string;
+    continent: Continent;
+    currencies: Array<string>;
+    currency?: string;
+    emoji: string;
+    emojiU: string;
+    languages: Language[];
+    name: (args?: CountryNameArgs) => string;
+    native: string;
+    phone: string;
+    phones: Array<string>;
+    states: State[];
+    subdivisions: Subdivision[];
+};
+
+export type Language = {
+    code: string;
+    countries: Country[];
+    name: string;
+    native: string;
+    rtl: boolean;
+};
+
+export type State = {
+    code?: string;
+    country: Country;
+    name: string;
+};
+
+export type Subdivision = {
+    code: string;
+    emoji?: string;
+    name: string;
+};
+
+export type Query = {
+    continent: (args: QueryContinentArgs) => Continent;
+    continents: (args?: QueryContinentsArgs) => Continent[];
+    countries: (args?: QueryCountriesArgs) => Country[];
+    country: (args: QueryCountryArgs) => Country;
+    language: (args: QueryLanguageArgs) => Language;
+    languages: (args?: QueryLanguagesArgs) => Language[];
+};
+
+export interface EnumTypesMapped {}
+
+type ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes<AS_PROMISE = 0> =
+    {
+        awsRegion: SelectionWrapperImpl<
+            "awsRegion",
+            "String!",
+            0,
+            {},
+            undefined
+        >;
+        capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
+        code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
+        continent: ReturnType<
+            SLFN<
+                {},
+                ReturnType<typeof makeContinentNotNullSelectionInput>,
+                "ContinentNotNullSelection",
+                "Continent",
+                0
+            >
+        >;
+        currencies: SelectionWrapperImpl<
+            "currencies",
+            "String!",
+            1,
+            {},
+            undefined
+        >;
+        currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
+        emoji: SelectionWrapperImpl<"emoji", "String!", 0, {}, undefined>;
+        emojiU: SelectionWrapperImpl<"emojiU", "String!", 0, {}, undefined>;
+        languages: ReturnType<
+            SLFN<
+                {},
+                ReturnType<
+                    typeof makeLanguageNotNullArrayNotNullSelectionInput
+                >,
+                "LanguageNotNullArrayNotNullSelection",
+                "Language",
+                1
+            >
+        >;
+        name: SelectionWrapperImpl<"name", "String!", 0, {}, CountryNameArgs>;
+        native: SelectionWrapperImpl<"native", "String!", 0, {}, undefined>;
+        phone: SelectionWrapperImpl<"phone", "String!", 0, {}, undefined>;
+        phones: SelectionWrapperImpl<"phones", "String!", 1, {}, undefined>;
+        states: ReturnType<
+            SLFN<
+                {},
+                ReturnType<typeof makeStateNotNullArrayNotNullSelectionInput>,
+                "StateNotNullArrayNotNullSelection",
+                "State",
+                1
+            >
+        >;
+        subdivisions: ReturnType<
+            SLFN<
+                {},
+                ReturnType<
+                    typeof makeSubdivisionNotNullArrayNotNullSelectionInput
+                >,
+                "SubdivisionNotNullArrayNotNullSelection",
+                "Subdivision",
+                1
+            >
+        >;
+    };
 type ReturnTypeFromCountryNotNullArrayNotNullSelection = {
-    awsRegion: SelectionWrapperImpl<"awsRegion", "String", 0, {}, undefined>;
-    capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
-    continent: ReturnType<
-        SLFN<
-            {},
-            ReturnType<typeof makeContinentNotNullSelectionInput>,
-            "ContinentNotNullSelection",
-            "Continent",
-            0
-        >
-    >;
-    currencies: SelectionWrapperImpl<"currencies", "String", 1, {}, undefined>;
-    currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
-    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
-    emojiU: SelectionWrapperImpl<"emojiU", "String", 0, {}, undefined>;
-    languages: ReturnType<
-        SLFN<
-            {},
-            ReturnType<typeof makeLanguageNotNullArrayNotNullSelectionInput>,
-            "LanguageNotNullArrayNotNullSelection",
-            "Language",
-            1
-        >
-    >;
+    awsRegion: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["awsRegion"];
+    capital: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["capital"];
+    code: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["code"];
+    continent: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["continent"];
+    currencies: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["currencies"];
+    currency: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["currency"];
+    emoji: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["emoji"];
+    emojiU: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["emojiU"];
+    languages: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["languages"];
     name: (
-        args: CountryNotNullArrayNotNullNameArgs,
-    ) => SelectionWrapperImpl<
-        "name",
-        "String",
-        0,
-        {},
-        CountryNotNullArrayNotNullNameArgs
-    >;
-    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
-    phone: SelectionWrapperImpl<"phone", "String", 0, {}, undefined>;
-    phones: SelectionWrapperImpl<"phones", "String", 1, {}, undefined>;
-    states: ReturnType<
-        SLFN<
-            {},
-            ReturnType<typeof makeStateNotNullArrayNotNullSelectionInput>,
-            "StateNotNullArrayNotNullSelection",
-            "State",
-            1
-        >
-    >;
-    subdivisions: ReturnType<
-        SLFN<
-            {},
-            ReturnType<typeof makeSubdivisionNotNullArrayNotNullSelectionInput>,
-            "SubdivisionNotNullArrayNotNullSelection",
-            "Subdivision",
-            1
-        >
-    >;
+        args: CountryNameArgs,
+    ) => ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["name"];
+    native: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["native"];
+    phone: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["phone"];
+    phones: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["phones"];
+    states: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["states"];
+    subdivisions: ReturnTypeFromCountryNotNullArrayNotNullSelectionRetTypes["subdivisions"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1769,102 +2402,134 @@ type ReturnTypeFromCountryNotNullArrayNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeCountryNotNullArrayNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Country[]>, "Country[]">;
 };
 
 export function makeCountryNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromCountryNotNullArrayNotNullSelection {
+    const that = this;
     return {
-        awsRegion: new SelectionWrapper(
-            "awsRegion",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        capital: new SelectionWrapper(
-            "capital",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        continent: ContinentNotNullSelection.bind({
-            collector: this,
-            fieldName: "continent",
-        }),
-        currencies: new SelectionWrapper(
-            "currencies",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        currency: new SelectionWrapper(
-            "currency",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        emoji: new SelectionWrapper("emoji", "String", 0, {}, this, undefined),
-        emojiU: new SelectionWrapper(
-            "emojiU",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        languages: LanguageNotNullArrayNotNullSelection.bind({
-            collector: this,
-            fieldName: "languages",
-        }),
-        name: (args: CountryNotNullArrayNotNullNameArgs) =>
-            new SelectionWrapper(
-                "name",
+        get awsRegion() {
+            return new SelectionWrapper(
+                "awsRegion",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get capital() {
+            return new SelectionWrapper(
+                "capital",
                 "String",
                 0,
                 {},
-                this,
+                that,
                 undefined,
-                args,
-                CountryNotNullArrayNotNullNameArgsMeta,
-            ),
-        native: new SelectionWrapper(
-            "native",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        phone: new SelectionWrapper("phone", "String", 0, {}, this, undefined),
-        phones: new SelectionWrapper(
-            "phones",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+            );
+        },
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        continent: ContinentNotNullSelection.bind({
+            collector: that,
+            fieldName: "continent",
+        }) as any,
+        get currencies() {
+            return new SelectionWrapper(
+                "currencies",
+                "String!",
+                1,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get currency() {
+            return new SelectionWrapper(
+                "currency",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get emoji() {
+            return new SelectionWrapper(
+                "emoji",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get emojiU() {
+            return new SelectionWrapper(
+                "emojiU",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        languages: LanguageNotNullArrayNotNullSelection.bind({
+            collector: that,
+            fieldName: "languages",
+        }) as any,
+        get name() {
+            return (args: CountryNameArgs) =>
+                new SelectionWrapper(
+                    "name",
+                    "String!",
+                    0,
+                    {},
+                    that,
+                    undefined,
+                    args,
+                    CountryNameArgsMeta,
+                );
+        },
+        get native() {
+            return new SelectionWrapper(
+                "native",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get phone() {
+            return new SelectionWrapper(
+                "phone",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get phones() {
+            return new SelectionWrapper("phones", "String!", 1, {}, that);
+        },
         states: StateNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "states",
-        }),
+        }) as any,
         subdivisions: SubdivisionNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "subdivisions",
-        }),
+        }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -1873,10 +2538,20 @@ export function makeCountryNotNullArrayNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeCountryNotNullArrayNotNullSelectionInput.bind(this)(),
+                makeCountryNotNullArrayNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeCountryNotNullArrayNotNullSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeCountryNotNullArrayNotNullSelectionInput.bind(
+                    that,
+                )() as any,
+                "Country[]",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const CountryNotNullArrayNotNullSelection = makeSLFN(
@@ -1886,8 +2561,8 @@ export const CountryNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromContinentNotNullSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+type ReturnTypeFromContinentNotNullSelectionRetTypes<AS_PROMISE = 0> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     countries: ReturnType<
         SLFN<
             {},
@@ -1897,7 +2572,12 @@ type ReturnTypeFromContinentNotNullSelection = {
             1
         >
     >;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromContinentNotNullSelection = {
+    code: ReturnTypeFromContinentNotNullSelectionRetTypes["code"];
+    countries: ReturnTypeFromContinentNotNullSelectionRetTypes["countries"];
+    name: ReturnTypeFromContinentNotNullSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1906,22 +2586,36 @@ type ReturnTypeFromContinentNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeContinentNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Continent>, "Continent">;
 };
 
 export function makeContinentNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromContinentNotNullSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
         countries: CountryNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "countries",
-        }),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -1930,10 +2624,18 @@ export function makeContinentNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeContinentNotNullSelectionInput.bind(this)(),
+                makeContinentNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeContinentNotNullSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeContinentNotNullSelectionInput.bind(that)() as any,
+                "Continent",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const ContinentNotNullSelection = makeSLFN(
@@ -1943,11 +2645,29 @@ export const ContinentNotNullSelection = makeSLFN(
     0,
 );
 
+type ReturnTypeFromLanguageNotNullArrayNotNullSelectionRetTypes<
+    AS_PROMISE = 0,
+> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
+    countries: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeCountryNotNullArrayNotNullSelectionInput>,
+            "CountryNotNullArrayNotNullSelection",
+            "Country",
+            1
+        >
+    >;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+    native: SelectionWrapperImpl<"native", "String!", 0, {}, undefined>;
+    rtl: SelectionWrapperImpl<"rtl", "Boolean!", 0, {}, undefined>;
+};
 type ReturnTypeFromLanguageNotNullArrayNotNullSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
-    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
-    rtl: SelectionWrapperImpl<"rtl", "Boolean", 0, {}, undefined>;
+    code: ReturnTypeFromLanguageNotNullArrayNotNullSelectionRetTypes["code"];
+    countries: ReturnTypeFromLanguageNotNullArrayNotNullSelectionRetTypes["countries"];
+    name: ReturnTypeFromLanguageNotNullArrayNotNullSelectionRetTypes["name"];
+    native: ReturnTypeFromLanguageNotNullArrayNotNullSelectionRetTypes["native"];
+    rtl: ReturnTypeFromLanguageNotNullArrayNotNullSelectionRetTypes["rtl"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -1956,27 +2676,56 @@ type ReturnTypeFromLanguageNotNullArrayNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeLanguageNotNullArrayNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Language[]>, "Language[]">;
 };
 
 export function makeLanguageNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromLanguageNotNullArrayNotNullSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        native: new SelectionWrapper(
-            "native",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rtl: new SelectionWrapper("rtl", "Boolean", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        countries: CountryNotNullArrayNotNullSelection.bind({
+            collector: that,
+            fieldName: "countries",
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get native() {
+            return new SelectionWrapper(
+                "native",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get rtl() {
+            return new SelectionWrapper(
+                "rtl",
+                "Boolean!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -1985,10 +2734,20 @@ export function makeLanguageNotNullArrayNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeLanguageNotNullArrayNotNullSelectionInput.bind(this)(),
+                makeLanguageNotNullArrayNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeLanguageNotNullArrayNotNullSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeLanguageNotNullArrayNotNullSelectionInput.bind(
+                    that,
+                )() as any,
+                "Language[]",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const LanguageNotNullArrayNotNullSelection = makeSLFN(
@@ -1998,7 +2757,7 @@ export const LanguageNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromStateNotNullArrayNotNullSelection = {
+type ReturnTypeFromStateNotNullArrayNotNullSelectionRetTypes<AS_PROMISE = 0> = {
     code: SelectionWrapperImpl<"code", "String", 0, {}, undefined>;
     country: ReturnType<
         SLFN<
@@ -2009,7 +2768,12 @@ type ReturnTypeFromStateNotNullArrayNotNullSelection = {
             0
         >
     >;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromStateNotNullArrayNotNullSelection = {
+    code: ReturnTypeFromStateNotNullArrayNotNullSelectionRetTypes["code"];
+    country: ReturnTypeFromStateNotNullArrayNotNullSelectionRetTypes["country"];
+    name: ReturnTypeFromStateNotNullArrayNotNullSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2018,22 +2782,43 @@ type ReturnTypeFromStateNotNullArrayNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeStateNotNullArrayNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<State[]>, "State[]">;
 };
 
 export function makeStateNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromStateNotNullArrayNotNullSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "String", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper(
+                "code",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
         country: CountryNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "country",
-        }),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2042,10 +2827,18 @@ export function makeStateNotNullArrayNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeStateNotNullArrayNotNullSelectionInput.bind(this)(),
+                makeStateNotNullArrayNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeStateNotNullArrayNotNullSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeStateNotNullArrayNotNullSelectionInput.bind(that)() as any,
+                "State[]",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const StateNotNullArrayNotNullSelection = makeSLFN(
@@ -2055,10 +2848,10 @@ export const StateNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromCountryNotNullSelection = {
-    awsRegion: SelectionWrapperImpl<"awsRegion", "String", 0, {}, undefined>;
+type ReturnTypeFromCountryNotNullSelectionRetTypes<AS_PROMISE = 0> = {
+    awsRegion: SelectionWrapperImpl<"awsRegion", "String!", 0, {}, undefined>;
     capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     continent: ReturnType<
         SLFN<
             {},
@@ -2068,10 +2861,10 @@ type ReturnTypeFromCountryNotNullSelection = {
             0
         >
     >;
-    currencies: SelectionWrapperImpl<"currencies", "String", 1, {}, undefined>;
+    currencies: SelectionWrapperImpl<"currencies", "String!", 1, {}, undefined>;
     currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
-    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
-    emojiU: SelectionWrapperImpl<"emojiU", "String", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String!", 0, {}, undefined>;
+    emojiU: SelectionWrapperImpl<"emojiU", "String!", 0, {}, undefined>;
     languages: ReturnType<
         SLFN<
             {},
@@ -2081,12 +2874,10 @@ type ReturnTypeFromCountryNotNullSelection = {
             1
         >
     >;
-    name: (
-        args: CountryNotNullNameArgs,
-    ) => SelectionWrapperImpl<"name", "String", 0, {}, CountryNotNullNameArgs>;
-    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
-    phone: SelectionWrapperImpl<"phone", "String", 0, {}, undefined>;
-    phones: SelectionWrapperImpl<"phones", "String", 1, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, CountryNameArgs>;
+    native: SelectionWrapperImpl<"native", "String!", 0, {}, undefined>;
+    phone: SelectionWrapperImpl<"phone", "String!", 0, {}, undefined>;
+    phones: SelectionWrapperImpl<"phones", "String!", 1, {}, undefined>;
     states: ReturnType<
         SLFN<
             {},
@@ -2105,6 +2896,25 @@ type ReturnTypeFromCountryNotNullSelection = {
             1
         >
     >;
+};
+type ReturnTypeFromCountryNotNullSelection = {
+    awsRegion: ReturnTypeFromCountryNotNullSelectionRetTypes["awsRegion"];
+    capital: ReturnTypeFromCountryNotNullSelectionRetTypes["capital"];
+    code: ReturnTypeFromCountryNotNullSelectionRetTypes["code"];
+    continent: ReturnTypeFromCountryNotNullSelectionRetTypes["continent"];
+    currencies: ReturnTypeFromCountryNotNullSelectionRetTypes["currencies"];
+    currency: ReturnTypeFromCountryNotNullSelectionRetTypes["currency"];
+    emoji: ReturnTypeFromCountryNotNullSelectionRetTypes["emoji"];
+    emojiU: ReturnTypeFromCountryNotNullSelectionRetTypes["emojiU"];
+    languages: ReturnTypeFromCountryNotNullSelectionRetTypes["languages"];
+    name: (
+        args: CountryNameArgs,
+    ) => ReturnTypeFromCountryNotNullSelectionRetTypes["name"];
+    native: ReturnTypeFromCountryNotNullSelectionRetTypes["native"];
+    phone: ReturnTypeFromCountryNotNullSelectionRetTypes["phone"];
+    phones: ReturnTypeFromCountryNotNullSelectionRetTypes["phones"];
+    states: ReturnTypeFromCountryNotNullSelectionRetTypes["states"];
+    subdivisions: ReturnTypeFromCountryNotNullSelectionRetTypes["subdivisions"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2113,102 +2923,141 @@ type ReturnTypeFromCountryNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeCountryNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Country>, "Country">;
 };
 
 export function makeCountryNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromCountryNotNullSelection {
+    const that = this;
     return {
-        awsRegion: new SelectionWrapper(
-            "awsRegion",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        capital: new SelectionWrapper(
-            "capital",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        continent: ContinentNotNullSelection.bind({
-            collector: this,
-            fieldName: "continent",
-        }),
-        currencies: new SelectionWrapper(
-            "currencies",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        currency: new SelectionWrapper(
-            "currency",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        emoji: new SelectionWrapper("emoji", "String", 0, {}, this, undefined),
-        emojiU: new SelectionWrapper(
-            "emojiU",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        languages: LanguageNotNullArrayNotNullSelection.bind({
-            collector: this,
-            fieldName: "languages",
-        }),
-        name: (args: CountryNotNullNameArgs) =>
-            new SelectionWrapper(
-                "name",
+        get awsRegion() {
+            return new SelectionWrapper(
+                "awsRegion",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get capital() {
+            return new SelectionWrapper(
+                "capital",
                 "String",
                 0,
                 {},
-                this,
+                that,
                 undefined,
-                args,
-                CountryNotNullNameArgsMeta,
-            ),
-        native: new SelectionWrapper(
-            "native",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        phone: new SelectionWrapper("phone", "String", 0, {}, this, undefined),
-        phones: new SelectionWrapper(
-            "phones",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+            );
+        },
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        continent: ContinentNotNullSelection.bind({
+            collector: that,
+            fieldName: "continent",
+        }) as any,
+        get currencies() {
+            return new SelectionWrapper(
+                "currencies",
+                "String!",
+                1,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get currency() {
+            return new SelectionWrapper(
+                "currency",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get emoji() {
+            return new SelectionWrapper(
+                "emoji",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get emojiU() {
+            return new SelectionWrapper(
+                "emojiU",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        languages: LanguageNotNullArrayNotNullSelection.bind({
+            collector: that,
+            fieldName: "languages",
+        }) as any,
+        get name() {
+            return (args: CountryNameArgs) =>
+                new SelectionWrapper(
+                    "name",
+                    "String!",
+                    0,
+                    {},
+                    that,
+                    undefined,
+                    args,
+                    CountryNameArgsMeta,
+                );
+        },
+        get native() {
+            return new SelectionWrapper(
+                "native",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get phone() {
+            return new SelectionWrapper(
+                "phone",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get phones() {
+            return new SelectionWrapper(
+                "phones",
+                "String!",
+                1,
+                {},
+                that,
+                undefined,
+            );
+        },
         states: StateNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "states",
-        }),
+        }) as any,
         subdivisions: SubdivisionNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "subdivisions",
-        }),
+        }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2217,10 +3066,18 @@ export function makeCountryNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeCountryNotNullSelectionInput.bind(this)(),
+                makeCountryNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeCountryNotNullSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeCountryNotNullSelectionInput.bind(that)() as any,
+                "Country",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const CountryNotNullSelection = makeSLFN(
@@ -2230,10 +3087,17 @@ export const CountryNotNullSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromSubdivisionNotNullArrayNotNullSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+type ReturnTypeFromSubdivisionNotNullArrayNotNullSelectionRetTypes<
+    AS_PROMISE = 0,
+> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromSubdivisionNotNullArrayNotNullSelection = {
+    code: ReturnTypeFromSubdivisionNotNullArrayNotNullSelectionRetTypes["code"];
+    emoji: ReturnTypeFromSubdivisionNotNullArrayNotNullSelectionRetTypes["emoji"];
+    name: ReturnTypeFromSubdivisionNotNullArrayNotNullSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2242,19 +3106,45 @@ type ReturnTypeFromSubdivisionNotNullArrayNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeSubdivisionNotNullArrayNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<
+        AllNonFuncFieldsFromType<Subdivision[]>,
+        "Subdivision[]"
+    >;
 };
 
 export function makeSubdivisionNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromSubdivisionNotNullArrayNotNullSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        emoji: new SelectionWrapper("emoji", "String", 0, {}, this, undefined),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        get emoji() {
+            return new SelectionWrapper(
+                "emoji",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2263,12 +3153,22 @@ export function makeSubdivisionNotNullArrayNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeSubdivisionNotNullArrayNotNullSelectionInput.bind(this)(),
+                makeSubdivisionNotNullArrayNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<
                     typeof makeSubdivisionNotNullArrayNotNullSelectionInput
                 >
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeSubdivisionNotNullArrayNotNullSelectionInput.bind(
+                    that,
+                )() as any,
+                "Subdivision[]",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const SubdivisionNotNullArrayNotNullSelection = makeSLFN(
@@ -2278,8 +3178,8 @@ export const SubdivisionNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromContinentSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+type ReturnTypeFromContinentSelectionRetTypes<AS_PROMISE = 0> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     countries: ReturnType<
         SLFN<
             {},
@@ -2289,7 +3189,12 @@ type ReturnTypeFromContinentSelection = {
             1
         >
     >;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromContinentSelection = {
+    code: ReturnTypeFromContinentSelectionRetTypes["code"];
+    countries: ReturnTypeFromContinentSelectionRetTypes["countries"];
+    name: ReturnTypeFromContinentSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2298,22 +3203,36 @@ type ReturnTypeFromContinentSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeContinentSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Continent>, "Continent">;
 };
 
 export function makeContinentSelectionInput(
     this: any,
 ): ReturnTypeFromContinentSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
         countries: CountryNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "countries",
-        }),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2322,10 +3241,18 @@ export function makeContinentSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeContinentSelectionInput.bind(this)(),
+                makeContinentSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeContinentSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeContinentSelectionInput.bind(that)() as any,
+                "Continent",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const ContinentSelection = makeSLFN(
@@ -2335,8 +3262,10 @@ export const ContinentSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromContinentNotNullArrayNotNullSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+type ReturnTypeFromContinentNotNullArrayNotNullSelectionRetTypes<
+    AS_PROMISE = 0,
+> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     countries: ReturnType<
         SLFN<
             {},
@@ -2346,7 +3275,12 @@ type ReturnTypeFromContinentNotNullArrayNotNullSelection = {
             1
         >
     >;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromContinentNotNullArrayNotNullSelection = {
+    code: ReturnTypeFromContinentNotNullArrayNotNullSelectionRetTypes["code"];
+    countries: ReturnTypeFromContinentNotNullArrayNotNullSelectionRetTypes["countries"];
+    name: ReturnTypeFromContinentNotNullArrayNotNullSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2355,22 +3289,36 @@ type ReturnTypeFromContinentNotNullArrayNotNullSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeContinentNotNullArrayNotNullSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Continent[]>, "Continent[]">;
 };
 
 export function makeContinentNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromContinentNotNullArrayNotNullSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
         countries: CountryNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "countries",
-        }),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2379,12 +3327,22 @@ export function makeContinentNotNullArrayNotNullSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeContinentNotNullArrayNotNullSelectionInput.bind(this)(),
+                makeContinentNotNullArrayNotNullSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<
                     typeof makeContinentNotNullArrayNotNullSelectionInput
                 >
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeContinentNotNullArrayNotNullSelectionInput.bind(
+                    that,
+                )() as any,
+                "Continent[]",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const ContinentNotNullArrayNotNullSelection = makeSLFN(
@@ -2394,10 +3352,10 @@ export const ContinentNotNullArrayNotNullSelection = makeSLFN(
     1,
 );
 
-type ReturnTypeFromCountrySelection = {
-    awsRegion: SelectionWrapperImpl<"awsRegion", "String", 0, {}, undefined>;
+type ReturnTypeFromCountrySelectionRetTypes<AS_PROMISE = 0> = {
+    awsRegion: SelectionWrapperImpl<"awsRegion", "String!", 0, {}, undefined>;
     capital: SelectionWrapperImpl<"capital", "String", 0, {}, undefined>;
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     continent: ReturnType<
         SLFN<
             {},
@@ -2407,10 +3365,10 @@ type ReturnTypeFromCountrySelection = {
             0
         >
     >;
-    currencies: SelectionWrapperImpl<"currencies", "String", 1, {}, undefined>;
+    currencies: SelectionWrapperImpl<"currencies", "String!", 1, {}, undefined>;
     currency: SelectionWrapperImpl<"currency", "String", 0, {}, undefined>;
-    emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
-    emojiU: SelectionWrapperImpl<"emojiU", "String", 0, {}, undefined>;
+    emoji: SelectionWrapperImpl<"emoji", "String!", 0, {}, undefined>;
+    emojiU: SelectionWrapperImpl<"emojiU", "String!", 0, {}, undefined>;
     languages: ReturnType<
         SLFN<
             {},
@@ -2420,12 +3378,10 @@ type ReturnTypeFromCountrySelection = {
             1
         >
     >;
-    name: (
-        args: CountryNameArgs,
-    ) => SelectionWrapperImpl<"name", "String", 0, {}, CountryNameArgs>;
-    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
-    phone: SelectionWrapperImpl<"phone", "String", 0, {}, undefined>;
-    phones: SelectionWrapperImpl<"phones", "String", 1, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, CountryNameArgs>;
+    native: SelectionWrapperImpl<"native", "String!", 0, {}, undefined>;
+    phone: SelectionWrapperImpl<"phone", "String!", 0, {}, undefined>;
+    phones: SelectionWrapperImpl<"phones", "String!", 1, {}, undefined>;
     states: ReturnType<
         SLFN<
             {},
@@ -2444,6 +3400,25 @@ type ReturnTypeFromCountrySelection = {
             1
         >
     >;
+};
+type ReturnTypeFromCountrySelection = {
+    awsRegion: ReturnTypeFromCountrySelectionRetTypes["awsRegion"];
+    capital: ReturnTypeFromCountrySelectionRetTypes["capital"];
+    code: ReturnTypeFromCountrySelectionRetTypes["code"];
+    continent: ReturnTypeFromCountrySelectionRetTypes["continent"];
+    currencies: ReturnTypeFromCountrySelectionRetTypes["currencies"];
+    currency: ReturnTypeFromCountrySelectionRetTypes["currency"];
+    emoji: ReturnTypeFromCountrySelectionRetTypes["emoji"];
+    emojiU: ReturnTypeFromCountrySelectionRetTypes["emojiU"];
+    languages: ReturnTypeFromCountrySelectionRetTypes["languages"];
+    name: (
+        args: CountryNameArgs,
+    ) => ReturnTypeFromCountrySelectionRetTypes["name"];
+    native: ReturnTypeFromCountrySelectionRetTypes["native"];
+    phone: ReturnTypeFromCountrySelectionRetTypes["phone"];
+    phones: ReturnTypeFromCountrySelectionRetTypes["phones"];
+    states: ReturnTypeFromCountrySelectionRetTypes["states"];
+    subdivisions: ReturnTypeFromCountrySelectionRetTypes["subdivisions"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2452,102 +3427,141 @@ type ReturnTypeFromCountrySelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeCountrySelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Country>, "Country">;
 };
 
 export function makeCountrySelectionInput(
     this: any,
 ): ReturnTypeFromCountrySelection {
+    const that = this;
     return {
-        awsRegion: new SelectionWrapper(
-            "awsRegion",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        capital: new SelectionWrapper(
-            "capital",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        continent: ContinentNotNullSelection.bind({
-            collector: this,
-            fieldName: "continent",
-        }),
-        currencies: new SelectionWrapper(
-            "currencies",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
-        currency: new SelectionWrapper(
-            "currency",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        emoji: new SelectionWrapper("emoji", "String", 0, {}, this, undefined),
-        emojiU: new SelectionWrapper(
-            "emojiU",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        languages: LanguageNotNullArrayNotNullSelection.bind({
-            collector: this,
-            fieldName: "languages",
-        }),
-        name: (args: CountryNameArgs) =>
-            new SelectionWrapper(
-                "name",
+        get awsRegion() {
+            return new SelectionWrapper(
+                "awsRegion",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get capital() {
+            return new SelectionWrapper(
+                "capital",
                 "String",
                 0,
                 {},
-                this,
+                that,
                 undefined,
-                args,
-                CountryNameArgsMeta,
-            ),
-        native: new SelectionWrapper(
-            "native",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        phone: new SelectionWrapper("phone", "String", 0, {}, this, undefined),
-        phones: new SelectionWrapper(
-            "phones",
-            "String",
-            1,
-            {},
-            this,
-            undefined,
-        ),
+            );
+        },
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        continent: ContinentNotNullSelection.bind({
+            collector: that,
+            fieldName: "continent",
+        }) as any,
+        get currencies() {
+            return new SelectionWrapper(
+                "currencies",
+                "String!",
+                1,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get currency() {
+            return new SelectionWrapper(
+                "currency",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get emoji() {
+            return new SelectionWrapper(
+                "emoji",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get emojiU() {
+            return new SelectionWrapper(
+                "emojiU",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        languages: LanguageNotNullArrayNotNullSelection.bind({
+            collector: that,
+            fieldName: "languages",
+        }) as any,
+        get name() {
+            return (args: CountryNameArgs) =>
+                new SelectionWrapper(
+                    "name",
+                    "String!",
+                    0,
+                    {},
+                    that,
+                    undefined,
+                    args,
+                    CountryNameArgsMeta,
+                );
+        },
+        get native() {
+            return new SelectionWrapper(
+                "native",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get phone() {
+            return new SelectionWrapper(
+                "phone",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get phones() {
+            return new SelectionWrapper(
+                "phones",
+                "String!",
+                1,
+                {},
+                that,
+                undefined,
+            );
+        },
         states: StateNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "states",
-        }),
+        }) as any,
         subdivisions: SubdivisionNotNullArrayNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "subdivisions",
-        }),
+        }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2556,10 +3570,18 @@ export function makeCountrySelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeCountrySelectionInput.bind(this)(),
+                makeCountrySelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeCountrySelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeCountrySelectionInput.bind(that)() as any,
+                "Country",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const CountrySelection = makeSLFN(
@@ -2569,11 +3591,27 @@ export const CountrySelection = makeSLFN(
     0,
 );
 
+type ReturnTypeFromLanguageSelectionRetTypes<AS_PROMISE = 0> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
+    countries: ReturnType<
+        SLFN<
+            {},
+            ReturnType<typeof makeCountryNotNullArrayNotNullSelectionInput>,
+            "CountryNotNullArrayNotNullSelection",
+            "Country",
+            1
+        >
+    >;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+    native: SelectionWrapperImpl<"native", "String!", 0, {}, undefined>;
+    rtl: SelectionWrapperImpl<"rtl", "Boolean!", 0, {}, undefined>;
+};
 type ReturnTypeFromLanguageSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
-    native: SelectionWrapperImpl<"native", "String", 0, {}, undefined>;
-    rtl: SelectionWrapperImpl<"rtl", "Boolean", 0, {}, undefined>;
+    code: ReturnTypeFromLanguageSelectionRetTypes["code"];
+    countries: ReturnTypeFromLanguageSelectionRetTypes["countries"];
+    name: ReturnTypeFromLanguageSelectionRetTypes["name"];
+    native: ReturnTypeFromLanguageSelectionRetTypes["native"];
+    rtl: ReturnTypeFromLanguageSelectionRetTypes["rtl"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2582,27 +3620,56 @@ type ReturnTypeFromLanguageSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeLanguageSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Language>, "Language">;
 };
 
 export function makeLanguageSelectionInput(
     this: any,
 ): ReturnTypeFromLanguageSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
-        native: new SelectionWrapper(
-            "native",
-            "String",
-            0,
-            {},
-            this,
-            undefined,
-        ),
-        rtl: new SelectionWrapper("rtl", "Boolean", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        countries: CountryNotNullArrayNotNullSelection.bind({
+            collector: that,
+            fieldName: "countries",
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get native() {
+            return new SelectionWrapper(
+                "native",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get rtl() {
+            return new SelectionWrapper(
+                "rtl",
+                "Boolean!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2611,10 +3678,18 @@ export function makeLanguageSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeLanguageSelectionInput.bind(this)(),
+                makeLanguageSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeLanguageSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeLanguageSelectionInput.bind(that)() as any,
+                "Language",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const LanguageSelection = makeSLFN(
@@ -2624,8 +3699,8 @@ export const LanguageSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromQuerySelection = {
-    continent: (args: QueryContinentArgs) => ReturnType<
+type ReturnTypeFromQuerySelectionRetTypes<AS_PROMISE = 0> = {
+    continent: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeContinentSelectionInput>,
@@ -2635,10 +3710,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryContinentArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    continents: (args: QueryContinentsArgs) => ReturnType<
+    continents: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeContinentNotNullArrayNotNullSelectionInput>,
@@ -2648,10 +3724,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryContinentsArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    countries: (args: QueryCountriesArgs) => ReturnType<
+    countries: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeCountryNotNullArrayNotNullSelectionInput>,
@@ -2661,10 +3738,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryCountriesArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    country: (args: QueryCountryArgs) => ReturnType<
+    country: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeCountrySelectionInput>,
@@ -2674,10 +3752,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryCountryArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    language: (args: QueryLanguageArgs) => ReturnType<
+    language: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeLanguageSelectionInput>,
@@ -2687,10 +3766,11 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryLanguageArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
-    languages: (args: QueryLanguagesArgs) => ReturnType<
+    languages: ReturnType<
         SLFN<
             {},
             ReturnType<typeof makeLanguageNotNullArrayNotNullSelectionInput>,
@@ -2700,70 +3780,102 @@ type ReturnTypeFromQuerySelection = {
             {
                 $lazy: (args: QueryLanguagesArgs) => Promise<"T">;
             },
-            "$lazy"
+            "$lazy",
+            AS_PROMISE
         >
     >;
+};
+type ReturnTypeFromQuerySelection = {
+    continent: (
+        args: QueryContinentArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["continent"];
+    continents: (
+        args: QueryContinentsArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["continents"];
+    countries: (
+        args: QueryCountriesArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["countries"];
+    country: (
+        args: QueryCountryArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["country"];
+    language: (
+        args: QueryLanguageArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["language"];
+    languages: (
+        args: QueryLanguagesArgs,
+    ) => ReturnTypeFromQuerySelectionRetTypes["languages"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
     ) => (...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Query>, "Query">;
 };
 
 export function makeQuerySelectionInput(
     this: any,
 ): ReturnTypeFromQuerySelection {
+    const that = this;
     return {
         continent: (args: QueryContinentArgs) =>
             ContinentSelection.bind({
-                collector: this,
+                collector: that,
                 fieldName: "continent",
                 args,
                 argsMeta: QueryContinentArgsMeta,
-            }),
+            }) as any,
         continents: (args: QueryContinentsArgs) =>
             ContinentNotNullArrayNotNullSelection.bind({
-                collector: this,
+                collector: that,
                 fieldName: "continents",
                 args,
                 argsMeta: QueryContinentsArgsMeta,
-            }),
+            }) as any,
         countries: (args: QueryCountriesArgs) =>
             CountryNotNullArrayNotNullSelection.bind({
-                collector: this,
+                collector: that,
                 fieldName: "countries",
                 args,
                 argsMeta: QueryCountriesArgsMeta,
-            }),
+            }) as any,
         country: (args: QueryCountryArgs) =>
             CountrySelection.bind({
-                collector: this,
+                collector: that,
                 fieldName: "country",
                 args,
                 argsMeta: QueryCountryArgsMeta,
-            }),
+            }) as any,
         language: (args: QueryLanguageArgs) =>
             LanguageSelection.bind({
-                collector: this,
+                collector: that,
                 fieldName: "language",
                 args,
                 argsMeta: QueryLanguageArgsMeta,
-            }),
+            }) as any,
         languages: (args: QueryLanguagesArgs) =>
             LanguageNotNullArrayNotNullSelection.bind({
-                collector: this,
+                collector: that,
                 fieldName: "languages",
                 args,
                 argsMeta: QueryLanguagesArgsMeta,
-            }),
+            }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
                 ...args: ArgumentsTypeFromFragment<F>
             ) => ReturnTypeFromFragment<F>,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeQuerySelectionInput.bind(that)() as any,
+                "Query",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const QuerySelection = makeSLFN(
@@ -2773,7 +3885,7 @@ export const QuerySelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromStateSelection = {
+type ReturnTypeFromStateSelectionRetTypes<AS_PROMISE = 0> = {
     code: SelectionWrapperImpl<"code", "String", 0, {}, undefined>;
     country: ReturnType<
         SLFN<
@@ -2784,7 +3896,12 @@ type ReturnTypeFromStateSelection = {
             0
         >
     >;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromStateSelection = {
+    code: ReturnTypeFromStateSelectionRetTypes["code"];
+    country: ReturnTypeFromStateSelectionRetTypes["country"];
+    name: ReturnTypeFromStateSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2793,22 +3910,43 @@ type ReturnTypeFromStateSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeStateSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<State>, "State">;
 };
 
 export function makeStateSelectionInput(
     this: any,
 ): ReturnTypeFromStateSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "String", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper(
+                "code",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
         country: CountryNotNullSelection.bind({
-            collector: this,
+            collector: that,
             fieldName: "country",
-        }),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        }) as any,
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2817,8 +3955,16 @@ export function makeStateSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeStateSelectionInput.bind(this)(),
+                makeStateSelectionInput.bind(that)(),
             ) as SLWsFromSelection<ReturnType<typeof makeStateSelectionInput>>,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeStateSelectionInput.bind(that)() as any,
+                "State",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const StateSelection = makeSLFN(
@@ -2828,10 +3974,15 @@ export const StateSelection = makeSLFN(
     0,
 );
 
-type ReturnTypeFromSubdivisionSelection = {
-    code: SelectionWrapperImpl<"code", "ID", 0, {}, undefined>;
+type ReturnTypeFromSubdivisionSelectionRetTypes<AS_PROMISE = 0> = {
+    code: SelectionWrapperImpl<"code", "ID!", 0, {}, undefined>;
     emoji: SelectionWrapperImpl<"emoji", "String", 0, {}, undefined>;
-    name: SelectionWrapperImpl<"name", "String", 0, {}, undefined>;
+    name: SelectionWrapperImpl<"name", "String!", 0, {}, undefined>;
+};
+type ReturnTypeFromSubdivisionSelection = {
+    code: ReturnTypeFromSubdivisionSelectionRetTypes["code"];
+    emoji: ReturnTypeFromSubdivisionSelectionRetTypes["emoji"];
+    name: ReturnTypeFromSubdivisionSelectionRetTypes["name"];
 } & {
     $fragment: <F extends (this: any, ...args: any[]) => any>(
         f: F,
@@ -2840,19 +3991,42 @@ type ReturnTypeFromSubdivisionSelection = {
     $scalars: () => SLWsFromSelection<
         ReturnType<typeof makeSubdivisionSelectionInput>
     >;
+
+    $all: selectAllFunc<AllNonFuncFieldsFromType<Subdivision>, "Subdivision">;
 };
 
 export function makeSubdivisionSelectionInput(
     this: any,
 ): ReturnTypeFromSubdivisionSelection {
+    const that = this;
     return {
-        code: new SelectionWrapper("code", "ID", 0, {}, this, undefined),
-        emoji: new SelectionWrapper("emoji", "String", 0, {}, this, undefined),
-        name: new SelectionWrapper("name", "String", 0, {}, this, undefined),
+        get code() {
+            return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
+        },
+        get emoji() {
+            return new SelectionWrapper(
+                "emoji",
+                "String",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
+        get name() {
+            return new SelectionWrapper(
+                "name",
+                "String!",
+                0,
+                {},
+                that,
+                undefined,
+            );
+        },
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
             f.bind({
-                collector: this,
+                collector: that,
                 fieldName: "",
                 isFragment: f.name,
             }) as (
@@ -2861,10 +4035,18 @@ export function makeSubdivisionSelectionInput(
 
         $scalars: () =>
             selectScalars(
-                makeSubdivisionSelectionInput.bind(this)(),
+                makeSubdivisionSelectionInput.bind(that)(),
             ) as SLWsFromSelection<
                 ReturnType<typeof makeSubdivisionSelectionInput>
             >,
+
+        $all: (opts?: any, collector = undefined) =>
+            selectAll(
+                makeSubdivisionSelectionInput.bind(that)() as any,
+                "Subdivision",
+                opts as any,
+                collector,
+            ) as any,
     } as const;
 }
 export const SubdivisionSelection = makeSLFN(
@@ -2898,7 +4080,7 @@ export const $directives = {
 } as const;
 export function _makeRootOperationInput(this: any) {
     return {
-        query: QuerySelection.bind({
+        Query: QuerySelection.bind({
             collector: this,
             isRootType: "Query",
         }),
@@ -2907,11 +4089,6 @@ export function _makeRootOperationInput(this: any) {
     } as const;
 }
 
-type __AuthenticationArg__ =
-    | string
-    | { [key: string]: string }
-    | (() => string | { [key: string]: string })
-    | (() => Promise<string | { [key: string]: string }>);
 function __client__<
     T extends object,
     F extends ReturnType<typeof _makeRootOperationInput>,
@@ -2933,87 +4110,78 @@ function __client__<
         undefined,
     ) as unknown as T;
     Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
+
+    type excludeLazy<T> = { [key in Exclude<keyof T, "$lazy">]: T[key] };
+
+    // remove the $lazy property from the result
     const result = _result as {
-        [k in keyof T]: T[k] extends (...args: infer A) => any
-            ? (...args: A) => Omit<ReturnType<T[k]>, "$lazy">
-            : Omit<T[k], "$lazy">;
+        [k in keyof T]: T[k] extends { $lazy: any }
+            ? // if T[k] is an array and has a $lazy property, return the type of the array elements
+              T[k] extends (infer U)[] & { $lazy: any }
+                ? U[]
+                : // if T[k] is an object and has a $lazy property, return the type of the object
+                  excludeLazy<T[k]>
+            : // if T[k] is a function and has a $lazy property, return the type of the function
+              T[k] extends (args: infer A) => Promise<infer R>
+              ? (args: A) => Promise<R>
+              : T[k];
     };
-    type TR = typeof result;
 
-    let headers: Record<string, string> | undefined = undefined;
-    const finalPromise = {
-        then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
-            const doExecute = () => {
-                root.execute(headers)
-                    .then(() => {
-                        resolve(result);
-                    })
-                    .catch(reject);
-            };
-            if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
-                const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
-                if (tokenOrPromise instanceof Promise) {
-                    tokenOrPromise.then((t) => {
-                        if (typeof t === "string")
-                            headers = { Authorization: t };
-                        else headers = t;
+    type _TR = typeof result;
+    type __HasPromisesAndOrNonPromisesK = {
+        [k in keyof _TR]: _TR[k] extends (args: any) => Promise<any>
+            ? "promise"
+            : "non-promise";
+    };
+    type __HasPromisesAndOrNonPromises =
+        __HasPromisesAndOrNonPromisesK[keyof __HasPromisesAndOrNonPromisesK];
+    type finalReturnTypeBasedOnIfHasLazyPromises =
+        __HasPromisesAndOrNonPromises extends "non-promise"
+            ? Promise<_TR>
+            : __HasPromisesAndOrNonPromises extends "promise"
+              ? _TR
+              : Promise<_TR>;
 
-                        doExecute();
-                    });
-                } else if (typeof tokenOrPromise === "string") {
-                    headers = { Authorization: tokenOrPromise };
-
-                    doExecute();
-                } else {
-                    headers = tokenOrPromise;
-
-                    doExecute();
+    const resultProxy = new Proxy(
+        {},
+        {
+            get(_t, _prop) {
+                const rAtProp = result[_prop as keyof T];
+                if (typeof rAtProp === "function") {
+                    return rAtProp;
                 }
-            } else {
-                doExecute();
-            }
-        },
-    };
-
-    Object.defineProperty(finalPromise, "auth", {
-        enumerable: false,
-        get: function () {
-            return function (auth: __AuthenticationArg__) {
-                if (typeof auth === "string") {
-                    headers = { Authorization: auth };
-                } else if (typeof auth === "function") {
-                    const tokenOrPromise = auth();
-                    if (tokenOrPromise instanceof Promise) {
-                        return tokenOrPromise.then((t) => {
-                            if (typeof t === "string")
-                                headers = { Authorization: t };
-                            else headers = t;
-
-                            return finalPromise as Promise<TR>;
+                const promise = new Promise((resolve, reject) => {
+                    root.execute()
+                        .catch(reject)
+                        .then(() => {
+                            resolve(rAtProp);
                         });
-                    }
-                    if (typeof tokenOrPromise === "string") {
-                        headers = { Authorization: tokenOrPromise };
-                    } else {
-                        headers = tokenOrPromise;
-                    }
-                } else {
-                    headers = auth;
+                });
+                if (String(_prop) === "then") {
+                    return promise.then.bind(promise);
                 }
-
-                return finalPromise as Promise<TR>;
-            };
+                return promise;
+            },
         },
-    });
+    ) as any;
 
-    return finalPromise as Promise<TR> & {
-        auth: (auth: __AuthenticationArg__) => Promise<TR>;
+    return resultProxy as finalReturnTypeBasedOnIfHasLazyPromises & {
+        auth: (
+            auth: FnOrPromisOrPrimitive,
+        ) => finalReturnTypeBasedOnIfHasLazyPromises;
     };
 }
 
 const __init__ = (options: {
-    auth?: __AuthenticationArg__;
     headers?: { [key: string]: string };
+    fetcher?: (
+        input: string | URL | globalThis.Request,
+        init?: RequestInit,
+    ) => Promise<Response>;
+    sseFetchTransform?: (
+        input: string | URL | globalThis.Request,
+        init?: RequestInit,
+    ) => Promise<[string | URL | globalThis.Request, RequestInit | undefined]>;
     scalars?: {
         [key in keyof ScalarTypeMapDefault]?: (
             v: string,
@@ -3024,21 +4192,17 @@ const __init__ = (options: {
         ) => ScalarTypeMapWithCustom[key];
     };
 }) => {
-    if (typeof options.auth === "string") {
-        RootOperation[OPTIONS].headers = {
-            Authorization: options.auth,
-        };
-    } else if (typeof options.auth === "function") {
-        RootOperation[OPTIONS]._auth_fn = options.auth;
-    } else if (options.auth) {
-        RootOperation[OPTIONS].headers = options.auth;
-    }
-
     if (options.headers) {
         RootOperation[OPTIONS].headers = {
             ...RootOperation[OPTIONS].headers,
             ...options.headers,
         };
+    }
+    if (options.fetcher) {
+        RootOperation[OPTIONS].fetcher = options.fetcher;
+    }
+    if (options.sseFetchTransform) {
+        RootOperation[OPTIONS].sseFetchTransform = options.sseFetchTransform;
     }
     if (options.scalars) {
         RootOperation[OPTIONS].scalars = {
@@ -3052,6 +4216,402 @@ Object.defineProperty(__client__, "init", {
     value: __init__,
 });
 
+const _makeOperationShortcut = <O extends "Query">(
+    operation: O,
+    field: Exclude<
+        keyof ReturnTypeFromQuerySelection,
+        "$fragment" | "$scalars" | "$all"
+    >,
+) => {
+    const root = new OperationSelectionCollector(
+        undefined,
+        undefined,
+        new RootOperation(),
+    );
+    const rootRef = { ref: root };
+
+    let fieldFn: ReturnTypeFromQuerySelection[Exclude<
+        keyof ReturnTypeFromQuerySelection,
+        "$fragment" | "$scalars" | "$all"
+    >];
+
+    fieldFn =
+        makeQuerySelectionInput.bind(rootRef)()[
+            field as Exclude<
+                keyof ReturnTypeFromQuerySelection,
+                "$fragment" | "$scalars" | "$all"
+            >
+        ];
+
+    if (typeof fieldFn === "function") {
+        const makeSubSelectionFn =
+            (
+                opFnArgs?: Exclude<
+                    Parameters<Extract<typeof fieldFn, (args: any) => any>>[0],
+                    (args: any) => any
+                >,
+            ) =>
+            (opFnSelectionCb?: (selection: unknown) => unknown) => {
+                let fieldSLFN:
+                    | ((
+                          s: typeof opFnSelectionCb,
+                      ) => SelectionWrapperImpl<
+                          typeof field,
+                          string,
+                          number,
+                          any,
+                          typeof opFnArgs
+                      >)
+                    | SelectionWrapperImpl<
+                          typeof field,
+                          string,
+                          number,
+                          any,
+                          typeof opFnArgs
+                      >;
+                if (opFnArgs === undefined) {
+                    fieldSLFN = fieldFn as Extract<
+                        typeof fieldFn,
+                        () => SelectionWrapperImpl<
+                            typeof field,
+                            string,
+                            number,
+                            any,
+                            typeof opFnArgs
+                        >
+                    >;
+                } else {
+                    fieldSLFN = (
+                        fieldFn as unknown as (
+                            args: typeof opFnArgs,
+                        ) =>
+                            | ((
+                                  s: typeof opFnSelectionCb,
+                              ) => SelectionWrapperImpl<
+                                  typeof field,
+                                  string,
+                                  number,
+                                  any,
+                                  typeof opFnArgs
+                              >)
+                            | SelectionWrapperImpl<
+                                  typeof field,
+                                  string,
+                                  number,
+                                  any,
+                                  typeof opFnArgs
+                              >
+                    )(opFnArgs);
+                }
+
+                let fieldSlw: SelectionWrapperImpl<
+                    typeof field,
+                    string,
+                    number,
+                    any,
+                    typeof opFnArgs
+                >;
+                if (typeof fieldSLFN === "function") {
+                    fieldSlw = (
+                        fieldSLFN as (
+                            s: typeof opFnSelectionCb,
+                        ) => SelectionWrapperImpl<
+                            typeof field,
+                            string,
+                            number,
+                            any,
+                            typeof opFnArgs
+                        >
+                    )(opFnSelectionCb);
+                } else {
+                    fieldSlw = fieldSLFN;
+                }
+
+                const opSlw = new SelectionWrapper(
+                    undefined,
+                    undefined,
+                    undefined,
+                    { [field]: fieldSlw },
+                    new OperationSelectionCollector(
+                        operation + "Selection",
+                        root,
+                    ),
+                    root,
+                );
+                fieldSlw[ROOT_OP_COLLECTOR] = rootRef;
+                fieldSlw[SLW_PARENT_SLW] = opSlw;
+                opSlw[SLW_IS_ROOT_TYPE] = operation;
+                opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
+                // access the keys of the proxy object, to register operations
+                Object.keys({ [field]: 0 }).forEach(
+                    (key) => (opSlw as any)[key as any],
+                );
+                const rootSlw = new SelectionWrapper(
+                    undefined,
+                    undefined,
+                    undefined,
+                    opSlw,
+                    root,
+                );
+                opSlw[ROOT_OP_COLLECTOR] = rootRef;
+                // access the keys of the proxy object, to register operations
+                Object.keys({ [field]: 0 }).forEach(
+                    (key) => (rootSlw as any)[key as any],
+                );
+
+                const resultProxy = new Proxy(
+                    {},
+                    {
+                        get(_t, _prop) {
+                            if (String(_prop) === "$lazy") {
+                                return (fieldSlw as any)["$lazy"].bind({
+                                    parentSlw: opSlw,
+                                    key: field,
+                                });
+                            } else {
+                                const result = new Promise(
+                                    (resolve, reject) => {
+                                        root.execute()
+                                            .catch(reject)
+                                            .then((_data) => {
+                                                const d = _data[field];
+
+                                                if (Symbol.asyncIterator in d) {
+                                                    return resolve(
+                                                        fieldSlw as any,
+                                                    );
+                                                }
+
+                                                const slw = (rootSlw as any)[
+                                                    field
+                                                ] as any;
+                                                if (
+                                                    typeof d === "object" &&
+                                                    d &&
+                                                    field in d
+                                                ) {
+                                                    const retval = d[field];
+                                                    if (
+                                                        retval === undefined ||
+                                                        retval === null
+                                                    ) {
+                                                        return resolve(retval);
+                                                    }
+                                                    const ret =
+                                                        typeof retval !==
+                                                        "object"
+                                                            ? slw
+                                                            : proxify(
+                                                                  retval,
+                                                                  slw,
+                                                              );
+                                                    return resolve(ret);
+                                                }
+                                                return resolve(slw);
+                                            });
+                                    },
+                                );
+                                if (String(_prop) === "then") {
+                                    return result.then.bind(result);
+                                }
+                                return result;
+                            }
+                        },
+                    },
+                ) as any;
+
+                return resultProxy;
+            };
+
+        // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
+        if (fieldFn.name.startsWith("bound ")) {
+            return makeSubSelectionFn();
+        }
+        return (
+            opFnArgs: Exclude<
+                Parameters<Extract<typeof fieldFn, (args: any) => any>>[0],
+                (args: any) => any
+            >,
+        ) => {
+            const inner = (
+                fieldFn as unknown as (
+                    args: typeof opFnArgs,
+                ) =>
+                    | ((
+                          s: unknown,
+                      ) => SelectionWrapperImpl<
+                          typeof field,
+                          string,
+                          number,
+                          any,
+                          typeof opFnArgs
+                      >)
+                    | SelectionWrapperImpl<
+                          typeof field,
+                          string,
+                          number,
+                          any,
+                          typeof opFnArgs
+                      >
+            )(opFnArgs);
+
+            if (typeof inner === "function") {
+                return makeSubSelectionFn(opFnArgs);
+            }
+
+            return makeSubSelectionFn(opFnArgs)();
+        };
+    } else {
+        const fieldSlw = fieldFn as SelectionWrapperImpl<any, any, any>;
+        const opSlw = new SelectionWrapper(
+            undefined,
+            undefined,
+            undefined,
+            { [field]: fieldSlw },
+            new OperationSelectionCollector(operation + "Selection", root),
+            root,
+        );
+        fieldSlw[ROOT_OP_COLLECTOR] = rootRef;
+        opSlw[SLW_IS_ROOT_TYPE] = operation;
+        opSlw[SLW_PARENT_COLLECTOR] = opSlw[SLW_COLLECTOR];
+        opSlw[SLW_PARENT_SLW] = opSlw;
+        // access the keys of the proxy object, to register operations
+        Object.keys({ [field]: 0 }).forEach(
+            (key) => (opSlw as any)[key as any],
+        );
+        const rootSlw = new SelectionWrapper(
+            undefined,
+            undefined,
+            undefined,
+            opSlw,
+            root,
+        );
+        opSlw[ROOT_OP_COLLECTOR] = rootRef;
+        // access the keys of the proxy object, to register operations
+        Object.keys({ [field]: 0 }).forEach(
+            (key) => (rootSlw as any)[key as any],
+        );
+
+        const resultProxy = new Proxy(
+            {},
+            {
+                get(_t, _prop) {
+                    if (String(_prop) === "$lazy") {
+                        return (fieldSlw as any)["$lazy"].bind({
+                            parentSlw: opSlw,
+                            key: field,
+                        });
+                    } else {
+                        const result = new Promise((resolve, reject) => {
+                            root.execute()
+                                .catch(reject)
+                                .then((_data) => {
+                                    const d = _data[field];
+
+                                    if (Symbol.asyncIterator in d) {
+                                        return resolve(fieldSlw as any);
+                                    }
+
+                                    const slw = (rootSlw as any)[field] as any;
+                                    if (
+                                        typeof d === "object" &&
+                                        d &&
+                                        field in d
+                                    ) {
+                                        const retval = d[field];
+                                        if (
+                                            retval === undefined ||
+                                            retval === null
+                                        ) {
+                                            return resolve(retval);
+                                        }
+                                        const ret =
+                                            typeof retval !== "object"
+                                                ? slw
+                                                : proxify(retval, slw);
+                                        return resolve(ret);
+                                    }
+                                    return resolve(slw);
+                                });
+                        });
+                        if (String(_prop) === "then") {
+                            return result.then.bind(result);
+                        }
+                        return result;
+                    }
+                },
+            },
+        ) as any;
+
+        return resultProxy;
+    }
+};
+
+Object.defineProperty(__client__, "query", {
+    enumerable: false,
+    get() {
+        return new Proxy(
+            {},
+            {
+                get(
+                    target,
+                    op: Exclude<
+                        keyof ReturnTypeFromQuerySelection,
+                        "$fragment" | "$scalars" | "$all"
+                    >,
+                ) {
+                    return _makeOperationShortcut("Query", op);
+                },
+            },
+        );
+    },
+});
+
 export default __client__ as typeof __client__ & {
     init: typeof __init__;
+} & {
+    query: {
+        [field in Exclude<
+            keyof ReturnType<typeof makeQuerySelectionInput>,
+            "$fragment" | "$scalars" | "$all"
+        >]: ReturnType<
+            typeof makeQuerySelectionInput
+        >[field] extends SelectionWrapperImpl<
+            infer FN,
+            infer TTNP,
+            infer TTAD,
+            infer VT,
+            infer AT
+        >
+            ? Promise<ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>> & {
+                  $lazy: () => Promise<
+                      Promise<ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>>
+                  >;
+              }
+            : ReturnType<typeof makeQuerySelectionInput>[field] extends (
+                    args: infer A,
+                ) => (selection: any) => any
+              ? (args: A) => ReturnTypeFromQuerySelectionRetTypes<1>[field]
+              : ReturnType<typeof makeQuerySelectionInput>[field] extends (
+                      args: infer _A,
+                  ) => SelectionWrapperImpl<
+                      infer _FN,
+                      infer _TTNP,
+                      infer _TTAD,
+                      infer _VT,
+                      infer _AT
+                  >
+                ? (args: _A) => Promise<
+                      ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                  > & {
+                      $lazy: (
+                          args: _A,
+                      ) => Promise<
+                          Promise<
+                              ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>
+                          >
+                      >;
+                  }
+                : ReturnTypeFromQuerySelectionRetTypes<1>[field];
+    };
 };

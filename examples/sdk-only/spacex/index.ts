@@ -2,30 +2,27 @@ import { confirm, input } from "@inquirer/prompts";
 import spacex from "./spacex";
 
 // Retrieve some basic information first
-
-const { info, getRockets, getRocket } = await spacex((op) =>
-    op.query((s) => ({
-        info: s.company(({ name, ceo, cto, coo, summary }) => ({
-            name,
-            ceo,
-            cto,
-            coo,
-            summary,
-        })),
-
-        getRockets: s.rockets({ limit: 10 })(({ id, name, type }) => ({
-            id,
-            name,
-            type,
-        })).$lazy,
-
-        getRocket: s.rocket({ id: "" })(({ name, type, description }) => ({
-            name,
-            type,
-            description,
-        })).$lazy,
-    })),
-);
+const info = await spacex.query.company(({ name, ceo, cto, coo, summary }) => ({
+    name,
+    ceo,
+    cto,
+    coo,
+    summary,
+}));
+const getRockets = await spacex.query.rockets({ limit: 10 })(
+    ({ id, name, type }) => ({
+        id,
+        name,
+        type,
+    }),
+).$lazy;
+const getRocket = await spacex.query.rocket({ id: "" })(
+    ({ name, type, description }) => ({
+        name,
+        type,
+        description,
+    }),
+).$lazy;
 
 // Print out the company info
 console.log("Welcome to the SpaceX Samarium SDK!");
