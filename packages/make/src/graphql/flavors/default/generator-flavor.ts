@@ -138,6 +138,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         isRootType?: "Query" | "Mutation" | "Subscription";
         onTypeFragment?: string;
         isFragment?: string;
+
+        tnp?: string;
     } | undefined;
 
     type CleanupNever<A> = Omit<A, keyof A> & {
@@ -547,8 +549,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
     >(
         selection: Record<string, V>,
         typeNamePure: TNP,
-        opts: selectAllOpts<S>,
-        collector?: { parents: string[]; path?: string },
+        opts: selectAllOpts<S> & { parent?: string },
+        collector?: { parents: string[]; path?: string, typeOnType?: string[] },
     ) => {
         // let's not make the type too complicated, it's basically a
         // nested map of string to either SLW or again
@@ -559,8 +561,22 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const tk = collector?.path
                 ? \`$\{collector.path\}.$\{k\}\`
                 : \`$\{typeNamePure\}.$\{k\}\`;
+            
+            let typeOnType = (collector?.typeOnType ?? []).at(-1);
+            typeOnType = typeOnType?.includes(".")
+                ? typeOnType.split(".").at(-1)
+                : typeOnType;
+            const tnpNoArray = typeNamePure.replaceAll("[]", "");
+            const tot = typeOnType ? \`$\{typeOnType\}.$\{tnpNoArray\}\` : opts?.parent ? \`$\{opts?.parent\}.$\{tnpNoArray\}\` : tnpNoArray;
+
             let excludePaths = opts?.exclude ?? ([] as string[]);
-            if ("cyclic" in opts) {
+            const excludeAllCyclic = "cyclic" in opts && opts.cyclic === "exclude";
+
+            if (
+                "cyclic" in opts &&
+                typeof opts.cyclic === "object" &&
+                Object.keys(opts.cyclic).length > 0
+            ) {
                 const exclude = Object.entries(
                     opts.cyclic as Record<string, string>,
                 )
@@ -587,10 +603,19 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (excludePaths.includes(tk as any)) continue;
 
             if (typeof v === "function") {
+                if (collector?.typeOnType && collector?.typeOnType.includes(tot)) {
+                    if (!excludeAllCyclic) {
+                        throw new Error(
+                            \`Circular dependency: $\{collector?.typeOnType.join(" -> ")\}\`,
+                        );
+                    }
+                    continue;
+                }
+
                 if (v.name.startsWith("bound ")) {
-                    // if (collector?.parents?.includes(tk)) continue;
                     const col = {
                         parents: [...(collector?.parents ?? []), tk],
+                        typeOnType: [...(collector?.typeOnType ?? []), tot],
                         path: tk,
                     };
                     s[k] = v(
@@ -649,7 +674,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const s =
                     _s ??
                     ((selection: FF) =>
-                        (selection as any)["$all"]({ cyclic: "exclude" }) as TT);
+                        (selection as any)["$all"]({ cyclic: "exclude", parent: parent?.tnp }) as TT);
 
                 const selection: FF = makeSLFNInput.bind(this)() as any;
                 const r = s(selection);
@@ -995,9 +1020,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName } = collectArgMeta();
 
-                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta }) as any`;
+                return `${field.name}: (args: ${argsTypeName}) => ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}", args, argsMeta: ${argsTypeName}Meta, tnp }) as any`;
             }
-            return `${field.name}: ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}" }) as any`;
+            return `${field.name}: ${selectionFunction}.bind({ collector: that, fieldName: "${field.name}", tnp }) as any`;
         } else {
             console.error(fieldType);
             throw new Error(`Unknown type for field ${field.name}: ${fieldType.name}`);
@@ -1152,6 +1177,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         const selectionFunction = `
             export function make${selectionFunctionName}Input(this: any) ${this.typeMeta.isUnion ? "" : `: ReturnTypeFrom${selectionFunctionName}`} {
                 const that = this;
+                const tnp = "${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(this.originalFullTypeName)}";
                 return {
                     ${this.typeMeta.fields
                         .map(
