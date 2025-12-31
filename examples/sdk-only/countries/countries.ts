@@ -1604,6 +1604,8 @@ type SelectionFnParent =
           isRootType?: "Query" | "Mutation" | "Subscription";
           onTypeFragment?: string;
           isFragment?: string;
+
+          tnp?: string;
       }
     | undefined;
 
@@ -2032,8 +2034,8 @@ const selectAll = <
 >(
     selection: Record<string, V>,
     typeNamePure: TNP,
-    opts: selectAllOpts<S>,
-    collector?: { parents: string[]; path?: string },
+    opts: selectAllOpts<S> & { parent?: string },
+    collector?: { parents: string[]; path?: string; typeOnType?: string[] },
 ) => {
     // let's not make the type too complicated, it's basically a
     // nested map of string to either SLW or again
@@ -2044,8 +2046,26 @@ const selectAll = <
         const tk = collector?.path
             ? `${collector.path}.${k}`
             : `${typeNamePure}.${k}`;
+
+        let typeOnType = (collector?.typeOnType ?? []).at(-1);
+        typeOnType = typeOnType?.includes(".")
+            ? typeOnType.split(".").at(-1)
+            : typeOnType;
+        const tnpNoArray = typeNamePure.replaceAll("[]", "");
+        const tot = typeOnType
+            ? `${typeOnType}.${tnpNoArray}`
+            : opts?.parent
+              ? `${opts?.parent}.${tnpNoArray}`
+              : tnpNoArray;
+
         let excludePaths = opts?.exclude ?? ([] as string[]);
-        if ("cyclic" in opts) {
+        const excludeAllCyclic = "cyclic" in opts && opts.cyclic === "exclude";
+
+        if (
+            "cyclic" in opts &&
+            typeof opts.cyclic === "object" &&
+            Object.keys(opts.cyclic).length > 0
+        ) {
             const exclude = Object.entries(
                 opts.cyclic as Record<string, string>,
             )
@@ -2077,10 +2097,19 @@ const selectAll = <
         if (excludePaths.includes(tk as any)) continue;
 
         if (typeof v === "function") {
+            if (collector?.typeOnType && collector?.typeOnType.includes(tot)) {
+                if (!excludeAllCyclic) {
+                    throw new Error(
+                        `Circular dependency: ${collector?.typeOnType.join(" -> ")}`,
+                    );
+                }
+                continue;
+            }
+
             if (v.name.startsWith("bound ")) {
-                // if (collector?.parents?.includes(tk)) continue;
                 const col = {
                     parents: [...(collector?.parents ?? []), tk],
+                    typeOnType: [...(collector?.typeOnType ?? []), tot],
                     path: tk,
                 };
                 s[k] = v(
@@ -2145,7 +2174,10 @@ const makeSLFN = <
             const s =
                 _s ??
                 ((selection: FF) =>
-                    (selection as any)["$all"]({ cyclic: "exclude" }) as TT);
+                    (selection as any)["$all"]({
+                        cyclic: "exclude",
+                        parent: parent?.tnp,
+                    }) as TT);
 
             const selection: FF = makeSLFNInput.bind(this)() as any;
             const r = s(selection);
@@ -2410,6 +2442,7 @@ export function makeCountryNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromCountryNotNullArrayNotNullSelection {
     const that = this;
+    const tnp = "Country";
     return {
         get awsRegion() {
             return new SelectionWrapper(
@@ -2437,6 +2470,7 @@ export function makeCountryNotNullArrayNotNullSelectionInput(
         continent: ContinentNotNullSelection.bind({
             collector: that,
             fieldName: "continent",
+            tnp,
         }) as any,
         get currencies() {
             return new SelectionWrapper(
@@ -2481,6 +2515,7 @@ export function makeCountryNotNullArrayNotNullSelectionInput(
         languages: LanguageNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "languages",
+            tnp,
         }) as any,
         get name() {
             return (args: CountryNameArgs) =>
@@ -2516,15 +2551,24 @@ export function makeCountryNotNullArrayNotNullSelectionInput(
             );
         },
         get phones() {
-            return new SelectionWrapper("phones", "String!", 1, {}, that);
+            return new SelectionWrapper(
+                "phones",
+                "String!",
+                1,
+                {},
+                that,
+                undefined,
+            );
         },
         states: StateNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "states",
+            tnp,
         }) as any,
         subdivisions: SubdivisionNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "subdivisions",
+            tnp,
         }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -2594,6 +2638,7 @@ export function makeContinentNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromContinentNotNullSelection {
     const that = this;
+    const tnp = "Continent";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
@@ -2601,6 +2646,7 @@ export function makeContinentNotNullSelectionInput(
         countries: CountryNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "countries",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -2684,6 +2730,7 @@ export function makeLanguageNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromLanguageNotNullArrayNotNullSelection {
     const that = this;
+    const tnp = "Language";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
@@ -2691,6 +2738,7 @@ export function makeLanguageNotNullArrayNotNullSelectionInput(
         countries: CountryNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "countries",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -2790,6 +2838,7 @@ export function makeStateNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromStateNotNullArrayNotNullSelection {
     const that = this;
+    const tnp = "State";
     return {
         get code() {
             return new SelectionWrapper(
@@ -2804,6 +2853,7 @@ export function makeStateNotNullArrayNotNullSelectionInput(
         country: CountryNotNullSelection.bind({
             collector: that,
             fieldName: "country",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -2931,6 +2981,7 @@ export function makeCountryNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromCountryNotNullSelection {
     const that = this;
+    const tnp = "Country";
     return {
         get awsRegion() {
             return new SelectionWrapper(
@@ -2958,6 +3009,7 @@ export function makeCountryNotNullSelectionInput(
         continent: ContinentNotNullSelection.bind({
             collector: that,
             fieldName: "continent",
+            tnp,
         }) as any,
         get currencies() {
             return new SelectionWrapper(
@@ -3002,6 +3054,7 @@ export function makeCountryNotNullSelectionInput(
         languages: LanguageNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "languages",
+            tnp,
         }) as any,
         get name() {
             return (args: CountryNameArgs) =>
@@ -3049,10 +3102,12 @@ export function makeCountryNotNullSelectionInput(
         states: StateNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "states",
+            tnp,
         }) as any,
         subdivisions: SubdivisionNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "subdivisions",
+            tnp,
         }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -3117,6 +3172,7 @@ export function makeSubdivisionNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromSubdivisionNotNullArrayNotNullSelection {
     const that = this;
+    const tnp = "Subdivision";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
@@ -3211,6 +3267,7 @@ export function makeContinentSelectionInput(
     this: any,
 ): ReturnTypeFromContinentSelection {
     const that = this;
+    const tnp = "Continent";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
@@ -3218,6 +3275,7 @@ export function makeContinentSelectionInput(
         countries: CountryNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "countries",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -3297,6 +3355,7 @@ export function makeContinentNotNullArrayNotNullSelectionInput(
     this: any,
 ): ReturnTypeFromContinentNotNullArrayNotNullSelection {
     const that = this;
+    const tnp = "Continent";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
@@ -3304,6 +3363,7 @@ export function makeContinentNotNullArrayNotNullSelectionInput(
         countries: CountryNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "countries",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -3435,6 +3495,7 @@ export function makeCountrySelectionInput(
     this: any,
 ): ReturnTypeFromCountrySelection {
     const that = this;
+    const tnp = "Country";
     return {
         get awsRegion() {
             return new SelectionWrapper(
@@ -3462,6 +3523,7 @@ export function makeCountrySelectionInput(
         continent: ContinentNotNullSelection.bind({
             collector: that,
             fieldName: "continent",
+            tnp,
         }) as any,
         get currencies() {
             return new SelectionWrapper(
@@ -3506,6 +3568,7 @@ export function makeCountrySelectionInput(
         languages: LanguageNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "languages",
+            tnp,
         }) as any,
         get name() {
             return (args: CountryNameArgs) =>
@@ -3553,10 +3616,12 @@ export function makeCountrySelectionInput(
         states: StateNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "states",
+            tnp,
         }) as any,
         subdivisions: SubdivisionNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "subdivisions",
+            tnp,
         }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -3628,6 +3693,7 @@ export function makeLanguageSelectionInput(
     this: any,
 ): ReturnTypeFromLanguageSelection {
     const that = this;
+    const tnp = "Language";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);
@@ -3635,6 +3701,7 @@ export function makeLanguageSelectionInput(
         countries: CountryNotNullArrayNotNullSelection.bind({
             collector: that,
             fieldName: "countries",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -3816,6 +3883,7 @@ export function makeQuerySelectionInput(
     this: any,
 ): ReturnTypeFromQuerySelection {
     const that = this;
+    const tnp = "Query";
     return {
         continent: (args: QueryContinentArgs) =>
             ContinentSelection.bind({
@@ -3823,6 +3891,7 @@ export function makeQuerySelectionInput(
                 fieldName: "continent",
                 args,
                 argsMeta: QueryContinentArgsMeta,
+                tnp,
             }) as any,
         continents: (args: QueryContinentsArgs) =>
             ContinentNotNullArrayNotNullSelection.bind({
@@ -3830,6 +3899,7 @@ export function makeQuerySelectionInput(
                 fieldName: "continents",
                 args,
                 argsMeta: QueryContinentsArgsMeta,
+                tnp,
             }) as any,
         countries: (args: QueryCountriesArgs) =>
             CountryNotNullArrayNotNullSelection.bind({
@@ -3837,6 +3907,7 @@ export function makeQuerySelectionInput(
                 fieldName: "countries",
                 args,
                 argsMeta: QueryCountriesArgsMeta,
+                tnp,
             }) as any,
         country: (args: QueryCountryArgs) =>
             CountrySelection.bind({
@@ -3844,6 +3915,7 @@ export function makeQuerySelectionInput(
                 fieldName: "country",
                 args,
                 argsMeta: QueryCountryArgsMeta,
+                tnp,
             }) as any,
         language: (args: QueryLanguageArgs) =>
             LanguageSelection.bind({
@@ -3851,6 +3923,7 @@ export function makeQuerySelectionInput(
                 fieldName: "language",
                 args,
                 argsMeta: QueryLanguageArgsMeta,
+                tnp,
             }) as any,
         languages: (args: QueryLanguagesArgs) =>
             LanguageNotNullArrayNotNullSelection.bind({
@@ -3858,6 +3931,7 @@ export function makeQuerySelectionInput(
                 fieldName: "languages",
                 args,
                 argsMeta: QueryLanguagesArgsMeta,
+                tnp,
             }) as any,
 
         $fragment: <F extends (this: any, ...args: any[]) => any>(f: F) =>
@@ -3918,6 +3992,7 @@ export function makeStateSelectionInput(
     this: any,
 ): ReturnTypeFromStateSelection {
     const that = this;
+    const tnp = "State";
     return {
         get code() {
             return new SelectionWrapper(
@@ -3932,6 +4007,7 @@ export function makeStateSelectionInput(
         country: CountryNotNullSelection.bind({
             collector: that,
             fieldName: "country",
+            tnp,
         }) as any,
         get name() {
             return new SelectionWrapper(
@@ -3999,6 +4075,7 @@ export function makeSubdivisionSelectionInput(
     this: any,
 ): ReturnTypeFromSubdivisionSelection {
     const that = this;
+    const tnp = "Subdivision";
     return {
         get code() {
             return new SelectionWrapper("code", "ID!", 0, {}, that, undefined);

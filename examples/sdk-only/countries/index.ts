@@ -5,15 +5,13 @@ const continents = await countries.query.continents({
         code: { in: ["EU", "NA"] },
     },
 })(({ countries }) => ({
-    countries: countries(({ name }) => ({
-        name: name({ lang: "en" }),
-    })),
+    countries: countries(),
 }));
 
 console.log(continents[0].countries.map((c) => c));
 console.log(
     continents?.flatMap((continent) =>
-        continent.countries.map((country) => country.name),
+        continent.countries.map((country) => country.capital),
     ),
 );
 // [ "Andorra", "Albania", "Austria", ...]
