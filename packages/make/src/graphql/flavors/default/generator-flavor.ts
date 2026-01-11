@@ -236,9 +236,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         AS_PROMISE,
         AS_ASYNC_ITER,
         REP extends string | number | symbol,
-    > =
-        // Overload 1: No 's' provided -> return full transformed F
-        (() => Prettify<
+        SLWFN_NO_SELECTION = () => Prettify<
             ConvertToPromise<
                 ConvertToAsyncIter<
                     ToTArrayWithDepth<
@@ -260,43 +258,29 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     E,
                     REP
                 >
-        >) &
+        >,
+        SLWFN_WITH_SELECTION = <
+            TT = T,
+            FF = F,
+            EE = E,
+            inferedResult = {
+                [K in keyof TT]: TT[K] extends SelectionWrapperImpl<infer FN, infer TTNP, infer TTAD, infer VT, infer AT>
+                    ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
+                    : TT[K];
+            },
+        >(
+            this: any,
+            s: (selection: FF) => TT,
+        ) => Prettify<
+            ConvertToPromise<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, AS_PROMISE> &
+                ReplacePlaceHoldersWithTNested<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, EE, REP>
+        >,
+    > = keyof F extends "$on"
+        ? SLWFN_WITH_SELECTION
+        : // Overload 1: No 's' provided -> return full transformed F
+        SLWFN_NO_SELECTION &
             // Overload 2: With 's' provided -> infer result from selection
-            (<
-                TT = T,
-                FF = F,
-                EE = E,
-                inferedResult = {
-                    [K in keyof TT]: TT[K] extends SelectionWrapperImpl<
-                        infer FN,
-                        infer TTNP,
-                        infer TTAD,
-                        infer VT,
-                        infer AT
-                    >
-                        ? ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>
-                        : TT[K];
-                },
-            >(
-                this: any,
-                s: (selection: FF) => TT,
-            ) => Prettify<
-                ConvertToPromise<
-                    ConvertToAsyncIter<
-                        ToTArrayWithDepth<inferedResult, TAD>,
-                        AS_ASYNC_ITER
-                    >,
-                    AS_PROMISE
-                > &
-                    ReplacePlaceHoldersWithTNested<
-                        ConvertToAsyncIter<
-                            ToTArrayWithDepth<inferedResult, TAD>,
-                            AS_ASYNC_ITER
-                        >,
-                        EE,
-                        REP
-                    >
-            >);
+            SLWFN_WITH_SELECTION;
 
     export type SLFN<
         T extends object,
