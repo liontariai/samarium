@@ -1074,13 +1074,26 @@ export class SelectionWrapper<
                                                     // this is only for subscriptions
                                                     SLW_NEEDS_CLONE: true,
                                                 });
-                                                const ret =
-                                                    typeof val.value === "object"
-                                                        ? proxify(val.value, clonedSlw)
-                                                        : clonedSlw;
+                                                let value = clonedSlw;
+                                                if (
+                                                    !isScalar &&
+                                                    val.value &&
+                                                    typeof val.value === "object" &&
+                                                    asyncGenRootPath &&
+                                                    asyncGenRootPath in val.value
+                                                ) {
+                                                    const retval = val.value[asyncGenRootPath!];
+                                                    if (retval === undefined || retval === null) {
+                                                        return {
+                                                            done: val.done,
+                                                            value: retval,
+                                                        };
+                                                    }
+                                                    value = proxify(retval, clonedSlw);
+                                                }
                                                 return {
                                                     done: val.done,
-                                                    value: isScalar ? ret[asyncGenRootPath!] : ret,
+                                                    value: isScalar ? (value as any)[asyncGenRootPath!] : value,
                                                 };
                                             });
                                         },
