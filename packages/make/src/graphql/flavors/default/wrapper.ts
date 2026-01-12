@@ -955,6 +955,10 @@ export class SelectionWrapper<
                                                     .execute()
                                                     .catch(reject)
                                                     .then((_data) => {
+                                                        if (_data === undefined || _data === null) {
+                                                            return resolve(_data);
+                                                        }
+
                                                         const fieldName = newThat[SLW_FIELD_NAME]!;
                                                         const d = _data[fieldName];
 

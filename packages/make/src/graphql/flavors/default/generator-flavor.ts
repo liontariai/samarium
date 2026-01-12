@@ -1396,7 +1396,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             const promise = new Promise((resolve, reject) => {
                                 root.execute()
                                     .catch(reject)
-                                    .then(() => {
+                                    .then((_data) => {
+                                        if (_data === undefined || _data === null) {
+                                            return resolve(_data);
+                                        }
                                         resolve(rAtProp);
                                     });
                             });
@@ -1637,6 +1640,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 root.execute()
                                                     .catch(reject)
                                                     .then((_data) => {
+                                                        if (_data === undefined || _data === null) {
+                                                            return resolve(_data);
+                                                        }
+
                                                         const d = _data[field];
 
                                                         if (Symbol.asyncIterator in d) {
@@ -1744,6 +1751,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         root.execute()
                                             .catch(reject)
                                             .then((_data) => {
+                                                if (_data === undefined || _data === null) {
+                                                    return resolve(_data);
+                                                }
+
                                                 const d = _data[field];
 
                                                 if (Symbol.asyncIterator in d) {
