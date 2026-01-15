@@ -683,14 +683,28 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const result = _result as unknown as T;
 
                 if (parent?.onTypeFragment) {
-                    return {
-                        [parent.onTypeFragment]: result,
-                    } as unknown as typeof result;
+                    return Object.defineProperty(
+                        {
+                            [parent.onTypeFragment]: result,
+                        },
+                        SLW_IS_ON_TYPE_FRAGMENT,
+                        {
+                            enumerable: false,
+                            value: result,
+                        },
+                    ) as unknown as typeof result;
                 }
                 if (parent?.isFragment) {
-                    return {
-                        [parent.isFragment]: result,
-                    } as unknown as typeof result;
+                    return Object.defineProperty(
+                        {
+                            [parent.isFragment]: result,
+                        },
+                        SLW_IS_FRAGMENT,
+                        {
+                            enumerable: false,
+                            value: result,
+                        },
+                    ) as unknown as typeof result;
                 }
 
                 return result;

@@ -1,7 +1,7 @@
 const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
 
-function proxify(data: any, slw: any): any & ArrayLike<any> {
+function proxify(data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
     // Create proxy around empty array (ensures Array.isArray(proxy) === true)
     const proxy = new Proxy(data as any | any[], {
         get(target: any[], prop: PropertyKey, receiver: any): any {
@@ -407,6 +407,8 @@ export class OperationSelectionCollector {
                 renderOnlyTheseSelections.find((r) => r[SLW_UID] === v[SLW_UID]),
         )) {
             const subPath = [...path, key];
+            const aliasPrefix = value[SLW_PARENT_SLW]?.[SLW_ALIAS_PREFIX] ?? "";
+
             const {
                 selection: fieldSelection,
                 variableDefinitions: fieldVarDefs,
@@ -431,31 +433,31 @@ export class OperationSelectionCollector {
 
             if (value[SLW_PARENT_COLLECTOR] === undefined) {
                 if (directiveRendered) {
-                    result[key] = `${fieldSelection} ${directiveRendered.rendered}`;
+                    result[`${aliasPrefix}${key}`] = `${fieldSelection} ${directiveRendered.rendered}`;
                 } else {
-                    result[key] = fieldSelection;
+                    result[`${aliasPrefix}${key}`] = `${fieldSelection}`;
                 }
             } else if (value[SLW_COLLECTOR] instanceof OperationSelectionCollector) {
                 const {
                     selection: subSelection,
                     variableDefinitions: subVarDefs,
                     variables: subVars,
-                } = value[SLW_COLLECTOR].renderSelections(subPath, opVars, usedFragments);
+                } = value[SLW_COLLECTOR].renderSelections(subPath, opVars, usedFragments, []);
 
                 if (value[SLW_IS_ON_TYPE_FRAGMENT]) {
                     if (directiveRendered) {
-                        result[key] =
+                        result[`${aliasPrefix}${key}`] =
                             `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${directiveRendered.rendered} ${subSelection}`;
                     } else {
-                        result[key] = `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
+                        result[`${aliasPrefix}${key}`] = `... on ${value[SLW_IS_ON_TYPE_FRAGMENT]} ${subSelection}`;
                     }
                 } else if (value[SLW_IS_FRAGMENT]) {
                     const fragmentName = `${key}_${subVarDefs.map((v) => v.split(":")[0].slice(1)).join("_")}`;
 
                     if (directiveRendered) {
-                        result[key] = `...${fragmentName} ${directiveRendered.rendered}`;
+                        result[`${aliasPrefix}${key}`] = `...${fragmentName} ${directiveRendered.rendered}`;
                     } else {
-                        result[key] = `...${fragmentName}`;
+                        result[`${aliasPrefix}${key}`] = `...${fragmentName}`;
                     }
 
                     const fragment = `fragment ${fragmentName} on ${value[SLW_FIELD_TYPENAME]} ${subSelection}`;
@@ -466,9 +468,10 @@ export class OperationSelectionCollector {
                     }
                 } else {
                     if (directiveRendered) {
-                        result[key] = `${fieldSelection} ${directiveRendered.rendered} ${subSelection}`;
+                        result[`${aliasPrefix}${key}`] =
+                            `${fieldSelection} ${directiveRendered.rendered} ${subSelection}`;
                     } else {
-                        result[key] = `${fieldSelection} ${subSelection}`;
+                        result[`${aliasPrefix}${key}`] = `${fieldSelection} ${subSelection}`;
                     }
                 }
 
@@ -501,12 +504,33 @@ export class OperationSelectionCollector {
     }
 
     private utilGet = (obj: Record<string, any>, path: (string | number)[]) => path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(path: (string | number)[] = [], _type?: string, opResultDataOverride?: any): T {
+    private utilSet = (o: Record<string, any>, p: (string | number)[], v: any) => {
+        for (let i = 0, len = p.length - 1; i < len; i++) o = o[p[i]] ??= Number.isInteger(p[i + 1]) ? [] : {};
+        o[p[p.length - 1]] = v;
+    };
+    private getReconstructedData = (data: any, prefix?: string): any => {
+        if (!prefix) return data;
+        if (Array.isArray(data)) return data.map((item) => this.getReconstructedData(item, prefix)) as any[];
+        return Object.fromEntries(
+            Object.entries(data)
+                .filter(([key]) => key.startsWith(prefix))
+                .map(([key, value]) => [key.replace(prefix, ""), value]),
+        );
+    };
+    public getOperationResultPath<T>(
+        path: (string | number)[] = [],
+        _type?: string,
+        opResultDataOverride?: any,
+        aliasPrefix?: string,
+    ): T {
         if (!this.op) {
             throw new Error("OperationSelectionCollector is not registered to a root operation");
         }
 
         let result = opResultDataOverride ?? this.operationResult;
+        if (aliasPrefix) {
+            this.utilSet(result, path, this.getReconstructedData(this.utilGet(result, path.slice(0, -1)), aliasPrefix));
+        }
 
         if (path.length === 0) return result as T;
 
@@ -556,6 +580,7 @@ export const SLW_DIRECTIVE_ARGS = Symbol("SLW_DIRECTIVE_ARGS");
 export const SLW_DIRECTIVE_ARGS_META = Symbol("SLW_DIRECTIVE_ARGS_META");
 export const SLW_PARENT_SLW = Symbol("SLW_PARENT_SLW");
 export const SLW_LAZY_FLAG = Symbol("SLW_LAZY_FLAG");
+export const SLW_ALIAS_PREFIX = Symbol("SLW_ALIAS_PREFIX");
 
 export const OP = Symbol("OP");
 export const ROOT_OP_COLLECTOR = Symbol("ROOT_OP_COLLECTOR");
@@ -611,6 +636,8 @@ export class SelectionWrapperImpl<
 
         slw[SLW_NEEDS_CLONE] = overrides.SLW_NEEDS_CLONE ? true : this[SLW_NEEDS_CLONE] ? false : true;
 
+        slw[SLW_ALIAS_PREFIX] = this[SLW_ALIAS_PREFIX];
+
         if (overrides.OP_RESULT_DATA) {
             slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
         }
@@ -645,6 +672,7 @@ export class SelectionWrapperImpl<
     [SLW_PARENT_SLW]?: SelectionWrapperImpl<string, string, number, any, any>;
     [SLW_LAZY_FLAG]?: boolean;
     [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
+    [SLW_ALIAS_PREFIX]?: string;
 
     [SLW_OP_RESULT_DATA_OVERRIDE]?: any;
     [SLW_SETTER_DATA_OVERRIDE]?: any;
@@ -821,6 +849,7 @@ export class SelectionWrapper<
                         (path?.split(".") ?? []).map((p) => (!isNaN(+p) ? +p : p)),
                         t[SLW_FIELD_TYPENAME],
                         t[SLW_OP_RESULT_DATA_OVERRIDE],
+                        t[SLW_ALIAS_PREFIX],
                     );
 
                     if (path) cache.data.set(path, data);
@@ -1040,7 +1069,8 @@ export class SelectionWrapper<
                             prop === SLW_OP_RESULT_DATA_OVERRIDE ||
                             prop === SLW_CLONE ||
                             prop === SLW_SETTER_DATA_OVERRIDE ||
-                            prop === SLW_NEEDS_CLONE
+                            prop === SLW_NEEDS_CLONE ||
+                            prop === SLW_ALIAS_PREFIX
                         ) {
                             return target[
                                 prop as keyof SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT>
@@ -1239,15 +1269,28 @@ export class SelectionWrapper<
                             return getResultDataForTarget(target);
                         }
 
+                        let slw = slw_value?.[String(prop)];
+                        const isOnTypeFragment =
+                            slw?.[SLW_IS_ON_TYPE_FRAGMENT] instanceof SelectionWrapperImpl || false;
+                        const isFragment = slw?.[SLW_IS_FRAGMENT] instanceof SelectionWrapperImpl || false;
                         if (
                             Object.hasOwn(slw_value ?? {}, String(prop)) &&
-                            slw_value?.[String(prop)] instanceof SelectionWrapperImpl
+                            (slw instanceof SelectionWrapperImpl || isOnTypeFragment || isFragment)
                         ) {
+                            let realSlw = isOnTypeFragment
+                                ? slw[SLW_IS_ON_TYPE_FRAGMENT]
+                                : isFragment
+                                  ? slw[SLW_IS_FRAGMENT]
+                                  : slw;
                             if (target[SLW_COLLECTOR]) {
-                                target[SLW_COLLECTOR].registerSelection(String(prop), slw_value[String(prop)]);
+                                target[SLW_COLLECTOR].registerSelection(String(prop), realSlw);
+                                if (isOnTypeFragment || isFragment) {
+                                    realSlw[SLW_ALIAS_PREFIX] = String(prop);
+                                    (target[SLW_VALUE] as Record<string, any>)[String(prop)] = realSlw;
+                                }
                             }
-                            if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
-                                slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                            if (!realSlw[SLW_PARENT_SLW]) {
+                                realSlw[SLW_PARENT_SLW] = target;
                             }
                         }
                         if (slw_value?.[String(prop)]?.[SLW_LAZY_FLAG]) {
