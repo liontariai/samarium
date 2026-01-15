@@ -39,7 +39,7 @@
     },
     "packages/make": {
       "name": "@samarium.sdk/make",
-      "version": "0.27.5",
+      "version": "0.28.0",
       "dependencies": {
         "graphql-request": "^7.1.0",
         "openapi-typescript": "^7.4.1",
@@ -54,7 +54,7 @@
     },
     "packages/new": {
       "name": "@samarium.sdk/new",
-      "version": "0.27.5",
+      "version": "0.28.0",
       "bin": {
         "samarium": "bin/samarium",
       },
