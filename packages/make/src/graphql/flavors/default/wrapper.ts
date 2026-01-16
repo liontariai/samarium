@@ -1,7 +1,43 @@
 const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
+function getReconstructedData(data: any, prefixes: string[], keepRest = true, hoist = true): any {
+    if (!prefixes?.length) return data;
+    if (Array.isArray(data)) return data.map((item) => getReconstructedData(item, prefixes, keepRest)) as any[];
+    const entries = keepRest
+        ? Object.entries(data)
+        : Object.entries(data).filter(([key]) => prefixes.some((p) => key.startsWith(p)));
+    const hoistedObjs: Map<string, [key: string, val: any][]> = new Map();
+    const newEntries: [key: string, val: any][] = [];
+    for (let keyval of entries) {
+        let res: typeof keyval | undefined = keyval;
+        for (const prefix of prefixes) {
+            const [key, val] = keyval;
+            if (key.startsWith(prefix)) {
+                res = [key.replace(prefix, ""), val] as [key: string, val: any];
+                if (hoist) {
+                    if (!hoistedObjs.has(prefix)) hoistedObjs.set(prefix, []);
+                    hoistedObjs.get(prefix)!.push(res);
+                    res = undefined;
+                    break;
+                }
+            }
+        }
+        if (res) newEntries.push(res);
+    }
+    if (hoist)
+        newEntries.push(
+            ...Array.from(hoistedObjs.entries(), ([alias, vals]) => {
+                return [alias, Object.fromEntries(vals)] as [key: string, val: any];
+            }),
+        );
+    return Object.fromEntries(newEntries);
+}
+function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
+    const aliases = Object.entries(slw[SLW_VALUE] || {})
+        .map(([k, v]) => (v instanceof SelectionWrapperImpl ? v[SLW_ALIAS_PREFIX] : 0))
+        .filter(Boolean) as string[];
+    const data = getReconstructedData(_data, aliases);
 
-function proxify(data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
     // Create proxy around empty array (ensures Array.isArray(proxy) === true)
     const proxy = new Proxy(data as any | any[], {
         get(target: any[], prop: PropertyKey, receiver: any): any {
@@ -508,15 +544,6 @@ export class OperationSelectionCollector {
         for (let i = 0, len = p.length - 1; i < len; i++) o = o[p[i]] ??= Number.isInteger(p[i + 1]) ? [] : {};
         o[p[p.length - 1]] = v;
     };
-    private getReconstructedData = (data: any, prefix?: string): any => {
-        if (!prefix) return data;
-        if (Array.isArray(data)) return data.map((item) => this.getReconstructedData(item, prefix)) as any[];
-        return Object.fromEntries(
-            Object.entries(data)
-                .filter(([key]) => key.startsWith(prefix))
-                .map(([key, value]) => [key.replace(prefix, ""), value]),
-        );
-    };
     public getOperationResultPath<T>(
         path: (string | number)[] = [],
         _type?: string,
@@ -529,7 +556,11 @@ export class OperationSelectionCollector {
 
         let result = opResultDataOverride ?? this.operationResult;
         if (aliasPrefix) {
-            this.utilSet(result, path, this.getReconstructedData(this.utilGet(result, path.slice(0, -1)), aliasPrefix));
+            this.utilSet(
+                result,
+                path,
+                getReconstructedData(this.utilGet(result, path.slice(0, -1)), [aliasPrefix], false)[aliasPrefix],
+            );
         }
 
         if (path.length === 0) return result as T;
