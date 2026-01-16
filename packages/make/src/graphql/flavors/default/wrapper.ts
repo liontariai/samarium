@@ -1234,6 +1234,10 @@ export class SelectionWrapper<
                             }
 
                             let slw = slw_value?.[String(prop)];
+                            if (slw === undefined) return undefined;
+                            if (slw === null) return null;
+                            if (typeof slw !== "object") return slw;
+
                             let slwOpPathIsIndexAccessOrInArray = false;
                             let targetOpPathArr = target[SLW_OP_PATH]?.split(".") ?? [];
                             while (targetOpPathArr.length) {
