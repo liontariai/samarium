@@ -109,7 +109,7 @@ export class RootOperation {
     constructor(
         public authArg?: FnOrPromisOrPrimitive,
         public headers?: FnOrPromisOrPrimitive,
-    ) {}
+    ) { }
     public setAuth(auth: FnOrPromisOrPrimitive) {
         this.authArg = auth;
         return this;
@@ -228,9 +228,8 @@ export class RootOperation {
                 ...acc,
                 [opName]: {
                     opType: rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase() as "subscription" | "query" | "mutation",
-                    query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${
-                        selection.variableDefinitions.length ? `(${selection.variableDefinitions.join(", ")}) ` : ""
-                    }${selection.selection}`,
+                    query: `${rootSlw[SLW_IS_ROOT_TYPE]?.toLowerCase()} ${opName} ${selection.variableDefinitions.length ? `(${selection.variableDefinitions.join(", ")}) ` : ""
+                        }${selection.selection}`,
                     variables: selection.variables,
                     fragments: selection.usedFragments,
                 },
@@ -406,9 +405,9 @@ export class OperationSelectionCollector {
         data: Map<string, any>;
         proxiedArray: Map<string, any[]>;
     } = {
-        data: new Map(),
-        proxiedArray: new Map(),
-    };
+            data: new Map(),
+            proxiedArray: new Map(),
+        };
 
     public async execute(headers?: Record<string, string>) {
         if (!this.op) {
@@ -588,7 +587,7 @@ export class OperationSelectionCollector {
                 finalResult,
                 depth,
                 RootOperation[OPTIONS].scalars[type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]] ??
-                    ((value: string) => JSON.parse(value)),
+                ((value: string) => JSON.parse(value)),
             ) as T;
         }
 
@@ -1190,16 +1189,16 @@ export class SelectionWrapper<
                                         Array.from({ length: data.length }, (_, i) =>
                                             typeof data[i] === "object"
                                                 ? proxify(
-                                                      data[i],
-                                                      target[SLW_CLONE]({
-                                                          SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
-                                                          OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                                      }),
-                                                  )
+                                                    data[i],
+                                                    target[SLW_CLONE]({
+                                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                                        OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                    }),
+                                                )
                                                 : target[SLW_CLONE]({
-                                                      SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
-                                                      OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                                  }),
+                                                    SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                                    OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                }),
                                         );
 
                                     if (!cache.proxiedArray.has(path)) {
@@ -1315,8 +1314,8 @@ export class SelectionWrapper<
                             let realSlw = isOnTypeFragment
                                 ? slw[SLW_IS_ON_TYPE_FRAGMENT]
                                 : isFragment
-                                  ? slw[SLW_IS_FRAGMENT]
-                                  : slw;
+                                    ? slw[SLW_IS_FRAGMENT]
+                                    : slw;
                             if (target[SLW_COLLECTOR]) {
                                 target[SLW_COLLECTOR].registerSelection(String(prop), realSlw);
                                 if (isOnTypeFragment || isFragment) {

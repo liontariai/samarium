@@ -759,20 +759,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ) ?? {};
 
         const enumType = `
-            export type ${enumTypeName} = ${
-                this.typeMeta.enumValues.length === 0
-                    ? "undefined" // handle empty enums (even though they shouldn't exist, they sometimes do)
-                    : this.typeMeta.enumValues.map((e) => `"${e.name}"`).join(" | ")
+            export type ${enumTypeName} = ${this.typeMeta.enumValues.length === 0
+                ? "undefined" // handle empty enums (even though they shouldn't exist, they sometimes do)
+                : this.typeMeta.enumValues.map((e) => `"${e.name}"`).join(" | ")
             };
             export enum ${enumTypeName}Enum {
                 ${this.typeMeta.enumValues
-                    .map((e) => {
-                        const remappedKey = enumMembersTypedefRemapped[e.name];
-                        return `${
-                            e.description ? `/** ${e.description} */\n` : ""
+                .map((e) => {
+                    const remappedKey = enumMembersTypedefRemapped[e.name];
+                    return `${e.description ? `/** ${e.description} */\n` : ""
                         }${remappedKey ?? e.name} = "${e.name}",`;
-                    })
-                    .join("\n")}
+                })
+                .join("\n")}
             };
         `;
         this.collector.addEnumType(this.typeMeta, enumType);
@@ -803,9 +801,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 this.ScalarTypeMap().get(fieldMeta.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "")) ??
                 (fieldMeta.scalarTSType
                     ? `ScalarTypeMapWithCustom["${fieldMeta.name
-                          .replaceAll("!", "")
-                          .replaceAll("[", "")
-                          .replaceAll("]", "")}"]`
+                        .replaceAll("!", "")
+                        .replaceAll("[", "")
+                        .replaceAll("]", "")}"]`
                     : "any");
         }
 
@@ -813,8 +811,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             return `${Array.from({ length: fieldMeta.isList })
                 .map((_) => "Array<")
                 .join("")}${type}${Array.from({ length: fieldMeta.isList })
-                .map((_) => ">")
-                .join("")}`;
+                    .map((_) => ">")
+                    .join("")}`;
         }
         return type;
     }
@@ -841,13 +839,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         if (isScalar) {
                             argType = arg.type.scalarTSType
                                 ? `ScalarTypeMapWithCustom["${arg.type.name
-                                      .replaceAll("!", "")
-                                      .replaceAll("[", "")
-                                      .replaceAll("]", "")}"]`
+                                    .replaceAll("!", "")
+                                    .replaceAll("[", "")
+                                    .replaceAll("]", "")}"]`
                                 : (this.ScalarTypeMap().get(
-                                      arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
-                                  ) ?? "any") +
-                                  (arg.type.isList ? Array.from({ length: arg.type.isList }).fill("[]").join("") : "");
+                                    arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
+                                ) ?? "any") +
+                                (arg.type.isList ? Array.from({ length: arg.type.isList }).fill("[]").join("") : "");
                         } else if (isInput || isEnum) {
                             argType = this.originalTypeNameToTypescriptTypeName(arg.type.name);
                         }
@@ -875,9 +873,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName, hasAtLeastOneNonNullArg } = collectArgTypes();
 
-                return `${description}${field.name}: (args${
-                    hasAtLeastOneNonNullArg ? "" : "?"
-                }: ${argsTypeName}) => ${selectionType};`;
+                return `${description}${field.name}: (args${hasAtLeastOneNonNullArg ? "" : "?"
+                    }: ${argsTypeName}) => ${selectionType};`;
             }
 
             return `${description}${field.name}${field.type.isNonNull ? "" : "?"}: ${selectionType};`;
@@ -896,15 +893,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             if (field.hasArgs) {
                 const { argsTypeName, hasAtLeastOneNonNullArg } = collectArgTypes();
 
-                return `${description}${field.name}: (args${
-                    hasAtLeastOneNonNullArg ? "" : "?"
-                }: ${argsTypeName} ) => ${selectionTypeNameForTypescript};`;
+                return `${description}${field.name}: (args${hasAtLeastOneNonNullArg ? "" : "?"
+                    }: ${argsTypeName} ) => ${selectionTypeNameForTypescript};`;
             }
 
             if (parentIsInput) {
-                return `${description}${field.name}${
-                    field.type.isNonNull ? "" : "?"
-                }: ${this.originalTypeNameToTypescriptTypeName(field.type.ofType.name)};`;
+                return `${description}${field.name}${field.type.isNonNull ? "" : "?"
+                    }: ${this.originalTypeNameToTypescriptTypeName(field.type.ofType.name)};`;
             }
 
             return `${description}${field.name}${field.type.isNonNull ? "" : "?"}: ${selectionTypeNameForTypescript};`;
@@ -1051,13 +1046,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     if (isScalar) {
                         argType = arg.type.scalarTSType
                             ? `ScalarTypeMapWithCustom["${arg.type.name
-                                  .replaceAll("!", "")
-                                  .replaceAll("[", "")
-                                  .replaceAll("]", "")}"]`
+                                .replaceAll("!", "")
+                                .replaceAll("[", "")
+                                .replaceAll("]", "")}"]`
                             : (this.ScalarTypeMap().get(
-                                  arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
-                              ) ?? "any") +
-                              (arg.type.isList ? Array.from({ length: arg.type.isList }).fill("[]").join("") : "");
+                                arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", ""),
+                            ) ?? "any") +
+                            (arg.type.isList ? Array.from({ length: arg.type.isList }).fill("[]").join("") : "");
                     } else if (isInput || isEnum) {
                         argType = this.originalTypeNameToTypescriptTypeName(arg.type.name);
                     }
@@ -1149,8 +1144,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     fieldName: "",
                     isFragment: f.name,
                 }) as ((...args: ArgumentsTypeFromFragment<F>) => ReturnTypeFromFragment<F>),
-            ${
-                typeHasScalars
+            ${typeHasScalars
                     ? `
             $scalars: () =>
                 selectScalars(
@@ -1160,7 +1154,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     >,
             `
                     : ""
-            }
+                }
             $all: (opts?: any, collector = undefined) =>
                 selectAll(
                     make${selectionFunctionName}Input.bind(that)() as any,
@@ -1178,73 +1172,68 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const tnp = "${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(this.originalFullTypeName)}";
                 return {
                     ${this.typeMeta.fields
-                        .map(
-                            (field) =>
-                                [
-                                    field,
-                                    this.makeSelectionFunctionInputObjectValueForField(
-                                        field,
-                                        this.typeMeta.isInput ? [] : [this.typeName],
-                                    ),
-                                ] as const,
-                        )
-                        .map(([field, fieldSlfn]) => {
-                            const lazyModiferType = `
+                .map(
+                    (field) =>
+                        [
+                            field,
+                            this.makeSelectionFunctionInputObjectValueForField(
+                                field,
+                                this.typeMeta.isInput ? [] : [this.typeName],
+                            ),
+                        ] as const,
+                )
+                .map(([field, fieldSlfn]) => {
+                    const lazyModiferType = `
                             $lazy: (
                                 ${field.hasArgs ? `args: ${this.makeArgsTypeName(field, [this.typeName])}` : ""}
                             ) => Promise<"T">`;
-                            makeSelectionFunctionInputReturnTypeParts.set(field.name, [
-                                `${
-                                    field.hasArgs
-                                        ? `(
+                    makeSelectionFunctionInputReturnTypeParts.set(field.name, [
+                        `${field.hasArgs
+                            ? `(
                                         args: ${this.makeArgsTypeName(field, [this.typeName])}
                                     ) =>`
-                                        : ""
-                                }`,
-                                `${
-                                    field.type.isScalar || field.type.isEnum
-                                        ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${field.type.isNonNull ? "!" : ""}", ${field.type.isList}, {}, ${
-                                              field.hasArgs
-                                                  ? this.makeArgsTypeName(field, [this.typeName])
-                                                  : "undefined"
-                                          }>`
-                                        : `ReturnType<
+                            : ""
+                        }`,
+                        `${field.type.isScalar || field.type.isEnum
+                            ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}${field.type.isNonNull ? "!" : ""}", ${field.type.isList}, {}, ${field.hasArgs
+                                ? this.makeArgsTypeName(field, [this.typeName])
+                                : "undefined"
+                            }>`
+                            : `ReturnType<
                                             SLFN<
                                                 {},
                                                 ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
-                                                    field.type.name,
-                                                )}SelectionInput>,
+                                field.type.name,
+                            )}SelectionInput>,
                                                 "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
                                                 "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-                                                    field.type.name,
-                                                )}",
+                                field.type.name,
+                            )}",
                                                 ${field.type.isList ?? 0}
-                                                ${
-                                                    isRootType
-                                                        ? `,
+                                                ${isRootType
+                                ? `,
                                                 { 
-                                                    ${lazyModiferType} ${
-                                                        this.authConfig
-                                                            ? `& {
+                                                    ${lazyModiferType} ${this.authConfig
+                                    ? `& {
                                                         auth: (auth: FnOrPromisOrPrimitive) => Promise<"T">;
                                                     }`
-                                                            : ""
-                                                    };
+                                    : ""
+                                };
                                                     ${this.authConfig ? `auth: (auth: FnOrPromisOrPrimitive) => Promise<"T"> & {${lazyModiferType}}` : ""}
                                                 },
                                                 "$lazy" ${this.authConfig ? `| "auth"` : ""},
                                                 AS_PROMISE
                                                 ${isSubscriptionType ? ", 1" : ""}
                                                 `
-                                                        : ""
-                                                }
+                                : ""
+                            }
                                             >
                                         >`
-                                }`,
-                            ]);
-                            return `${fieldSlfn},`;
-                        })
-                        .join("\n")}
+                        }`,
+                    ]);
+                    return `${fieldSlfn},`;
+                })
+                .join("\n")}
 
                     ${helperFunctions}
                 } as const;
@@ -1261,8 +1250,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             : `
         type ReturnTypeFrom${selectionFunctionName}RetTypes<AS_PROMISE = 0> = {
         ${Array.from(makeSelectionFunctionInputReturnTypeParts)
-            .map(([k, [argsPart, retPart]]) => `${k}: ${retPart}`)
-            .join("\n")}
+                .map(([k, [argsPart, retPart]]) => `${k}: ${retPart}`)
+                .join("\n")}
         }
         type ReturnTypeFrom${selectionFunctionName} = {
             ${Array.from(makeSelectionFunctionInputReturnTypeParts)
@@ -1277,12 +1266,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             ) => (
                 ...args: ArgumentsTypeFromFragment<F>
             ) => ReturnTypeFromFragment<F>;
-            ${
-                typeHasScalars
-                    ? `
+            ${typeHasScalars
+                ? `
             $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
             `
-                    : ""
+                : ""
             }
             $all: selectAllFunc<AllNonFuncFieldsFromType<${tsTypeName}>, "${tsTypeName}">${/*this.typeMeta.isList ? Array.from({ length: this.typeMeta.isList }).fill("[]").join("") : ""*/ ""};
         };`;
@@ -1327,31 +1315,29 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             });
 
         const rootOperationFunction = `
-            ${
-                directives?.length
-                    ? `export const $directives = {
+            ${directives?.length
+                ? `export const $directives = {
                         ${directives.join(",\n")}
                     } as const;`
-                    : ""
+                : ""
             }
             export function _makeRootOperationInput(this: any) {
                 return {
                     ${availOperations
-                        .filter((op) => collector.types.has(op))
-                        .map((op) => {
-                            return `${op}: ${op}Selection.bind({
+                .filter((op) => collector.types.has(op))
+                .map((op) => {
+                    return `${op}: ${op}Selection.bind({
                                 collector: this,
                                 isRootType: "${op}",
                     }),`;
-                        })
-                        .join("\n")}
+                })
+                .join("\n")}
 
-                    ${
-                        directives?.length
-                            ? `
+                    ${directives?.length
+                ? `
                         $directives,`
-                            : ""
-                    }
+                : ""
+            }
                 } as const;
             };
 
@@ -1425,9 +1411,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     },
                 ) as any;
 
-                return ${
-                    authConfig
-                        ? `new Proxy(
+                return ${authConfig
+                ? `new Proxy(
                     {},
                     {
                         get(_t, _prop) {
@@ -1441,8 +1426,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         },
                     },
                 )`
-                        : `resultProxy`
-                } as finalReturnTypeBasedOnIfHasLazyPromises & {
+                : `resultProxy`
+            } as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
                         auth: FnOrPromisOrPrimitive,
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
@@ -1470,9 +1455,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
-                ${
-                    authConfig
-                        ? `
+                ${authConfig
+                ? `
                 if (typeof options.auth === "string") {
                     RootOperation[OPTIONS].headers = {
                         "${authConfig.headerName}": options.auth,
@@ -1484,8 +1468,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     RootOperation[OPTIONS].headers = options.auth;
                 }
                 `
-                        : ""
-                }
+                : ""
+            }
 
                 if (options.headers) {
                     RootOperation[OPTIONS].headers = {
@@ -1514,20 +1498,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             const _makeOperationShortcut = <O extends ${availOperations.map((op) => `"${op}"`).join(" | ")}>(
                 operation: O,
                 field: Exclude<
-                    ${
-                        availOperations.length === 1
-                            ? `keyof ReturnTypeFrom${availOperations[0]}Selection,`
-                            : `typeof operation extends "${availOperations[0]}"
+                    ${availOperations.length === 1
+                ? `keyof ReturnTypeFrom${availOperations[0]}Selection,`
+                : `typeof operation extends "${availOperations[0]}"
                         ? keyof ReturnTypeFrom${availOperations[0]}Selection
-                        : ${
-                            availOperations.length > 2
-                                ? `
+                        : ${availOperations.length > 2
+                    ? `
                             typeof operation extends "${availOperations[1]}"
                             ? keyof ReturnTypeFrom${availOperations[1]}Selection
                             : keyof ReturnTypeFrom${availOperations[2]}Selection,`
-                                : `keyof ReturnTypeFrom${availOperations[1]}Selection,`
-                        }`
-                    }
+                    : `keyof ReturnTypeFrom${availOperations[1]}Selection,`
+                }`
+            }
                     "$fragment" | "$scalars" | "$all"
                 >,
             ) => {
@@ -1539,14 +1521,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 const rootRef = { ref: root };
 
                 let fieldFn: ${availOperations
-                    .map(
-                        (opType) => `
+                .map(
+                    (opType) => `
                     ReturnTypeFrom${opType}Selection[Exclude<
                         keyof ReturnTypeFrom${opType}Selection,
                         "$fragment" | "$scalars" | "$all"
                     >]`,
-                    )
-                    .join(" | ")};
+                )
+                .join(" | ")};
                 
                     ${availOperations.length > 1 ? `if (operation === "${availOperations[0]}") {` : ""}
                     fieldFn =
@@ -1556,13 +1538,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 "$fragment" | "$scalars" | "$all"
                             >
                         ];
-                ${
-                    availOperations.length > 1
-                        ? `} else ${availOperations.length > 2 ? `if (operation === "${availOperations[1]}")` : ""}`
-                        : ""
-                }${
-                    availOperations.length > 1
-                        ? `{
+                ${availOperations.length > 1
+                ? `} else ${availOperations.length > 2 ? `if (operation === "${availOperations[1]}")` : ""}`
+                : ""
+            }${availOperations.length > 1
+                ? `{
                     fieldFn =
                         make${availOperations[1]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
@@ -1571,11 +1551,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             >
                         ];
                 }`
-                        : ""
-                }
-                ${
-                    availOperations.length > 2
-                        ? `else {
+                : ""
+            }
+                ${availOperations.length > 2
+                ? `else {
                     fieldFn =
                         make${availOperations[2]}SelectionInput.bind(rootRef)()[
                             field as Exclude<
@@ -1584,8 +1563,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             >
                         ];
                 }`
-                        : ""
-                }
+                : ""
+            }
 
                 if (typeof fieldFn === "function") {
                     const makeSubSelectionFn =
@@ -1685,9 +1664,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 },
                             ) as any;
 
-                            return ${
-                                authConfig
-                                    ? `new Proxy(
+                            return ${authConfig
+                ? `new Proxy(
                                 {},
                                 {
                                     get(_t, _prop) {
@@ -1701,8 +1679,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     },
                                 },
                             )`
-                                    : `resultProxy`
-                            };
+                : `resultProxy`
+            };
                         };
 
                     // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
@@ -1796,9 +1774,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         },
                     ) as any;
 
-                    return ${
-                        authConfig
-                            ? `new Proxy(
+                    return ${authConfig
+                ? `new Proxy(
                         {},
                         {
                             get(_t, _prop) {
@@ -1812,8 +1789,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             },
                         },
                     )`
-                            : `resultProxy`
-                    };
+                : `resultProxy`
+            };
                 }
             };
 
@@ -1847,14 +1824,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 init: typeof __init__;
             } & {
                 ${availOperations
-                    .map((op) => ({
-                        op,
-                        wrapForAsyncIter: (str: string) =>
-                            op === SubscriptionTypeName ? `AsyncIterable<${str}>` : `Promise<${str}>`,
-                    }))
-                    .map(
-                        ({ op, wrapForAsyncIter }) =>
-                            `${op?.toLowerCase()}: {
+                .map((op) => ({
+                    op,
+                    wrapForAsyncIter: (str: string) =>
+                        op === SubscriptionTypeName ? `AsyncIterable<${str}>` : `Promise<${str}>`,
+                }))
+                .map(
+                    ({ op, wrapForAsyncIter }) =>
+                        `${op?.toLowerCase()}: {
                                 [field in Exclude<
                                     keyof ReturnType<typeof make${op}SelectionInput>,
                                     "$fragment" | "$scalars" | "$all"
@@ -1870,9 +1847,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     ? ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")} & {
                                         $lazy: () => Promise<
                                             ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
-                                        > ${
-                                            authConfig
-                                                ? `& {
+                                        > ${authConfig
+                            ? `& {
                                                     auth: (
                                                         auth: FnOrPromisOrPrimitive,
                                                     ) => Promise<
@@ -1880,17 +1856,16 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     >
                                                 }
                                             `
-                                                : ""
-                                        };
-                                        ${
-                                            authConfig
-                                                ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                            : ""
+                        };
+                                        ${authConfig
+                            ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
                                             $lazy: () => Promise<
                                                 ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                             >;
                                         };`
-                                                : ""
-                                        }
+                            : ""
+                        }
                                     }
                                     : ReturnType<typeof make${op}SelectionInput>[field]extends (
                                             args: infer A,
@@ -1908,9 +1883,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                     ? (args: _A) => ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>,_TTAD>")} & {
                                         $lazy: (args: _A) => Promise<
                                             ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
-                                        > ${
-                                            authConfig
-                                                ? `& {
+                                        > ${authConfig
+                            ? `& {
                                                     auth: (
                                                         auth: FnOrPromisOrPrimitive,
                                                     ) => Promise<
@@ -1918,22 +1892,21 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                     >;
                                                 }
                                             `
-                                                : ""
-                                        };
-                                        ${
-                                            authConfig
-                                                ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                            : ""
+                        };
+                                        ${authConfig
+                            ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
                                             $lazy: () => Promise<
                                                 ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                             >;
                                         };`
-                                                : ""
-                                        }
+                            : ""
+                        }
                                     }
                                     : ReturnTypeFrom${op}SelectionRetTypes<1>[field];
                             };`,
-                    )
-                    .join("\n")}
+                )
+                .join("\n")}
             }
         `;
 
