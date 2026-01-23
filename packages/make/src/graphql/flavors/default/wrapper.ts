@@ -1005,16 +1005,26 @@ export class SelectionWrapper<
 
                                 const isScalar = newThat[SLW_PARENT_COLLECTOR] === undefined;
 
+                                let constPromise: Promise<any> | undefined;
+                                let constPromiseStatus: "pending" | "fulfilled" | "rejected" = "pending";
+                                let constPromiseReason: string | undefined;
+                                let constPromiseValue: any | undefined;
                                 const resultProxy = new Proxy(
                                     {},
                                     {
                                         get(_t, _prop) {
-                                            const result = new Promise((resolve, reject) => {
+                                            const result = constPromise ?? (constPromise = new Promise((resolve, reject) => {
                                                 newRootOpCollectorRef.ref
                                                     .execute()
-                                                    .catch(reject)
+                                                    .catch((reason) => {
+                                                        constPromiseStatus = "rejected";
+                                                        constPromiseReason = reason;
+                                                        return reject(reason);
+                                                    })
                                                     .then((_data) => {
+                                                        constPromiseStatus = "fulfilled";
                                                         if (_data === undefined || _data === null) {
+                                                            constPromiseValue = _data;
                                                             return resolve(_data);
                                                         }
 
@@ -1022,32 +1032,45 @@ export class SelectionWrapper<
                                                         const d = _data[fieldName];
 
                                                         if (Symbol.asyncIterator in d) {
+                                                            constPromiseValue = newThat;
                                                             return resolve(newThat);
                                                         }
                                                         if (typeof d === "object" && d && fieldName in d) {
                                                             const retval = d[fieldName];
                                                             if (retval === undefined || retval === null) {
+                                                                constPromiseValue = retval;
                                                                 return resolve(retval);
                                                             }
                                                             const ret = isScalar
                                                                 ? getResultDataForTarget(
-                                                                      newThat as SelectionWrapper<
-                                                                          fieldName,
-                                                                          typeNamePure,
-                                                                          typeArrDepth,
-                                                                          valueT,
-                                                                          argsT
-                                                                      >,
-                                                                  )
+                                                                    newThat as SelectionWrapper<
+                                                                        fieldName,
+                                                                        typeNamePure,
+                                                                        typeArrDepth,
+                                                                        valueT,
+                                                                        argsT
+                                                                    >,
+                                                                )
                                                                 : proxify(retval, newThat);
+                                                            constPromiseValue = ret;
                                                             return resolve(ret);
                                                         }
 
+                                                        constPromiseValue = newThat;
                                                         return resolve(newThat);
                                                     });
-                                            });
+                                            }));
                                             if (String(_prop) === "then") {
                                                 return result.then.bind(result);
+                                            }
+                                            if (String(_prop) === "status") {
+                                                return constPromiseStatus;
+                                            }
+                                            if (String(_prop) === "reason") {
+                                                return constPromiseReason;
+                                            }
+                                            if (String(_prop) === "value") {
+                                                return constPromiseValue;
                                             }
                                             return result;
                                         },

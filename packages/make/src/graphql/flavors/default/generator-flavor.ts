@@ -1385,6 +1385,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? _TR
                         : Promise<_TR>;
 
+                let constPromise: Promise<any> | undefined;
+                let constPromiseStatus: "pending" | "fulfilled" | "rejected" = "pending";
+                let constPromiseReason: string | undefined;
+                let constPromiseValue: any | undefined;
                 const resultProxy = new Proxy(
                     {},
                     {
@@ -1393,18 +1397,34 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             if (typeof rAtProp === "function") {
                                 return rAtProp;
                             }
-                            const promise = new Promise((resolve, reject) => {
+                            const promise = constPromise ?? (constPromise = new Promise((resolve, reject) => {
                                 root.execute()
-                                    .catch(reject)
+                                    .catch((reason) => {
+                                        constPromiseStatus = "rejected";
+                                        constPromiseReason = reason;
+                                        return reject(reason);
+                                    })
                                     .then((_data) => {
+                                        constPromiseStatus = "fulfilled";
                                         if (_data === undefined || _data === null) {
+                                            constPromiseValue = _data;
                                             return resolve(_data);
                                         }
-                                        resolve(rAtProp);
-                                    });
-                            });
+                                            constPromiseValue = rAtProp;
+                                            return resolve(rAtProp);
+                                        });
+                                }));
                             if (String(_prop) === "then") {
                                 return promise.then.bind(promise);
+                            }
+                            if (String(_prop) === "status") {
+                                return constPromiseStatus;
+                            }
+                            if (String(_prop) === "reason") {
+                                return constPromiseReason;
+                            }
+                            if (String(_prop) === "value") {
+                                return constPromiseValue;
                             }
                             return promise;
                         },
@@ -1619,6 +1639,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             // access the keys of the proxy object, to register operations
                             Object.keys({ [field]: 0 }).forEach(key => (rootSlw as any)[key as any]);
                                 
+                            let constPromise: Promise<any> | undefined;
+                            let constPromiseStatus: "pending" | "fulfilled" | "rejected" = "pending";
+                            let constPromiseReason: string | undefined;
+                            let constPromiseValue: any | undefined;
                             const resultProxy = new Proxy(
                                 {},
                                 {
@@ -1629,17 +1653,24 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 key: field,
                                             });
                                         } else {
-                                            const result = new Promise((resolve, reject) => {
+                                            const result = constPromise ?? (constPromise = new Promise((resolve, reject) => {
                                                 root.execute()
-                                                    .catch(reject)
+                                                    .catch((reason) => {
+                                                        constPromiseStatus = "rejected";
+                                                        constPromiseReason = reason;
+                                                        return reject(reason);
+                                                    })
                                                     .then((_data) => {
+                                                        constPromiseStatus = "fulfilled";
                                                         if (_data === undefined || _data === null) {
+                                                            constPromiseValue = _data;
                                                             return resolve(_data);
                                                         }
 
                                                         const d = _data[field];
 
                                                         if (Symbol.asyncIterator in d) {
+                                                            constPromiseValue = fieldSlw as any;
                                                             return resolve(fieldSlw as any);
                                                         }
 
@@ -1647,16 +1678,28 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                         if (typeof d === "object" && d && field in d) {
                                                             const retval = d[field];
                                                             if (retval === undefined || retval === null) {
+                                                                constPromiseValue = retval;
                                                                 return resolve(retval);
                                                             }
                                                             const ret = typeof retval !== "object" ? slw : proxify(retval, slw);
+                                                            constPromiseValue = ret;
                                                             return resolve(ret);
                                                         }
+                                                        constPromiseValue = slw;
                                                         return resolve(slw);
                                                     });
-                                            });
+                                            }));
                                             if (String(_prop) === "then") {
                                                 return result.then.bind(result);
+                                            }
+                                            if (String(_prop) === "status") {
+                                                return constPromiseStatus;
+                                            }
+                                            if (String(_prop) === "reason") {
+                                                return constPromiseReason;
+                                            }
+                                            if (String(_prop) === "value") {
+                                                return constPromiseValue;
                                             }
                                             return result;
                                         }
@@ -1729,6 +1772,10 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     // access the keys of the proxy object, to register operations
                     Object.keys({ [field]: 0 }).forEach(key => (rootSlw as any)[key as any]);
 
+                    let constPromise: Promise<any> | undefined;
+                    let constPromiseStatus: "pending" | "fulfilled" | "rejected" = "pending";
+                    let constPromiseReason: string | undefined;
+                    let constPromiseValue: any | undefined;
                     const resultProxy = new Proxy(
                         {},
                         {
@@ -1739,17 +1786,24 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         key: field,
                                     });
                                 } else {
-                                    const result = new Promise((resolve, reject) => {
+                                    const result = constPromise ?? (constPromise = new Promise((resolve, reject) => {
                                         root.execute()
-                                            .catch(reject)
+                                            .catch((reason) => {
+                                                constPromiseStatus = "rejected";
+                                                constPromiseReason = reason;
+                                                return reject(reason);
+                                            })
                                             .then((_data) => {
+                                                constPromiseStatus = "fulfilled";
                                                 if (_data === undefined || _data === null) {
+                                                    constPromiseValue = _data;
                                                     return resolve(_data);
                                                 }
 
                                                 const d = _data[field];
 
                                                 if (Symbol.asyncIterator in d) {
+                                                    constPromiseValue = fieldSlw as any;
                                                     return resolve(fieldSlw as any);
                                                 }
 
@@ -1757,16 +1811,28 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 if (typeof d === "object" && d && field in d) {
                                                     const retval = d[field];
                                                     if (retval === undefined || retval === null) {
+                                                        constPromiseValue = retval;
                                                         return resolve(retval);
                                                     }
                                                     const ret = typeof retval !== "object" ? slw : proxify(retval, slw);
+                                                    constPromiseValue = ret;
                                                     return resolve(ret);
                                                 }
+                                                constPromiseValue = slw;
                                                 return resolve(slw);
                                             });
-                                    });
+                                    }));
                                     if (String(_prop) === "then") {
                                         return result.then.bind(result);
+                                    }
+                                    if (String(_prop) === "status") {
+                                        return constPromiseStatus;
+                                    }
+                                    if (String(_prop) === "reason") {
+                                        return constPromiseReason;
+                                    }
+                                    if (String(_prop) === "value") {
+                                        return constPromiseValue;
                                     }
                                     return result;
                                 }
