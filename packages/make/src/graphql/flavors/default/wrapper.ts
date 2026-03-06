@@ -940,6 +940,7 @@ export class SelectionWrapper<
                         }
                         if (prop === "$lazy") {
                             const that = this;
+                            const lazyFnCallCache = new Map<string, { promise: Promise<any> | undefined, status: "pending" | "fulfilled" | "rejected", reason: string | undefined, value: any | undefined }>();
                             function lazy(
                                 this: {
                                     parentSlw: SelectionWrapperImpl<
@@ -1005,26 +1006,29 @@ export class SelectionWrapper<
 
                                 const isScalar = newThat[SLW_PARENT_COLLECTOR] === undefined;
 
-                                let constPromise: Promise<any> | undefined;
-                                let constPromiseStatus: "pending" | "fulfilled" | "rejected" = "pending";
-                                let constPromiseReason: string | undefined;
-                                let constPromiseValue: any | undefined;
+                                const cacheKey = JSON.stringify({ parentSlw: parentSlw[SLW_UID], key, args });
+                                let constPromise: Promise<any> | undefined = lazyFnCallCache.get(cacheKey)?.promise;
+                                let constPromiseStatus: "pending" | "fulfilled" | "rejected" = lazyFnCallCache.get(cacheKey)?.status ?? "pending";
+                                let constPromiseReason: string | undefined = lazyFnCallCache.get(cacheKey)?.reason;
+                                let constPromiseValue: any | undefined = lazyFnCallCache.get(cacheKey)?.value;
                                 const resultProxy = new Proxy(
                                     {},
                                     {
                                         get(_t, _prop) {
-                                            const result = constPromise ?? (constPromise = new Promise((resolve, reject) => {
+                                            const makePromise = () => new Promise((resolve, reject) => {
                                                 newRootOpCollectorRef.ref
                                                     .execute()
                                                     .catch((reason) => {
                                                         constPromiseStatus = "rejected";
                                                         constPromiseReason = reason;
+                                                        lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "rejected", reason, value: undefined });
                                                         return reject(reason);
                                                     })
                                                     .then((_data) => {
                                                         constPromiseStatus = "fulfilled";
                                                         if (_data === undefined || _data === null) {
                                                             constPromiseValue = _data;
+                                                            lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "fulfilled", reason: undefined, value: _data });
                                                             return resolve(_data);
                                                         }
 
@@ -1033,12 +1037,14 @@ export class SelectionWrapper<
 
                                                         if (Symbol.asyncIterator in d) {
                                                             constPromiseValue = newThat;
+                                                            lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "fulfilled", reason: undefined, value: newThat });
                                                             return resolve(newThat);
                                                         }
                                                         if (typeof d === "object" && d && fieldName in d) {
                                                             const retval = d[fieldName];
                                                             if (retval === undefined || retval === null) {
                                                                 constPromiseValue = retval;
+                                                                lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "fulfilled", reason: undefined, value: retval });
                                                                 return resolve(retval);
                                                             }
                                                             const ret = isScalar
@@ -1053,13 +1059,16 @@ export class SelectionWrapper<
                                                                 )
                                                                 : proxify(retval, newThat);
                                                             constPromiseValue = ret;
+                                                            lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "fulfilled", reason: undefined, value: ret });
                                                             return resolve(ret);
                                                         }
 
                                                         constPromiseValue = newThat;
+                                                        lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "fulfilled", reason: undefined, value: newThat });
                                                         return resolve(newThat);
                                                     });
-                                            }));
+                                            });
+                                            const result = constPromiseStatus === "fulfilled" && constPromise ? (constPromise = makePromise()) : constPromise ?? (constPromise = makePromise());
                                             if (String(_prop) === "then") {
                                                 return result.then.bind(result);
                                             }
