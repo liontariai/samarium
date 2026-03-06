@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.29.0",
+    "version": "0.29.1",
     "exports": {
         ".": {
             "import": "./dist/esm/index.js",
