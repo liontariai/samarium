@@ -273,73 +273,93 @@ export class RootOperation {
     ): Promise<AsyncGenerator<any, void, unknown>> {
         const that = this;
         const generator = (async function* () {
-            const [url, options] = (await (
-                RootOperation[OPTIONS].sseFetchTransform ?? ((url: string, options?: RequestInit) => [url, options])
-            )("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    ...headers,
-                    "Content-Type": "application/json",
-                    Accept: "text/event-stream",
-                },
-                body: JSON.stringify({
-                    query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
-                    variables: query.variables,
-                }),
-            })) as [string | URL | Request, RequestInit];
-            const response = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
-                ...options,
-                headers: {
-                    ...options?.headers,
-                    "Content-Type": "application/json",
-                    Accept: "text/event-stream",
-                },
-            });
 
-            const reader = response.body!.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
+            let abortController: AbortController | undefined = undefined;
+            let reader: import("stream/web").ReadableStreamDefaultReader<any> | undefined = undefined;
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+            try {
+                abortController = new AbortController();
 
-                buffer += decoder.decode(value, { stream: true });
-                const events = buffer.split("\n\n");
-                buffer = events.pop() || "";
+                const [url, options] = (await (
+                    RootOperation[OPTIONS].sseFetchTransform ?? ((url: string, options?: RequestInit) => [url, options])
+                )("[ENDPOINT]", {
+                    method: "POST",
+                    headers: {
+                        ...headers,
+                        "Content-Type": "application/json",
+                        Accept: "text/event-stream",
+                    },
+                    body: JSON.stringify({
+                        query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
+                        variables: query.variables,
+                    }),
+                    signal: abortController?.signal,
+                })) as [string | URL | Request, RequestInit];
+                const response = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
+                    ...options,
+                    headers: {
+                        ...options?.headers,
+                        "Content-Type": "application/json",
+                        Accept: "text/event-stream",
+                    },
+                });
 
-                for (const event of events) {
-                    if (event.trim()) {
-                        const eventName = event.match(/^event: (.*)$/m)?.[1];
-                        const rawdata = event.match(/^data: (.*)$/m)?.[1];
+                reader = response.body!.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
 
-                        if ((eventName === null && rawdata === "") || !rawdata) continue;
-                        if (eventName === "complete" || done) break;
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                        const parsed = JSON.parse(rawdata) as {
-                            data: any;
-                            errors: any[];
-                        };
-                        const { data, errors } = parsed ?? {};
-                        if (errors?.length > 0) {
-                            if (!data) {
-                                const err = new Error(JSON.stringify(errors), {
-                                    cause: "Only errors were returned from the server.",
-                                });
-                                throw err;
-                            }
-                            for (const error of errors) {
-                                if (error.path) {
-                                    that.utilSet(data, error.path, error);
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split("\n\n");
+                    buffer = events.pop() || "";
+
+                    for (const event of events) {
+                        if (event.trim()) {
+                            const eventName = event.match(/^event: (.*)$/m)?.[1];
+                            const rawdata = event.match(/^data: (.*)$/m)?.[1];
+
+                            if ((eventName === null && rawdata === "") || !rawdata) continue;
+                            if (eventName === "complete" || done) break;
+
+                            const parsed = JSON.parse(rawdata) as {
+                                data: any;
+                                errors: any[];
+                            };
+                            const { data, errors } = parsed ?? {};
+                            if (errors?.length > 0) {
+                                if (!data) {
+                                    const err = new Error(JSON.stringify(errors), {
+                                        cause: "Only errors were returned from the server.",
+                                    });
+                                    throw err;
+                                }
+                                for (const error of errors) {
+                                    if (error.path) {
+                                        that.utilSet(data, error.path, error);
+                                    }
                                 }
                             }
-                        }
 
-                        yield data;
+                            yield data;
+                        }
                     }
                 }
-            }
 
+                return;
+            } catch (error) {
+                console.error(error);
+            }
+            finally {
+                if (reader) {
+                    reader.cancel();
+                }
+                if (abortController) {
+                    abortController.abort();
+                }
+            }
             return;
         })();
 
@@ -1159,6 +1179,15 @@ export class SelectionWrapper<
 
                                 return function () {
                                     return {
+                                        return() {
+                                            return asyncGen.return(undefined).then((val) => {
+                                                return {
+                                                    done: val.done,
+                                                    value: val.value,
+                                                };
+                                            });
+                                        },
+
                                         next() {
                                             return asyncGen.next().then((val) => {
                                                 const clonedSlw = target[SLW_CLONE]({
