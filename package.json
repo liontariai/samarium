@@ -25,6 +25,10 @@
     "bin": {
         "samarium": "bin/samarium"
     },
+    "scripts": {
+        "bundle:all": "cd packages/make && bun bundle.ts && cd ../new && bun bundle.ts && cd ../..",
+        "publish:all": "cd packages/make && bun publish && cd ../new && bun publish && cd ../.."
+    },
     "publishConfig": {
         "access": "public"
     },
