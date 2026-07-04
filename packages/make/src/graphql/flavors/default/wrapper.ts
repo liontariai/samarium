@@ -270,15 +270,15 @@ export class RootOperation {
             fragments: Map<string, string>;
         },
         headers: Record<string, string> = {},
-    ): Promise<AsyncGenerator<any, void, unknown>> {
+    ): Promise<{ generator: AsyncGenerator<any, void, unknown>; abortController: AbortController | undefined }> {
         const that = this;
+        const abortState = { controller: undefined as AbortController | undefined };
         const generator = (async function* () {
 
-            let abortController: AbortController | undefined = undefined;
             let reader: import("stream/web").ReadableStreamDefaultReader<any> | undefined = undefined;
 
             try {
-                abortController = new AbortController();
+                abortState.controller = new AbortController();
 
                 const [url, options] = (await (
                     RootOperation[OPTIONS].sseFetchTransform ?? ((url: string, options?: RequestInit) => [url, options])
@@ -293,10 +293,11 @@ export class RootOperation {
                         query: `${[...query.fragments.values()].join("\n")}\n ${query.query}`.trim(),
                         variables: query.variables,
                     }),
-                    signal: abortController?.signal,
+                    signal: abortState.controller.signal,
                 })) as [string | URL | Request, RequestInit];
                 const response = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
                     ...options,
+                    signal: abortState.controller.signal,
                     headers: {
                         ...options?.headers,
                         "Content-Type": "application/json",
@@ -350,20 +351,25 @@ export class RootOperation {
 
                 return;
             } catch (error) {
-                console.error(error);
+                if (!(error instanceof DOMException && error.name === "AbortError")) {
+                    console.error(error);
+                }
             }
             finally {
+                abortState.controller?.abort();
                 if (reader) {
-                    reader.cancel();
-                }
-                if (abortController) {
-                    abortController.abort();
+                    await reader.cancel().catch(() => { });
                 }
             }
             return;
         })();
 
-        return generator;
+        return {
+            generator,
+            get abortController() {
+                return abortState.controller;
+            },
+        };
     }
 
     private async executeOperation(
@@ -1174,13 +1180,14 @@ export class SelectionWrapper<
                                     target,
                                     asyncGenRootPath,
                                     true,
-                                ) as AsyncGenerator<valueT, any, any>;
+                                ) as { generator: AsyncGenerator<valueT, any, any>; abortController: AbortController | undefined };
                                 const isScalar = target[SLW_PARENT_COLLECTOR] === undefined;
 
                                 return function () {
                                     return {
                                         return() {
-                                            return asyncGen.return(undefined).then((val) => {
+                                            asyncGen.abortController?.abort();
+                                            return asyncGen.generator.return(undefined).then((val) => {
                                                 return {
                                                     done: val.done,
                                                     value: val.value,
@@ -1189,7 +1196,7 @@ export class SelectionWrapper<
                                         },
 
                                         next() {
-                                            return asyncGen.next().then((val) => {
+                                            return asyncGen.generator.next().then((val) => {
                                                 const clonedSlw = target[SLW_CLONE]({
                                                     SLW_OP_PATH: asyncGenRootPath,
                                                     OP_RESULT_DATA: isScalar
