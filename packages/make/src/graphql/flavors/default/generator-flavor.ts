@@ -1669,7 +1669,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                                                         const d = _data[field];
 
-                                                        if (Symbol.asyncIterator in d) {
+                                                        if (SLW_IS_ASYNC_ITERABLE in d) {
                                                             constPromiseValue = fieldSlw as any;
                                                             return resolve(fieldSlw as any);
                                                         }
@@ -1802,7 +1802,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                                                 const d = _data[field];
 
-                                                if (Symbol.asyncIterator in d) {
+                                                if (SLW_IS_ASYNC_ITERABLE in d) {
                                                     constPromiseValue = fieldSlw as any;
                                                     return resolve(fieldSlw as any);
                                                 }

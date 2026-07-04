@@ -270,7 +270,7 @@ export class RootOperation {
             fragments: Map<string, string>;
         },
         headers: Record<string, string> = {},
-    ): Promise<{ generator: AsyncGenerator<any, void, unknown>; abortController: AbortController | undefined }> {
+    ): Promise<{ generator: AsyncGenerator<any, void, unknown>; abortController: AbortController | undefined;[SLW_IS_ASYNC_ITERABLE]: true }> {
         const that = this;
         const abortState = { controller: undefined as AbortController | undefined };
         const generator = (async function* () {
@@ -369,6 +369,7 @@ export class RootOperation {
             get abortController() {
                 return abortState.controller;
             },
+            [SLW_IS_ASYNC_ITERABLE]: true,
         };
     }
 
@@ -653,6 +654,8 @@ export const SLW_SETTER_DATA_OVERRIDE = Symbol("SLW_SETTER_DATA_OVERRIDE");
 export const SLW_NEEDS_CLONE = Symbol("SLW_NEEDS_CLONE");
 
 export const SLW_CLONE = Symbol("SLW_CLONE");
+
+export const SLW_IS_ASYNC_ITERABLE = Symbol("SLW_IS_ASYNC_ITERABLE");
 
 export class SelectionWrapperImpl<
     fieldName extends string,
@@ -1061,7 +1064,7 @@ export class SelectionWrapper<
                                                         const fieldName = newThat[SLW_FIELD_NAME]!;
                                                         const d = _data[fieldName];
 
-                                                        if (Symbol.asyncIterator in d) {
+                                                        if (SLW_IS_ASYNC_ITERABLE in d) {
                                                             constPromiseValue = newThat;
                                                             lazyFnCallCache.set(cacheKey, { promise: constPromise, status: "fulfilled", reason: undefined, value: newThat });
                                                             return resolve(newThat);
