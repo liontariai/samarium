@@ -1247,7 +1247,11 @@ export class SelectionWrapper<
                                             SLW_OP_PATH: path + "." + String(prop),
                                             OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
                                         });
-                                        return proxify(_data[Number(prop)], elm);
+                                        const d = _data[Number(prop)];
+                                        if (typeof d === "undefined" || d === null) {
+                                            return d;
+                                        }
+                                        return proxify(d, elm);
                                     }
 
                                     const data = _data as valueT[] | undefined;
