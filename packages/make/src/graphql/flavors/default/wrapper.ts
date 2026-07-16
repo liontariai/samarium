@@ -463,11 +463,10 @@ export class OperationSelectionCollector {
         const varDefs: string[] = [];
         const variables: Record<string, any> = {};
 
-        for (const [key, value] of [...this.selections.entries()].filter(
-            ([k, v]) =>
-                renderOnlyTheseSelections.length === 0 ||
-                renderOnlyTheseSelections.find((r) => r[SLW_UID] === v[SLW_UID]),
-        )) {
+        for (const [key, _value] of this.selections.entries()) {
+            const value = renderOnlyTheseSelections.length === 0 ? _value : renderOnlyTheseSelections.find((r) => r[SLW_UID] === _value[SLW_UID]);
+            if (!value) continue;
+
             const subPath = [...path, key];
             const aliasPrefix = value[SLW_PARENT_SLW]?.[SLW_ALIAS_PREFIX] ?? "";
 
