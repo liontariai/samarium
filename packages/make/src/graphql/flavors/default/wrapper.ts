@@ -1260,18 +1260,18 @@ export class SelectionWrapper<
                                     const cache = getCache(target);
 
                                     const proxiedData =
-                                        cache.proxiedArray.get(target[SLW_OP_PATH]!) ??
+                                        cache.proxiedArray.get(path) ??
                                         Array.from({ length: data.length }, (_, i) =>
                                             typeof data[i] === "object"
                                                 ? proxify(
                                                     data[i],
                                                     target[SLW_CLONE]({
-                                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                                        SLW_OP_PATH: path + "." + String(i),
                                                         OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
                                                     }),
                                                 )
                                                 : target[SLW_CLONE]({
-                                                    SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
+                                                    SLW_OP_PATH: path + "." + String(i),
                                                     OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
                                                 }),
                                         );
