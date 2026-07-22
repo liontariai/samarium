@@ -1215,11 +1215,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 { 
                                                     ${lazyModiferType} ${this.authConfig
                                     ? `& {
-                                                        auth: (auth: FnOrPromisOrPrimitive) => Promise<"T">;
+                                                        auth: (auth: AuthSource) => Promise<"T">;
                                                     }`
                                     : ""
                                 };
-                                                    ${this.authConfig ? `auth: (auth: FnOrPromisOrPrimitive) => Promise<"T"> & {${lazyModiferType}}` : ""}
+                                                    ${this.authConfig ? `auth: (auth: AuthSource) => Promise<"T"> & {${lazyModiferType}}` : ""}
                                                 },
                                                 "$lazy" ${this.authConfig ? `| "auth"` : ""},
                                                 AS_PROMISE
@@ -1437,7 +1437,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     {
                         get(_t, _prop) {
                             if (String(_prop) === "auth") {
-                                return (auth: FnOrPromisOrPrimitive) => {
+                                return (auth: AuthSource) => {
                                     root.op!.setAuth(auth);
                                     return resultProxy;
                                 };
@@ -1449,13 +1449,18 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 : `resultProxy`
             } as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
-                        auth: FnOrPromisOrPrimitive,
+                        auth: AuthSource,
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
                 };
             };
 
             const __init__ = (options: {
-                ${authConfig ? `auth?: FnOrPromisOrPrimitive;` : ""}
+                ${authConfig
+                ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
+                auth?: AuthResolver;
+                /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
+                authToken?: string;`
+                : ""}
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1477,15 +1482,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }) => {
                 ${authConfig
                 ? `
-                if (typeof options.auth === "string") {
-                    RootOperation[OPTIONS].headers = {
-                        "${authConfig.headerName}": options.auth,
-                    };
-                } else if (typeof options.auth === "function" ) {
-                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                if (options.authToken !== undefined) {
+                    RootOperation[OPTIONS]._auth_token = options.authToken;
                 }
-                else if (options.auth) {
-                    RootOperation[OPTIONS].headers = options.auth;
+                if (typeof options.auth === "function") {
+                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                } else if (typeof options.auth === "string") {
+                    // Deprecated: use authToken for static tokens
+                    console.warn(
+                        "[samarium] init({ auth: string }) is deprecated; use init({ authToken: string }) for static tokens.",
+                    );
+                    RootOperation[OPTIONS]._auth_token = options.auth;
                 }
                 `
                 : ""
@@ -1713,7 +1720,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 {
                                     get(_t, _prop) {
                                         if (String(_prop) === "auth") {
-                                            return (auth: FnOrPromisOrPrimitive) => {
+                                            return (auth: AuthSource) => {
                                                 root.op!.setAuth(auth);
                                                 return resultProxy;
                                             };
@@ -1846,7 +1853,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         {
                             get(_t, _prop) {
                                 if (String(_prop) === "auth") {
-                                    return (auth: FnOrPromisOrPrimitive) => {
+                                    return (auth: AuthSource) => {
                                         root.op!.setAuth(auth);
                                         return resultProxy;
                                     };
@@ -1916,7 +1923,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         > ${authConfig
                             ? `& {
                                                     auth: (
-                                                        auth: FnOrPromisOrPrimitive,
+                                                        auth: AuthSource,
                                                     ) => Promise<
                                                         ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                                     >
@@ -1925,7 +1932,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             : ""
                         };
                                         ${authConfig
-                            ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                            ? `auth: (token: AuthSource) => Promise<"T"> & {
                                             $lazy: () => Promise<
                                                 ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                             >;
@@ -1952,7 +1959,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         > ${authConfig
                             ? `& {
                                                     auth: (
-                                                        auth: FnOrPromisOrPrimitive,
+                                                        auth: AuthSource,
                                                     ) => Promise<
                                                         ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                                     >;
@@ -1961,7 +1968,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             : ""
                         };
                                         ${authConfig
-                            ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                            ? `auth: (token: AuthSource) => Promise<"T"> & {
                                             $lazy: () => Promise<
                                                 ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                             >;
