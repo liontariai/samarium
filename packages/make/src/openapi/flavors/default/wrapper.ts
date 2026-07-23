@@ -227,7 +227,7 @@ export class RootOperation {
         const { finalPath, cookies } = this.buildRequestUrl(request);
 
         const generator = (async function* () {
-            let reader: ReadableStreamDefaultReader<Uint8Array> | undefined = undefined;
+            let reader: import("stream/web").ReadableStreamDefaultReader<any> | undefined = undefined;
 
             try {
                 abortState.controller = new AbortController();
