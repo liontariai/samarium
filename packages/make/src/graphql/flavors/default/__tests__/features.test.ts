@@ -1061,7 +1061,13 @@ describe("Testing and validating features", () => {
             global.fetch = realFetch;
         });
 
-        it("sets the auth token for the sdk globally using the .init() method", async () => {
+        const resetAuth = () => {
+            RootOperation[OPTIONS]._auth_fn = undefined;
+            RootOperation[OPTIONS]._auth_token = undefined;
+            RootOperation[OPTIONS].headers = {};
+        };
+
+        it("sets a static authToken for the sdk globally using the .init() method", async () => {
             const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
@@ -1079,7 +1085,7 @@ describe("Testing and validating features", () => {
             const authToken = "Bearer test token";
 
             examplesContentful.default.init({
-                auth: authToken,
+                authToken,
             });
 
             const { test } = await examplesContentful.default((op) =>
@@ -1110,14 +1116,11 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            // reset the auth token because it's set globally in the local RootOperation which is used in other tests
-            examplesContentful.default.init({
-                auth: {},
-            });
+            resetAuth();
             global.fetch = realFetch;
         });
 
-        it("sets the auth token with an sync function for the sdk globally using the .init() method", async () => {
+        it("sets the auth token with a sync function for the sdk globally using the .init() method", async () => {
             const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
@@ -1166,10 +1169,7 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            // reset the auth token because it's set globally in the local RootOperation which is used in other tests
-            examplesContentful.default.init({
-                auth: {},
-            });
+            resetAuth();
             global.fetch = realFetch;
         });
 
@@ -1222,10 +1222,107 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            // reset the auth token because it's set globally in the local RootOperation which is used in other tests
-            examplesContentful.default.init({
-                auth: {},
+            resetAuth();
+            global.fetch = realFetch;
+        });
+
+        it("passes the .auth(source) argument into the global auth resolver per call", async () => {
+            const realFetch = global.fetch;
+            const mockFetch = jest.fn().mockResolvedValue({
+                json: () =>
+                    Promise.resolve({
+                        data: {
+                            test: {
+                                title: "test title",
+                                description: "test description",
+                            },
+                        },
+                    }),
             });
+            global.fetch = mockFetch as any;
+
+            const seenSources: unknown[] = [];
+            examplesContentful.default.init({
+                auth: (source) => {
+                    seenSources.push(source);
+                    if (typeof source === "string") return source;
+                    return "Bearer default";
+                },
+            });
+
+            await examplesContentful
+                .default((op) =>
+                    op.query((q) => ({
+                        test: q.asset({ id: "test" })(({ title, description }) => ({
+                            title: title({ locale: "en-US" }),
+                            description: description({ locale: "en-US" }),
+                        })),
+                    })),
+                )
+                .auth("Bearer from-source");
+
+            expect(seenSources).toEqual(["Bearer from-source"]);
+            expect(mockFetch).toHaveBeenCalledWith(
+                "[ENDPOINT]",
+                expect.objectContaining({
+                    headers: expect.objectContaining({
+                        Authorization: "Bearer from-source",
+                    }),
+                }),
+            );
+
+            resetAuth();
+            global.fetch = realFetch;
+        });
+
+        it("isolates concurrent calls with different .auth(source) values under a global resolver", async () => {
+            const realFetch = global.fetch;
+            const mockFetch = jest.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+                // Simulate network latency so both requests are in flight together
+                await new Promise((r) => setTimeout(r, 20));
+                const auth = (init?.headers as Record<string, string>)?.Authorization;
+                return {
+                    json: () =>
+                        Promise.resolve({
+                            data: {
+                                test: {
+                                    title: auth ?? "none",
+                                    description: "test description",
+                                },
+                            },
+                        }),
+                };
+            });
+            global.fetch = mockFetch as any;
+
+            examplesContentful.default.init({
+                auth: (source) => (typeof source === "string" ? source : "Bearer default"),
+            });
+
+            const call = (token: string) =>
+                examplesContentful
+                    .default((op) =>
+                        op.query((q) => ({
+                            test: q.asset({ id: "test" })(({ title, description }) => ({
+                                title: title({ locale: "en-US" }),
+                                description: description({ locale: "en-US" }),
+                            })),
+                        })),
+                    )
+                    .auth(token);
+
+            const [a, b] = await Promise.all([call("Bearer user-A"), call("Bearer user-B")]);
+
+            expect(a.test.title).toEqual("Bearer user-A");
+            expect(b.test.title).toEqual("Bearer user-B");
+
+            const authHeaders = mockFetch.mock.calls.map(
+                (c: any[]) => (c[1]?.headers as Record<string, string>)?.Authorization,
+            );
+            expect(authHeaders).toContain("Bearer user-A");
+            expect(authHeaders).toContain("Bearer user-B");
+
+            resetAuth();
             global.fetch = realFetch;
         });
     });

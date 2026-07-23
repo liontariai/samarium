@@ -2758,23 +2758,33 @@ export const TestTestResourcesHyperlinkSelection = makeSLFN(
     0,
 );
 
+
+/** Per-call source passed to `.auth(source)` and into the global `auth` resolver. */
+type AuthSource = unknown;
+/** Value returned by the global `auth` resolver (or a direct per-call token/headers). */
+type AuthResult = string | { [key: string]: string } | undefined;
+/** Global `init({ auth })` resolver — called per SDK request with the optional `.auth(source)` argument. */
+type AuthResolver =
+    | ((source?: AuthSource) => AuthResult)
+    | ((source?: AuthSource) => Promise<AuthResult>);
+
 export const _directive_include =
     (args: Directive_includeArgs) =>
-    <F>(f: F) => {
-        (f as any)[SLW_DIRECTIVE] = "include";
-        (f as any)[SLW_DIRECTIVE_ARGS] = args;
-        (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_includeArgsMeta;
-        return f;
-    };
+        <F>(f: F) => {
+            (f as any)[SLW_DIRECTIVE] = "include";
+            (f as any)[SLW_DIRECTIVE_ARGS] = args;
+            (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_includeArgsMeta;
+            return f;
+        };
 
 export const _directive_skip =
     (args: Directive_skipArgs) =>
-    <F>(f: F) => {
-        (f as any)[SLW_DIRECTIVE] = "skip";
-        (f as any)[SLW_DIRECTIVE_ARGS] = args;
-        (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_skipArgsMeta;
-        return f;
-    };
+        <F>(f: F) => {
+            (f as any)[SLW_DIRECTIVE] = "skip";
+            (f as any)[SLW_DIRECTIVE_ARGS] = args;
+            (f as any)[SLW_DIRECTIVE_ARGS_META] = Directive_skipArgsMeta;
+            return f;
+        };
 
 export const $directives = {
     include: _directive_include,
@@ -2791,16 +2801,12 @@ export function _makeRootOperationInput(this: any) {
     } as const;
 }
 
-type __AuthenticationArg__ =
-    | string
-    | { [key: string]: string }
-    | (() => string | { [key: string]: string })
-    | (() => Promise<string | { [key: string]: string }>);
 function __client__<T extends object, F extends ReturnType<typeof _makeRootOperationInput>>(
     this: any,
     s: (selection: F) => T,
 ) {
-    const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
+    const rootOp = new RootOperation();
+    const root = new OperationSelectionCollector(undefined, undefined, rootOp);
     const rootRef = { ref: root };
     const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
     const r = s(selection);
@@ -2808,82 +2814,40 @@ function __client__<T extends object, F extends ReturnType<typeof _makeRootOpera
     Object.keys(r).forEach((key) => (_result as T)[key as keyof T]);
     const result = _result as {
         [k in keyof T]: T[k] extends (...args: infer A) => any
-            ? (...args: A) => Omit<ReturnType<T[k]>, "$lazy">
-            : Omit<T[k], "$lazy">;
+        ? (...args: A) => Omit<ReturnType<T[k]>, "$lazy">
+        : Omit<T[k], "$lazy">;
     };
     type TR = typeof result;
 
-    let headers: Record<string, string> | undefined = undefined;
+    // Auth is resolved inside RootOperation.execute (global auth / authToken / per-call source)
     const finalPromise = {
         then: (resolve: (value: TR) => void, reject: (reason: any) => void) => {
-            const doExecute = () => {
-                root.execute(headers)
-                    .then(() => {
-                        resolve(result);
-                    })
-                    .catch(reject);
-            };
-            if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
-                const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
-                if (tokenOrPromise instanceof Promise) {
-                    tokenOrPromise.then((t) => {
-                        if (typeof t === "string") headers = { Authorization: t };
-                        else headers = t;
-
-                        doExecute();
-                    });
-                } else if (typeof tokenOrPromise === "string") {
-                    headers = { Authorization: tokenOrPromise };
-
-                    doExecute();
-                } else {
-                    headers = tokenOrPromise;
-
-                    doExecute();
-                }
-            } else {
-                doExecute();
-            }
+            root.execute()
+                .then(() => {
+                    resolve(result);
+                })
+                .catch(reject);
         },
     };
 
     Object.defineProperty(finalPromise, "auth", {
         enumerable: false,
         get: function () {
-            return function (auth: __AuthenticationArg__) {
-                if (typeof auth === "string") {
-                    headers = { Authorization: auth };
-                } else if (typeof auth === "function") {
-                    const tokenOrPromise = auth();
-                    if (tokenOrPromise instanceof Promise) {
-                        return tokenOrPromise.then((t) => {
-                            if (typeof t === "string") headers = { Authorization: t };
-                            else headers = t;
-
-                            return finalPromise as Promise<TR>;
-                        });
-                    }
-                    if (typeof tokenOrPromise === "string") {
-                        headers = { Authorization: tokenOrPromise };
-                    } else {
-                        headers = tokenOrPromise;
-                    }
-                } else {
-                    headers = auth;
-                }
-
+            return function (auth: AuthSource) {
+                rootOp.setAuth(auth);
                 return finalPromise as Promise<TR>;
             };
         },
     });
 
     return finalPromise as Promise<TR> & {
-        auth: (auth: __AuthenticationArg__) => Promise<TR>;
+        auth: (auth: AuthSource) => Promise<TR>;
     };
 }
 
 const __init__ = (options: {
-    auth?: __AuthenticationArg__;
+    auth?: AuthResolver;
+    authToken?: string;
     headers?: { [key: string]: string };
     scalars?: {
         [key in keyof ScalarTypeMapDefault]?: (v: string) => ScalarTypeMapDefault[key];
@@ -2891,14 +2855,16 @@ const __init__ = (options: {
         [key in keyof ScalarTypeMapWithCustom]?: (v: string) => ScalarTypeMapWithCustom[key];
     };
 }) => {
-    if (typeof options.auth === "string") {
-        RootOperation[OPTIONS].headers = {
-            Authorization: options.auth,
-        };
-    } else if (typeof options.auth === "function") {
+    if (options.authToken !== undefined) {
+        RootOperation[OPTIONS]._auth_token = options.authToken;
+    }
+    if (typeof options.auth === "function") {
         RootOperation[OPTIONS]._auth_fn = options.auth;
-    } else if (options.auth) {
-        RootOperation[OPTIONS].headers = options.auth;
+    } else if (typeof options.auth === "string") {
+        console.warn(
+            "[samarium] init({ auth: string }) is deprecated; use init({ authToken: string }) for static tokens.",
+        );
+        RootOperation[OPTIONS]._auth_token = options.auth as unknown as string;
     }
 
     if (options.headers) {
