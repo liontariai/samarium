@@ -57,6 +57,11 @@ export class RootOperation {
             input: string | URL | globalThis.Request,
             init?: RequestInit,
         ) => Promise<Response>,
+        sseFetchTransform: undefined as unknown as (
+            input: string | URL | globalThis.Request,
+            init?: RequestInit,
+        ) => Promise<[string | URL | globalThis.Request, RequestInit | undefined]>
+            | [string | URL | globalThis.Request, RequestInit | undefined],
         scalars: {
             DateTime: (value: string) => new Date(value),
             DateTimeISO: (value: string) => new Date(value),
@@ -120,22 +125,23 @@ export class RootOperation {
                     bodyVarDefCount === 0
                         ? undefined
                         : bodyVarDefCount === 1 && Object.keys(selection.variableDefinitions).length === 1
-                          ? selection.variables
-                          : bodyVarDefCount === 1 &&
-                              "$body" in selection.variableDefinitions &&
-                              "$body" in selection.variables
-                            ? selection.variables["$body"]
-                            : Object.fromEntries(
-                                  Object.entries(selection.variableDefinitions)
-                                      .filter(([_, v]) => v.location === "body")
-                                      .map(([k, _]) => [k, selection.variables[k]]),
-                              );
+                            ? selection.variables
+                            : bodyVarDefCount === 1 &&
+                                "$body" in selection.variableDefinitions &&
+                                "$body" in selection.variables
+                                ? selection.variables["$body"]
+                                : Object.fromEntries(
+                                    Object.entries(selection.variableDefinitions)
+                                        .filter(([_, v]) => v.location === "body")
+                                        .map(([k, _]) => [k, selection.variables[k]]),
+                                );
 
                 return {
                     ...acc,
                     [opName]: {
                         path: rootSlw[ROOT_OP_META]!.path,
                         method: rootSlw[ROOT_OP_META]!.method,
+                        isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
                         header: Object.fromEntries(
                             Object.entries(selection.variableDefinitions)
                                 .filter(([_, v]) => v.location === "header")
@@ -164,12 +170,17 @@ export class RootOperation {
             },
             {} as Record<string, OpenAPIRequest>,
         );
-        // const subscription = `{${subscriptions.join("")}}`;
 
         const results = Object.fromEntries(
             await Promise.all([
                 ...Object.entries(ops).map(
-                    async ([opName, op]) => [opName, await this.executeOperation(op, headers)] as const,
+                    async ([opName, op]) =>
+                        [
+                            opName,
+                            op.isEventStream
+                                ? await this.subscribeOperation(op, headers)
+                                : await this.executeOperation(op, headers),
+                        ] as const,
                 ),
             ]),
         );
@@ -199,6 +210,116 @@ export class RootOperation {
 
         return data;
     }
+
+    /**
+     * SSE for OpenAPI operations whose success content is text/event-stream.
+     * Yields bare JSON payloads from `data:` lines (not a GraphQL envelope).
+     */
+    private async subscribeOperation(
+        request: OpenAPIRequest,
+        headers: Record<string, string> = {},
+    ): Promise<{
+        generator: AsyncGenerator<any, void, unknown>;
+        abortController: AbortController | undefined;
+        [SLW_IS_ASYNC_ITERABLE]: true;
+    }> {
+        const abortState = { controller: undefined as AbortController | undefined };
+        const { finalPath, cookies } = this.buildRequestUrl(request);
+
+        const generator = (async function* () {
+            let reader: ReadableStreamDefaultReader<Uint8Array> | undefined = undefined;
+
+            try {
+                abortState.controller = new AbortController();
+
+                const defaultUrl = `[ENDPOINT]${finalPath}`;
+                const defaultInit: RequestInit = {
+                    method: request.method,
+                    headers: {
+                        ...(request.body ? { "Content-Type": "application/json" } : {}),
+                        ...(request.header ? request.header : {}),
+                        ...(cookies ? { Cookie: cookies } : {}),
+                        ...headers,
+                        Accept: "text/event-stream",
+                    },
+                    body: request.body ? JSON.stringify(request.body) : undefined,
+                    signal: abortState.controller.signal,
+                };
+
+                const transform =
+                    RootOperation[OPTIONS].sseFetchTransform ??
+                    ((url: string | URL | Request, options?: RequestInit) => [url, options] as const);
+                const transformed = await transform(defaultUrl, defaultInit);
+                const [url, options] = transformed as [
+                    string | URL | Request,
+                    RequestInit | undefined,
+                ];
+
+                const response = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
+                    ...options,
+                    signal: abortState.controller.signal,
+                    headers: {
+                        ...options?.headers,
+                        Accept: "text/event-stream",
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(`${response.statusText}: ${await response.text()}`);
+                }
+
+                reader = response.body!.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split("\n\n");
+                    buffer = events.pop() || "";
+
+                    for (const event of events) {
+                        if (!event.trim()) continue;
+
+                        const eventName = event.match(/^event: (.*)$/m)?.[1];
+                        const rawdata = event.match(/^data: (.*)$/m)?.[1];
+
+                        if ((eventName === null && rawdata === "") || !rawdata) continue;
+                        if (eventName === "complete") break;
+
+                        try {
+                            yield JSON.parse(rawdata);
+                        } catch (e) {
+                            // Non-JSON data lines: yield raw string
+                            yield rawdata;
+                        }
+                    }
+                }
+
+                return;
+            } catch (error) {
+                if (!(error instanceof DOMException && error.name === "AbortError")) {
+                    console.error(error);
+                }
+            } finally {
+                abortState.controller?.abort();
+                if (reader) {
+                    await reader.cancel().catch(() => { });
+                }
+            }
+            return;
+        })();
+
+        return {
+            generator,
+            get abortController() {
+                return abortState.controller;
+            },
+            [SLW_IS_ASYNC_ITERABLE]: true,
+        };
+    }
 }
 
 export type OperationSelectionCollectorRef = {
@@ -221,9 +342,9 @@ export class OperationSelectionCollector {
         data: Map<string, any>;
         proxiedArray: Map<string, any[]>;
     } = {
-        data: new Map(),
-        proxiedArray: new Map(),
-    };
+            data: new Map(),
+            proxiedArray: new Map(),
+        };
 
     public async execute(headers: Record<string, string> = RootOperation[OPTIONS].headers) {
         if (!this.op) {
@@ -322,7 +443,7 @@ export class OperationSelectionCollector {
                 finalResult,
                 depth,
                 RootOperation[OPTIONS].scalars[typeName as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]] ??
-                    ((value: string) => JSON.parse(value)),
+                ((value: string) => JSON.parse(value)),
             ) as T;
         }
 
@@ -355,6 +476,7 @@ export const SLW_OP_RESULT_DATA_OVERRIDE = Symbol("SLW_OP_RESULT_DATA_OVERRIDE")
 export const SLW_RECREATE_VALUE_CALLBACK = Symbol("SLW_RECREATE_VALUE_CALLBACK");
 export const SLW_NEEDS_CLONE = Symbol("SLW_NEEDS_CLONE");
 export const SLW_CLONE = Symbol("SLW_CLONE");
+export const SLW_IS_ASYNC_ITERABLE = Symbol("SLW_IS_ASYNC_ITERABLE");
 
 export const OP_SCALAR_RESULT = Symbol("OP_SCALAR_RESULT");
 export const SLW_IS_SCALAR_OP = Symbol("SLW_IS_SCALAR_OP");
@@ -417,6 +539,7 @@ export class SelectionWrapperImpl<
     [ROOT_OP_META]?: {
         path: string;
         method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
+        isEventStream?: boolean;
     };
 
     [SLW_ARGS]?: argsT;
@@ -510,7 +633,7 @@ export class SelectionWrapperImpl<
                 variableDefinitions: argsMeta?.["$body"]
                     ? (argsMeta ?? {})
                     : args
-                      ? Object.keys(args).reduce(
+                        ? Object.keys(args).reduce(
                             (acc, key) => {
                                 acc[key] = argsMeta?.[key];
                                 return acc;
@@ -523,7 +646,7 @@ export class SelectionWrapperImpl<
                                 }
                             >,
                         )
-                      : {},
+                        : {},
             };
         }
         return {
@@ -697,6 +820,9 @@ export class SelectionWrapper<
                                             const fieldName = newThat[SLW_FIELD_NAME]!;
                                             const d = _data[fieldName];
 
+                                            if (d && typeof d === "object" && SLW_IS_ASYNC_ITERABLE in d) {
+                                                return resolve(newThat);
+                                            }
                                             if (typeof d === "object" && d && fieldName in d) {
                                                 const retval = d[fieldName];
                                                 if (retval === undefined || retval === null) {
@@ -765,10 +891,63 @@ export class SelectionWrapper<
                         let slw_value = target[SLW_VALUE] as Record<string, any> | undefined;
 
                         if (target[ROOT_OP_COLLECTOR]?.ref.isExecuted) {
+                            if (prop === Symbol.asyncIterator) {
+                                const asyncGenRootPath = target[SLW_OP_PATH]?.split(".")?.[0];
+                                const asyncGen = getResultDataForTarget(target, asyncGenRootPath) as {
+                                    generator: AsyncGenerator<valueT, any, any>;
+                                    abortController: AbortController | undefined;
+                                };
+                                const isScalar = target[SLW_PARENT_COLLECTOR] === undefined;
+
+                                return function () {
+                                    return {
+                                        return() {
+                                            asyncGen.abortController?.abort();
+                                            return asyncGen.generator.return(undefined).then((val) => {
+                                                return {
+                                                    done: val.done,
+                                                    value: val.value,
+                                                };
+                                            });
+                                        },
+
+                                        next() {
+                                            return asyncGen.generator.next().then((val) => {
+                                                // Wrap each event as { [opName]: payload } so SLW_OP_PATH works
+                                                const wrapped = {
+                                                    [asyncGenRootPath!]: val.value,
+                                                };
+                                                const clonedSlw = target[SLW_CLONE]({
+                                                    SLW_OP_PATH: asyncGenRootPath,
+                                                    OP_RESULT_DATA: isScalar
+                                                        ? wrapped
+                                                        : wrapped,
+                                                    SLW_NEEDS_CLONE: true,
+                                                });
+                                                let out: any = clonedSlw;
+                                                if (!isScalar && val.value && typeof val.value === "object") {
+                                                    out = proxify(val.value, clonedSlw);
+                                                } else if (isScalar) {
+                                                    out = getResultDataForTarget(clonedSlw as any, asyncGenRootPath);
+                                                }
+                                                return {
+                                                    done: val.done,
+                                                    value: out,
+                                                };
+                                            });
+                                        },
+                                    };
+                                };
+                            }
 
                             if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
                                 const _data = getResultDataForTarget(target);
                                 const path = target[SLW_OP_PATH]!;
+
+                                // Async-iterable root: not a plain object
+                                if (_data && typeof _data === "object" && SLW_IS_ASYNC_ITERABLE in _data) {
+                                    return undefined;
+                                }
 
                                 if (typeArrDepth && Array.isArray(_data)) {
                                     if (!isNaN(+String(prop))) {
@@ -793,16 +972,16 @@ export class SelectionWrapper<
                                         Array.from({ length: data.length }, (_, i) =>
                                             typeof data[i] === "object" && data[i] !== null
                                                 ? proxify(
-                                                      data[i],
-                                                      target[SLW_CLONE]({
-                                                          SLW_OP_PATH: path + "." + String(i),
-                                                          OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                                      }),
-                                                  )
+                                                    data[i],
+                                                    target[SLW_CLONE]({
+                                                        SLW_OP_PATH: path + "." + String(i),
+                                                        OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                    }),
+                                                )
                                                 : target[SLW_CLONE]({
-                                                      SLW_OP_PATH: path + "." + String(i),
-                                                      OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
-                                                  }),
+                                                    SLW_OP_PATH: path + "." + String(i),
+                                                    OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                }),
                                         );
 
                                     if (!cache.proxiedArray.has(path)) {
@@ -877,7 +1056,9 @@ export class SelectionWrapper<
                                 const data = getResultDataForTarget(slw) as unknown | undefined | null;
                                 if (data === undefined) return undefined;
                                 if (data === null) return null;
-
+                                if (data && typeof data === "object" && SLW_IS_ASYNC_ITERABLE in (data as object)) {
+                                    return slw;
+                                }
                                 if (slw[SLW_PARENT_COLLECTOR] && typeof data === "object") {
                                     return proxify(data, slw);
                                 }

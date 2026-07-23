@@ -14,6 +14,10 @@ export interface OperationMeta {
     method: OperationMethod;
     args: ParameterMeta[];
     type: TypeMeta;
+    /** True when success response content includes text/event-stream */
+    isEventStream?: boolean;
+    /** Response content-type used for the operation body/event payload type */
+    responseContentType?: string;
 }
 
 export interface ParameterMeta {

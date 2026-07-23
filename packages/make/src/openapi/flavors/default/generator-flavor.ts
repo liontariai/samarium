@@ -147,6 +147,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         fieldName?: string;
         opPath?: string;
         method?: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
+        isEventStream?: boolean;
         args?: Record<string, any>;
         argsMeta?: Record<string, { type: string; location: "path" | "query" | "header" | "cookie" | "body" }>;
     } | undefined;
@@ -396,6 +397,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     ? {
                         path: parent.opPath,
                         method: parent.method!,
+                        isEventStream: parent.isEventStream,
                     }
                     : undefined;
 
@@ -454,6 +456,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 _result[ROOT_OP_META] = parent?.opPath ? {
                         path: parent.opPath,
                         method: parent.method!,
+                        isEventStream: parent.isEventStream,
                     }
                     : undefined;
 
@@ -1061,17 +1064,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         fieldName: "${operation.name}",
                         opPath: "${operation.path}",
                         method: "${operation.method}",
+                        isEventStream: ${operation.isEventStream ? "true" : "false"},
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
                     })${operation.type.isScalar || operation.type.isEnum ? "()" : ""},
             `;
 
             if (!operation.type.isScalar && !operation.type.isEnum) {
-                makeSelectionFunctionInputReturnTypeParts.set(
-                    operation.name,
-                    `(
-                    ${argTypes ? `args: ${argTypes.argsTypeName}` : ""}
-                    ) =>
-                        ReturnType<
+                const objectReturnType = `ReturnType<
                             SLFN<
                                 {},
                                 ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
@@ -1087,7 +1086,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 },
                                 "$lazy"
                             >
-                        >,`,
+                        >`;
+                makeSelectionFunctionInputReturnTypeParts.set(
+                    operation.name,
+                    `(
+                    ${argTypes ? `args: ${argTypes.argsTypeName}` : ""}
+                    ) =>
+                        ${operation.isEventStream ? `AsyncIterable<${objectReturnType}>` : objectReturnType},`,
                 );
             }
 
@@ -1298,6 +1303,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     input: string | URL | globalThis.Request,
                     init?: RequestInit,
                 ) => Promise<Response>;
+                sseFetchTransform?: (
+                    input: string | URL | globalThis.Request,
+                    init?: RequestInit,
+                ) => Promise<[string | URL | globalThis.Request, RequestInit | undefined]>
+                    | [string | URL | globalThis.Request, RequestInit | undefined];
                 scalars?: {
                     [key in keyof ScalarTypeMapDefault]?: (
                         v: string,
@@ -1333,6 +1343,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 }
                 if (options.fetcher) {
                     RootOperation[OPTIONS].fetcher = options.fetcher;
+                }
+                if (options.sseFetchTransform) {
+                    RootOperation[OPTIONS].sseFetchTransform = options.sseFetchTransform;
                 }
                 if (options.scalars) {
                     RootOperation[OPTIONS].scalars = {

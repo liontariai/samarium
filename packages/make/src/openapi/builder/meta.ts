@@ -754,18 +754,42 @@ export const gatherMetaForPathOperation = (
             "",
         );
 
+    // Prefer text/event-stream when present (OpenAPI SSE), else application/json, else first content type
+    let responseContentType: string | undefined;
+    let responseMedia: MediaTypeObject | ReferenceObject | undefined;
+    let isEventStream = false;
+    if ("content" in successResponse && successResponse.content) {
+        const content = successResponse.content;
+        if (content["text/event-stream"]) {
+            responseContentType = "text/event-stream";
+            responseMedia = content["text/event-stream"];
+            isEventStream = true;
+        } else if (content["application/json"]) {
+            responseContentType = "application/json";
+            responseMedia = content["application/json"];
+        } else {
+            const first = Object.entries(content).find(([_, value]) => value);
+            if (first) {
+                responseContentType = first[0];
+                responseMedia = first[1];
+                isEventStream = first[0] === "text/event-stream";
+            }
+        }
+    }
+
     const meta: OperationMeta = {
         name: operationName,
         description: operation.description,
         path,
         method,
         args: [],
+        isEventStream,
+        responseContentType,
         type: gatherMetaForType(
             schema,
             operationName,
             "content" in successResponse
-                ? (successResponse.content!["application/json"] ??
-                      Object.entries(successResponse.content!).find(([_, value]) => value)?.[1]!)
+                ? (responseMedia as MediaTypeObject | ReferenceObject)
                 : (successResponse as ReferenceObject),
             "responses",
             { isNonNull: false, operationResponseType: true },
