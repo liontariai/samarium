@@ -1,15 +1,62 @@
-const Proxy = global.Proxy;
+const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
+
+/** Wrap real response data so property access re-enters the SelectionWrapper handler (Array.isArray works). */
+function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
+    const data = _data;
+    const proxy = new Proxy(data as any | any[], {
+        get(target: any[], prop: PropertyKey, receiver: any): any {
+            return Reflect.get(slw, prop, receiver);
+        },
+        set(target: any[], prop: PropertyKey, value: any, receiver: any): boolean {
+            return Reflect.set(slw, prop, value, receiver);
+        },
+        has(target: any[], prop: PropertyKey): boolean {
+            return Reflect.has(slw, prop);
+        },
+        deleteProperty(target: any[], prop: PropertyKey): boolean {
+            return Reflect.deleteProperty(slw, prop);
+        },
+        ownKeys(target: any[]): ArrayLike<string | symbol> {
+            return Reflect.ownKeys(target);
+        },
+        getOwnPropertyDescriptor(target: any[], prop: PropertyKey): PropertyDescriptor | undefined {
+            return Reflect.getOwnPropertyDescriptor(target, prop);
+        },
+        getPrototypeOf(target: any[]): object | null {
+            return Object.getPrototypeOf(target);
+        },
+    });
+    return proxy as unknown as any & ArrayLike<any>;
+}
 
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
+
+type OpenAPIRequest = {
+    path: string;
+    method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
+    header: Record<string, any>;
+    params: {
+        path: Record<string, any>;
+        query: Record<string, any>;
+    };
+    body: Record<string, any>;
+    cookie: Record<string, any>;
+    isEventStream?: boolean;
+};
+
 export class RootOperation {
     public static [OPTIONS] = {
-        headers: {},
+        headers: {} as Record<string, string>,
         _auth_fn: undefined as
             | (() => string | { [key: string]: string })
             | (() => Promise<string | { [key: string]: string }>)
             | undefined,
+        fetcher: undefined as unknown as (
+            input: string | URL | globalThis.Request,
+            init?: RequestInit,
+        ) => Promise<Response>,
         scalars: {
             DateTime: (value: string) => new Date(value),
             DateTimeISO: (value: string) => new Date(value),
@@ -26,6 +73,20 @@ export class RootOperation {
     public registerRootCollector(collector: OperationSelectionCollector) {
         this.rootCollector = collector;
     }
+
+    private buildRequestUrl(request: OpenAPIRequest): {
+        finalPath: string;
+        cookies: string;
+    } {
+        let finalPath = request.path.replace(/\{([^}]+)\}/g, (_, key) => {
+            return request.params.path[key];
+        });
+        const finalQuery = new URLSearchParams(request.params.query).toString();
+        finalPath = `${finalPath.replace(/\{.*?\}$/, "")}${finalQuery ? `?${finalQuery}` : ""}`;
+        const cookies = new URLSearchParams(request.cookie).toString();
+        return { finalPath, cookies };
+    }
+
     public async execute(headers: Record<string, string> = {}) {
         if (!this.rootCollector) {
             throw new Error("RootOperation has no registered collector");
@@ -101,20 +162,7 @@ export class RootOperation {
                     },
                 };
             },
-            {} as Record<
-                string,
-                {
-                    path: string;
-                    method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
-                    header: Record<string, any>;
-                    params: {
-                        path: Record<string, any>;
-                        query: Record<string, any>;
-                    };
-                    body: Record<string, any>;
-                    cookie: Record<string, any>;
-                }
-            >,
+            {} as Record<string, OpenAPIRequest>,
         );
         // const subscription = `{${subscriptions.join("")}}`;
 
@@ -129,29 +177,10 @@ export class RootOperation {
         return results;
     }
 
-    private async executeOperation(
-        request: {
-            path: string;
-            method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
-            header: Record<string, any>;
-            params: {
-                path: Record<string, any>;
-                query: Record<string, any>;
-            };
-            body: Record<string, any>;
-            cookie: Record<string, any>;
-        },
-        headers: Record<string, string> = {},
-    ) {
-        let finalPath = request.path.replace(/\{([^}]+)\}/g, (_, key) => {
-            return request.params.path[key];
-        });
-        const finalQuery = new URLSearchParams(request.params.query).toString();
-        // remove the '{?arg1, arg2, ...}' part from the finalPath and add the finalQuery to the end
-        finalPath = `${finalPath.replace(/\{.*?\}$/, "")}${finalQuery ? `?${finalQuery}` : ""}`;
-        const cookies = new URLSearchParams(request.cookie).toString();
+    private async executeOperation(request: OpenAPIRequest, headers: Record<string, string> = {}) {
+        const { finalPath, cookies } = this.buildRequestUrl(request);
 
-        const res = await fetch(`[ENDPOINT]${finalPath}`, {
+        const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(`[ENDPOINT]${finalPath}`, {
             method: request.method,
             headers: {
                 ...(request.body ? { "Content-Type": "application/json" } : {}),
@@ -186,12 +215,23 @@ export class OperationSelectionCollector {
 
     private executed = false;
     private operationResult: any | undefined = undefined;
+
+    /** Path → resolved data / proxied arrays (stable identity for frameworks). */
+    public cache: {
+        data: Map<string, any>;
+        proxiedArray: Map<string, any[]>;
+    } = {
+        data: new Map(),
+        proxiedArray: new Map(),
+    };
+
     public async execute(headers: Record<string, string> = RootOperation[OPTIONS].headers) {
         if (!this.op) {
             throw new Error("OperationSelectionCollector is not registered to a root operation");
         }
         this.operationResult = await this.op.execute(headers);
         this.executed = true;
+        return this.operationResult;
     }
     public get isExecuted() {
         return this.executed;
@@ -246,18 +286,23 @@ export class OperationSelectionCollector {
     }
 
     private utilGet = (obj: Record<string, any>, path: (string | number)[]) => path.reduce((o, p) => o?.[p], obj);
-    public getOperationResultPath<T>(path: (string | number)[] = [], type?: string): T {
+    public getOperationResultPath<T>(
+        path: (string | number)[] = [],
+        type?: string,
+        opResultDataOverride?: any,
+    ): T {
         if (!this.op) {
             throw new Error("OperationSelectionCollector is not registered to a root operation");
         }
 
-        let result = this.operationResult;
+        let result = opResultDataOverride ?? this.operationResult;
 
         if (path.length === 0) return result as T;
 
         result = this.utilGet(result, path) as T;
 
-        if (type && result && type in RootOperation[OPTIONS].scalars) {
+        const typeName = type?.replaceAll("!", "");
+        if (typeName && result && typeName in RootOperation[OPTIONS].scalars) {
             let depth = 0;
             let finalResult = result instanceof Array ? [...result] : result;
 
@@ -276,7 +321,8 @@ export class OperationSelectionCollector {
             return deepParse(
                 finalResult,
                 depth,
-                RootOperation[OPTIONS].scalars[type as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]],
+                RootOperation[OPTIONS].scalars[typeName as keyof (typeof RootOperation)[typeof OPTIONS]["scalars"]] ??
+                    ((value: string) => JSON.parse(value)),
             ) as T;
         }
 
@@ -305,8 +351,9 @@ export const SLW_OP_PATH = Symbol("SLW_OP_PATH");
 export const SLW_REGISTER_PATH = Symbol("SLW_REGISTER_PATH");
 export const SLW_RENDER_WITH_ARGS = Symbol("SLW_RENDER_WITH_ARGS");
 
+export const SLW_OP_RESULT_DATA_OVERRIDE = Symbol("SLW_OP_RESULT_DATA_OVERRIDE");
 export const SLW_RECREATE_VALUE_CALLBACK = Symbol("SLW_RECREATE_VALUE_CALLBACK");
-
+export const SLW_NEEDS_CLONE = Symbol("SLW_NEEDS_CLONE");
 export const SLW_CLONE = Symbol("SLW_CLONE");
 
 export const OP_SCALAR_RESULT = Symbol("OP_SCALAR_RESULT");
@@ -325,6 +372,8 @@ export class SelectionWrapperImpl<
     [SLW_CLONE](
         overrides: {
             SLW_OP_PATH?: string;
+            OP_RESULT_DATA?: any;
+            SLW_NEEDS_CLONE?: boolean;
         } = {},
     ) {
         const slw = new SelectionWrapper(
@@ -342,6 +391,16 @@ export class SelectionWrapperImpl<
         slw[ROOT_OP_META] = this[ROOT_OP_META];
         slw[SLW_PARENT_SLW] = this[SLW_PARENT_SLW];
         slw[SLW_OP_PATH] = overrides.SLW_OP_PATH ?? this[SLW_OP_PATH];
+        slw[SLW_NEEDS_CLONE] = overrides.SLW_NEEDS_CLONE ? true : this[SLW_NEEDS_CLONE] ? false : true;
+        if (overrides.OP_RESULT_DATA !== undefined) {
+            slw[SLW_OP_RESULT_DATA_OVERRIDE] = overrides.OP_RESULT_DATA;
+        } else if (this[SLW_OP_RESULT_DATA_OVERRIDE] !== undefined) {
+            slw[SLW_OP_RESULT_DATA_OVERRIDE] = this[SLW_OP_RESULT_DATA_OVERRIDE];
+        }
+        // Keep ROOT_OP_COLLECTOR from the new construction; for clones under same op, re-bind to source collector
+        if (this[ROOT_OP_COLLECTOR]) {
+            slw[ROOT_OP_COLLECTOR] = this[ROOT_OP_COLLECTOR];
+        }
         return slw;
     }
 
@@ -373,6 +432,8 @@ export class SelectionWrapperImpl<
     [SLW_LAZY_FLAG]?: boolean;
 
     [SLW_RECREATE_VALUE_CALLBACK]?: () => valueT;
+    [SLW_OP_RESULT_DATA_OVERRIDE]?: any;
+    [SLW_NEEDS_CLONE]?: boolean;
 
     [SLW_IS_SCALAR_OP]?: boolean;
 
@@ -515,212 +576,349 @@ export class SelectionWrapper<
                 reCreateValueCallback,
                 isScalarOp,
             ),
-            {
-                // implement ProxyHandler methods
-                ownKeys() {
-                    return Reflect.ownKeys(value ?? {});
-                },
-                getOwnPropertyDescriptor(target, prop) {
-                    return Reflect.getOwnPropertyDescriptor(value ?? {}, prop);
-                },
-                has(target, prop) {
-                    if (prop === Symbol.for("nodejs.util.inspect.custom")) return true;
-                    return Reflect.has(value ?? {}, prop);
-                },
-                get: (target, prop) => {
-                    if (prop === "$lazy") {
-                        const that = this;
-                        function lazy(
-                            this: {
-                                parentSlw: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>;
-                                key: string;
-                            },
-                            args?: argsT,
-                        ) {
-                            const { parentSlw, key } = this;
-                            const newRootOpCollectorRef = {
-                                ref: new OperationSelectionCollector(undefined, undefined, new RootOperation()),
-                            };
+            (() => {
+                const getCache = (t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>) => {
+                    if (t[SLW_OP_RESULT_DATA_OVERRIDE] || !t[ROOT_OP_COLLECTOR]) {
+                        return { data: new Map(), proxiedArray: new Map() };
+                    }
+                    return t[ROOT_OP_COLLECTOR].ref.cache;
+                };
 
-                            const newThisCollector = new OperationSelectionCollector(undefined, newRootOpCollectorRef);
-                            const r = that[SLW_RECREATE_VALUE_CALLBACK]?.bind(newThisCollector)();
+                const getResultDataForTarget = (
+                    t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>,
+                    overrideOpPath?: string,
+                ): valueT | undefined => {
+                    if (!t[ROOT_OP_COLLECTOR]) return undefined;
+                    const cache = getCache(t);
+                    const path = overrideOpPath ?? t[SLW_OP_PATH] ?? undefined;
 
-                            const newThat = new SelectionWrapper(
-                                that[SLW_FIELD_NAME],
-                                that[SLW_FIELD_TYPENAME],
-                                that[SLW_FIELD_ARR_DEPTH],
-                                r,
-                                newThisCollector,
-                                newRootOpCollectorRef,
-                                that[SLW_ARGS],
-                                that[SLW_ARGS_META],
-                                that[SLW_RECREATE_VALUE_CALLBACK],
-                                that[SLW_IS_SCALAR_OP],
-                            );
-                            Object.keys(r!).forEach((key) => (newThat as valueT)[key as keyof valueT]);
+                    if (path && cache.data.has(path) && !t[SLW_NEEDS_CLONE]) return cache.data.get(path);
 
-                            newThat[ROOT_OP_META] = that[ROOT_OP_META];
+                    const data = t[ROOT_OP_COLLECTOR].ref.getOperationResultPath<valueT>(
+                        (path?.split(".") ?? []).map((p) => (!isNaN(+p) ? +p : p)),
+                        t[SLW_FIELD_TYPENAME],
+                        t[SLW_OP_RESULT_DATA_OVERRIDE],
+                    );
 
-                            newThat[SLW_PARENT_SLW] = parentSlw;
-                            parentSlw[SLW_COLLECTOR]?.registerSelection(key, newThat);
-                            newThat[SLW_ARGS] = {
-                                ...(that[SLW_ARGS] ?? {}),
-                                ...(args as any), // need to fix this
-                            } as argsT;
+                    if (path && !t[SLW_OP_RESULT_DATA_OVERRIDE]) cache.data.set(path, data);
+                    return data;
+                };
 
-                            newThat[SLW_OP_PATH] = that[SLW_OP_PATH];
-
-                            newRootOpCollectorRef.ref.registerSelection(newThat[SLW_FIELD_NAME]!, newThat);
-
-                            return new Promise((resolve, reject) => {
-                                newRootOpCollectorRef.ref
-                                    .execute()
-                                    .catch(reject)
-                                    .then(() => {
-                                        resolve(newThat);
-                                    });
-                            });
+                return {
+                    ownKeys(target) {
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.ownKeys(new Array(target[SLW_FIELD_ARR_DEPTH]));
                         }
-                        target[SLW_LAZY_FLAG] = true;
-                        lazy[SLW_LAZY_FLAG] = true;
-                        return lazy;
-                    }
-                    if (prop === SLW_VALUE && target[SLW_IS_SCALAR_OP]) {
-                        return (target[SLW_VALUE] as any)[OP_SCALAR_RESULT];
-                    }
-                    if (
-                        prop === SLW_UID ||
-                        prop === SLW_FIELD_NAME ||
-                        prop === SLW_FIELD_TYPENAME ||
-                        prop === SLW_FIELD_ARR_DEPTH ||
-                        prop === ROOT_OP_META ||
-                        prop === SLW_ARGS ||
-                        prop === SLW_ARGS_META ||
-                        prop === SLW_PARENT_SLW ||
-                        prop === SLW_LAZY_FLAG ||
-                        prop === ROOT_OP_COLLECTOR ||
-                        prop === SLW_PARENT_COLLECTOR ||
-                        prop === SLW_COLLECTOR ||
-                        prop === SLW_OP_PATH ||
-                        prop === SLW_VALUE ||
-                        prop === SLW_REGISTER_PATH ||
-                        prop === SLW_RENDER_WITH_ARGS ||
-                        prop === SLW_RECREATE_VALUE_CALLBACK ||
-                        prop === SLW_CLONE ||
-                        prop === SLW_IS_SCALAR_OP
-                    ) {
-                        return target[
-                            prop as keyof SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT>
-                        ];
-                    }
-                    if (prop === SLW_VALUE) {
-                        return value;
-                    }
-                    if (prop === "then") {
-                        return this;
-                    }
+                        return Reflect.ownKeys(value ?? {});
+                    },
+                    getOwnPropertyDescriptor(target, prop) {
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.getOwnPropertyDescriptor(new Array(target[SLW_FIELD_ARR_DEPTH]), prop);
+                        }
+                        return Reflect.getOwnPropertyDescriptor(value ?? {}, prop);
+                    },
+                    has(target, prop) {
+                        if (prop === Symbol.for("nodejs.util.inspect.custom")) return true;
+                        if (prop === Symbol.iterator && typeArrDepth) {
+                            const dataArr = getResultDataForTarget(target);
+                            if (Array.isArray(dataArr)) return true;
+                            if (dataArr === undefined || dataArr === null) return false;
+                        }
+                        if (target[SLW_FIELD_ARR_DEPTH]) {
+                            return Reflect.has(new Array(target[SLW_FIELD_ARR_DEPTH]), prop);
+                        }
+                        return Reflect.has(value ?? {}, prop);
+                    },
+                    get: (target, prop) => {
+                        if (prop === "$lazy") {
+                            const that = this;
+                            function lazy(
+                                this: {
+                                    parentSlw: SelectionWrapperImpl<
+                                        fieldName,
+                                        typeNamePure,
+                                        typeArrDepth,
+                                        valueT,
+                                        argsT
+                                    >;
+                                    key: string;
+                                },
+                                args?: argsT,
+                            ) {
+                                const { parentSlw, key } = this;
+                                const newRootOpCollectorRef = {
+                                    ref: new OperationSelectionCollector(undefined, undefined, new RootOperation()),
+                                };
 
-                    let slw_value = target[SLW_VALUE] as Record<string, any> | undefined;
+                                const newThisCollector = new OperationSelectionCollector(
+                                    undefined,
+                                    newRootOpCollectorRef,
+                                );
+                                const r = that[SLW_RECREATE_VALUE_CALLBACK]?.bind(newThisCollector)();
 
-                    if (target[ROOT_OP_COLLECTOR]?.ref.isExecuted) {
-                        const getResultDataForTarget = (
-                            t: SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT, argsT>,
-                        ): valueT | undefined => {
-                            const data = t[ROOT_OP_COLLECTOR]!.ref.getOperationResultPath<valueT>(
-                                (t[SLW_OP_PATH]?.split(".") ?? []).map((p) => (!isNaN(+p) ? +p : p)),
-                                t[SLW_FIELD_TYPENAME],
-                            );
-                            return data;
-                        };
+                                const newThat = new SelectionWrapper(
+                                    that[SLW_FIELD_NAME],
+                                    that[SLW_FIELD_TYPENAME],
+                                    that[SLW_FIELD_ARR_DEPTH],
+                                    r,
+                                    newThisCollector,
+                                    that[SLW_PARENT_COLLECTOR] ? newRootOpCollectorRef : undefined,
+                                    that[SLW_ARGS],
+                                    that[SLW_ARGS_META],
+                                    that[SLW_RECREATE_VALUE_CALLBACK],
+                                    that[SLW_IS_SCALAR_OP],
+                                );
+                                Object.keys(r!).forEach((key) => (newThat as valueT)[key as keyof valueT]);
 
-                        if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
-                            // check if the selected field is an array
-                            if (typeArrDepth) {
-                                if (!isNaN(+String(prop))) {
-                                    const elm = target[SLW_CLONE]({
-                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(prop),
-                                    });
-                                    return elm;
+                                newThat[ROOT_OP_META] = that[ROOT_OP_META];
+
+                                newThat[SLW_PARENT_SLW] = parentSlw;
+                                parentSlw[SLW_COLLECTOR]?.registerSelection(key, newThat);
+                                newThat[SLW_ARGS] = {
+                                    ...(that[SLW_ARGS] ?? {}),
+                                    ...(args as any),
+                                } as argsT;
+
+                                newThat[SLW_OP_PATH] = that[SLW_OP_PATH];
+
+                                newRootOpCollectorRef.ref.registerSelection(newThat[SLW_FIELD_NAME]!, newThat);
+
+                                const isScalar = newThat[SLW_PARENT_COLLECTOR] === undefined;
+
+                                return new Promise((resolve, reject) => {
+                                    newRootOpCollectorRef.ref
+                                        .execute()
+                                        .catch(reject)
+                                        .then((_data) => {
+                                            if (_data === undefined || _data === null) {
+                                                return resolve(_data);
+                                            }
+
+                                            const fieldName = newThat[SLW_FIELD_NAME]!;
+                                            const d = _data[fieldName];
+
+                                            if (typeof d === "object" && d && fieldName in d) {
+                                                const retval = d[fieldName];
+                                                if (retval === undefined || retval === null) {
+                                                    return resolve(retval);
+                                                }
+                                                const ret = isScalar
+                                                    ? getResultDataForTarget(newThat as any)
+                                                    : proxify(retval, newThat);
+                                                return resolve(ret);
+                                            }
+
+                                            // One-shot body is the op value directly under opName
+                                            if (d === undefined || d === null) {
+                                                return resolve(d);
+                                            }
+                                            if (typeof d === "object" && !isScalar) {
+                                                return resolve(proxify(d, newThat));
+                                            }
+                                            return resolve(
+                                                isScalar ? getResultDataForTarget(newThat as any) : newThat,
+                                            );
+                                        });
+                                });
+                            }
+                            target[SLW_LAZY_FLAG] = true;
+                            lazy[SLW_LAZY_FLAG] = true;
+                            return lazy;
+                        }
+                        if (prop === SLW_VALUE && target[SLW_IS_SCALAR_OP]) {
+                            return (target[SLW_VALUE] as any)[OP_SCALAR_RESULT];
+                        }
+                        if (
+                            prop === SLW_UID ||
+                            prop === SLW_FIELD_NAME ||
+                            prop === SLW_FIELD_TYPENAME ||
+                            prop === SLW_FIELD_ARR_DEPTH ||
+                            prop === ROOT_OP_META ||
+                            prop === SLW_ARGS ||
+                            prop === SLW_ARGS_META ||
+                            prop === SLW_PARENT_SLW ||
+                            prop === SLW_LAZY_FLAG ||
+                            prop === ROOT_OP_COLLECTOR ||
+                            prop === SLW_PARENT_COLLECTOR ||
+                            prop === SLW_COLLECTOR ||
+                            prop === SLW_OP_PATH ||
+                            prop === SLW_VALUE ||
+                            prop === SLW_REGISTER_PATH ||
+                            prop === SLW_RENDER_WITH_ARGS ||
+                            prop === SLW_RECREATE_VALUE_CALLBACK ||
+                            prop === SLW_OP_RESULT_DATA_OVERRIDE ||
+                            prop === SLW_CLONE ||
+                            prop === SLW_NEEDS_CLONE ||
+                            prop === SLW_IS_SCALAR_OP
+                        ) {
+                            return target[
+                                prop as keyof SelectionWrapperImpl<fieldName, typeNamePure, typeArrDepth, valueT>
+                            ];
+                        }
+                        if (prop === SLW_VALUE) {
+                            return value;
+                        }
+                        if (prop === "then") {
+                            return this;
+                        }
+
+                        let slw_value = target[SLW_VALUE] as Record<string, any> | undefined;
+
+                        if (target[ROOT_OP_COLLECTOR]?.ref.isExecuted) {
+
+                            if (!Object.hasOwn(slw_value ?? {}, String(prop))) {
+                                const _data = getResultDataForTarget(target);
+                                const path = target[SLW_OP_PATH]!;
+
+                                if (typeArrDepth && Array.isArray(_data)) {
+                                    if (!isNaN(+String(prop))) {
+                                        const elm = target[SLW_CLONE]({
+                                            SLW_OP_PATH: path + "." + String(prop),
+                                            OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                        });
+                                        const d = _data[Number(prop)];
+                                        if (typeof d === "undefined" || d === null) {
+                                            return d;
+                                        }
+                                        return typeof d === "object" ? proxify(d, elm) : elm;
+                                    }
+
+                                    const data = _data as valueT[] | undefined;
+                                    if (data === undefined) return undefined;
+                                    if (data === null) return null;
+
+                                    const cache = getCache(target);
+                                    const proxiedData =
+                                        cache.proxiedArray.get(path) ??
+                                        Array.from({ length: data.length }, (_, i) =>
+                                            typeof data[i] === "object" && data[i] !== null
+                                                ? proxify(
+                                                      data[i],
+                                                      target[SLW_CLONE]({
+                                                          SLW_OP_PATH: path + "." + String(i),
+                                                          OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                      }),
+                                                  )
+                                                : target[SLW_CLONE]({
+                                                      SLW_OP_PATH: path + "." + String(i),
+                                                      OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                                  }),
+                                        );
+
+                                    if (!cache.proxiedArray.has(path)) {
+                                        cache.proxiedArray.set(path, proxiedData);
+                                    }
+
+                                    const proto = Object.getPrototypeOf(proxiedData);
+                                    if (Object.hasOwn(proto, prop)) {
+                                        const v = (proxiedData as any)[prop];
+                                        if (typeof v === "function") return v.bind(proxiedData);
+                                        return v;
+                                    }
+
+                                    return (proxiedData as any)[prop];
                                 }
 
-                                const data = getResultDataForTarget(target) as valueT[] | undefined;
-
+                                const data = _data as valueT | undefined;
                                 if (data === undefined) return undefined;
+                                if (data === null) return null;
 
-                                const proxiedData = Array.from({ length: data.length }, (_, i) =>
-                                    target[SLW_CLONE]({
-                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(i),
-                                    }),
-                                );
-
-                                const proto = Object.getPrototypeOf(proxiedData);
+                                const proto = Object.getPrototypeOf(data);
                                 if (Object.hasOwn(proto, prop)) {
-                                    const v = (proxiedData as any)[prop];
-                                    if (typeof v === "function") return v.bind(proxiedData);
+                                    const v = (data as any)[prop];
+                                    if (typeof v === "function") return v.bind(data);
                                     return v;
                                 }
 
-                                return () => proxiedData;
+                                return (data as any)[prop];
                             }
 
-                            const data = getResultDataForTarget(target);
-                            if (data === undefined) return undefined;
-                            const proto = Object.getPrototypeOf(data);
-                            if (Object.hasOwn(proto, prop)) {
-                                const v = (data as any)[prop];
-                                if (typeof v === "function") return v.bind(data);
-                                return v;
+                            let slw = slw_value?.[String(prop)];
+                            if (slw === undefined) return undefined;
+                            if (slw === null) return null;
+                            if (typeof slw !== "object") return slw;
+
+                            let slwOpPathIsIndexAccessOrInArray = false;
+                            let targetOpPathArr = target[SLW_OP_PATH]?.split(".") ?? [];
+                            while (targetOpPathArr.length) {
+                                if (!isNaN(+targetOpPathArr.pop()!)) {
+                                    slwOpPathIsIndexAccessOrInArray = true;
+                                    break;
+                                }
+                            }
+                            if (
+                                slw instanceof SelectionWrapperImpl &&
+                                (slwOpPathIsIndexAccessOrInArray ||
+                                    (target[SLW_OP_RESULT_DATA_OVERRIDE] && !slw[SLW_OP_RESULT_DATA_OVERRIDE]))
+                            ) {
+                                if (target[SLW_NEEDS_CLONE]) {
+                                    slw = slw[SLW_CLONE]({
+                                        SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(prop),
+                                        OP_RESULT_DATA: target[SLW_OP_RESULT_DATA_OVERRIDE],
+                                        SLW_NEEDS_CLONE: true,
+                                    });
+                                } else {
+                                    slw[SLW_OP_PATH] = target[SLW_OP_PATH] + "." + String(prop);
+                                    slw[SLW_OP_RESULT_DATA_OVERRIDE] = target[SLW_OP_RESULT_DATA_OVERRIDE];
+                                }
                             }
 
-                            return () => data;
+                            if (slw instanceof SelectionWrapperImpl && slw[SLW_FIELD_ARR_DEPTH]) {
+                                const dataArr = getResultDataForTarget(slw) as unknown[] | undefined | null;
+                                if (dataArr === undefined) return undefined;
+                                if (dataArr === null) return null;
+                                if (!dataArr?.length) {
+                                    return [];
+                                }
+                                if (slw[SLW_PARENT_COLLECTOR]) {
+                                    return proxify(dataArr, slw);
+                                }
+                            } else if (slw instanceof SelectionWrapperImpl) {
+                                const data = getResultDataForTarget(slw) as unknown | undefined | null;
+                                if (data === undefined) return undefined;
+                                if (data === null) return null;
+
+                                if (slw[SLW_PARENT_COLLECTOR] && typeof data === "object") {
+                                    return proxify(data, slw);
+                                }
+                            }
+
+                            if (slw instanceof SelectionWrapperImpl) {
+                                return getResultDataForTarget(slw);
+                            } else if (slw[SLW_LAZY_FLAG]) {
+                                return slw;
+                            }
+
+                            return getResultDataForTarget(target);
                         }
 
-                        let slw = slw_value?.[String(prop)];
-                        const slwOpPathIsIndexAccess = !isNaN(+target[SLW_OP_PATH]?.split(".").pop()!);
-                        if (slwOpPathIsIndexAccess) {
-                            // index access detected, cloning
-                            slw = slw[SLW_CLONE]({
-                                SLW_OP_PATH: target[SLW_OP_PATH] + "." + String(prop),
-                            });
+                        if (
+                            Object.hasOwn(slw_value ?? {}, String(prop)) &&
+                            slw_value?.[String(prop)] instanceof SelectionWrapperImpl
+                        ) {
+                            if (target[SLW_COLLECTOR]) {
+                                target[SLW_COLLECTOR].registerSelection(String(prop), slw_value[String(prop)]);
+                            }
+                            if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
+                                slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                            }
+                        }
+                        if (slw_value?.[String(prop)]?.[SLW_LAZY_FLAG]) {
+                            if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
+                                const lazyFn = slw_value[String(prop)];
+                                slw_value[String(prop)] = lazyFn.bind({
+                                    parentSlw: target,
+                                    key: String(prop),
+                                });
+                                slw_value[String(prop)][SLW_PARENT_SLW] = target;
+                                slw_value[String(prop)][SLW_LAZY_FLAG] = true;
+                            }
                         }
 
-                        if (slw instanceof SelectionWrapperImpl && slw[SLW_PARENT_COLLECTOR]) {
-                            return slw;
-                        } else if (slw instanceof SelectionWrapperImpl) {
-                            return getResultDataForTarget(slw);
-                        } else if (slw[SLW_LAZY_FLAG]) {
-                            return slw;
-                        }
-
-                        return getResultDataForTarget(target);
-                    }
-
-                    if (
-                        Object.hasOwn(slw_value ?? {}, String(prop)) &&
-                        slw_value?.[String(prop)] instanceof SelectionWrapperImpl
-                    ) {
-                        if (target[SLW_COLLECTOR]) {
-                            target[SLW_COLLECTOR].registerSelection(String(prop), slw_value[String(prop)]);
-                        }
-                        if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
-                            slw_value[String(prop)][SLW_PARENT_SLW] = target;
-                        }
-                    }
-                    if (slw_value?.[String(prop)]?.[SLW_LAZY_FLAG]) {
-                        if (!slw_value[String(prop)][SLW_PARENT_SLW]) {
-                            const lazyFn = slw_value[String(prop)];
-                            slw_value[String(prop)] = lazyFn.bind({
-                                parentSlw: target,
-                                key: String(prop),
-                            });
-                            slw_value[String(prop)][SLW_PARENT_SLW] = target;
-                            slw_value[String(prop)][SLW_LAZY_FLAG] = true;
-                        }
-                    }
-
-                    return slw_value?.[String(prop)] ?? undefined;
-                },
-            },
+                        return slw_value?.[String(prop)] ?? undefined;
+                    },
+                };
+            })(),
         );
     }
 }
