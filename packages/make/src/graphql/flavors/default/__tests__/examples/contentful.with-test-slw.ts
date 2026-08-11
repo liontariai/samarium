@@ -2849,6 +2849,10 @@ const __init__ = (options: {
     auth?: AuthResolver;
     authToken?: string;
     headers?: { [key: string]: string };
+    fetcher?: (
+        input: string | URL | globalThis.Request,
+        init?: RequestInit,
+    ) => Promise<Response>;
     scalars?: {
         [key in keyof ScalarTypeMapDefault]?: (v: string) => ScalarTypeMapDefault[key];
     } & {
@@ -2872,6 +2876,9 @@ const __init__ = (options: {
             ...RootOperation[OPTIONS].headers,
             ...options.headers,
         };
+    }
+    if (options.fetcher) {
+        RootOperation[OPTIONS].fetcher = options.fetcher;
     }
     if (options.scalars) {
         RootOperation[OPTIONS].scalars = {

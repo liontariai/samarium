@@ -40,12 +40,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
         expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
@@ -111,7 +109,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("works with aliases", async () => {
@@ -122,8 +120,6 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () =>
                 Promise.resolve({
@@ -132,7 +128,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -156,7 +152,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("selects all scalars by using the $scalars() helper", async () => {
@@ -167,12 +163,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -196,7 +190,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("works with inline (implicit) fragments", async () => {
@@ -213,12 +207,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -242,7 +234,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("adds fragments to the operation text before the operation selection", async () => {
@@ -261,12 +253,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
         expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
@@ -294,7 +284,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("handles arguments that are being used in fragments (parameterized fragments)", async () => {
@@ -311,12 +301,10 @@ describe("Testing and validating features", () => {
                 ...$fragment(launchQueryFragment)(10),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -341,7 +329,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("handles multiple uses of the same fragment with different arguments (parameterized fragments)", async () => {
@@ -369,12 +357,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -400,7 +386,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("works with inline ...on fragments for union types", async () => {
@@ -416,12 +402,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -447,7 +431,7 @@ describe("Testing and validating features", () => {
             },
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("supports directives", async () => {
@@ -461,12 +445,10 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () => Promise.resolve({ data: { mockData: "test" } }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -494,7 +476,17 @@ describe("Testing and validating features", () => {
     });
 
     it("supports custom scalars and lazily transforms them (with custom deserialization function) when accessed (for objects)", async () => {
+        const date = new Date();
+        const mockFetch = jest.fn().mockResolvedValue({
+            json: () =>
+                Promise.resolve({
+                    data: {
+                        date: date.toISOString(),
+                    },
+                }),
+        });
         examplesDates.init({
+            fetcher: mockFetch as any,
             scalars: {
                 DateTime: (v) => new Date(new Date(v).getTime() * 1.2),
             },
@@ -505,18 +497,6 @@ describe("Testing and validating features", () => {
                 date: q.date,
             })),
         }));
-
-        const date = new Date();
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () =>
-                Promise.resolve({
-                    data: {
-                        date: date.toISOString(),
-                    },
-                }),
-        });
-        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -577,11 +557,26 @@ describe("Testing and validating features", () => {
             RootOperation[OPTIONS].scalars.DateTime(date.toISOString()),
         );
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("supports custom scalars and lazily transforms them (with custom deserialization function) when accessed (for arrays with depth = n)", async () => {
+        const date = new Date();
+        const dates = [date, date];
+        const nestedDates = [[date, date]];
+        const nestedDates2 = [[[date], [date]]];
+        const mockFetch = jest.fn().mockResolvedValue({
+            json: () =>
+                Promise.resolve({
+                    data: {
+                        dates: dates.map((d) => d.toISOString()),
+                        nestedDates: nestedDates.map((d) => d.map((d) => d.toISOString())),
+                        nestedDates2: nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString()))),
+                    },
+                }),
+        });
         examplesDates.init({
+            fetcher: mockFetch as any,
             scalars: {
                 DateTime: (v) => new Date(new Date(v).getTime() * 1.2),
             },
@@ -594,24 +589,6 @@ describe("Testing and validating features", () => {
                 nestedDates2: q.nestedDates2,
             })),
         }));
-
-        const date = new Date();
-        const dates = [date, date];
-        const nestedDates = [[date, date]];
-        const nestedDates2 = [[[date], [date]]];
-
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () =>
-                Promise.resolve({
-                    data: {
-                        dates: dates.map((d) => d.toISOString()),
-                        nestedDates: nestedDates.map((d) => d.map((d) => d.toISOString())),
-                        nestedDates2: nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString()))),
-                    },
-                }),
-        });
-        global.fetch = mockFetch as any;
 
         const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
         const result = await rootOp.execute();
@@ -678,11 +655,10 @@ describe("Testing and validating features", () => {
             ),
         });
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     it("supports lazy execution of operations, using the magic .$lazy property", async () => {
-        const realFetch = global.fetch;
         const mockFetch = jest.fn().mockResolvedValue({
             json: () =>
                 Promise.resolve({
@@ -691,7 +667,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        global.fetch = mockFetch as any;
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
 
         const { first10Launches } = await examplesSpaceX.default((op) =>
             op.query((q) => ({
@@ -745,12 +721,11 @@ describe("Testing and validating features", () => {
         expect(Array.from(result2)).toHaveLength(3);
         expect(Array.from(result2)).toEqual([{ id: "1" }, { id: "2" }, { id: "3" }]);
 
-        global.fetch = realFetch;
+        RootOperation[OPTIONS].fetcher = undefined as any;
     });
 
     describe("provides multiple ways for authentication", () => {
         it("sets the auth token as string with the .auth() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -762,9 +737,11 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+            });
 
             const { test } = await examplesContentful
                 .default((op) =>
@@ -796,11 +773,10 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets the auth token with a sync callback function in the .auth() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -812,9 +788,11 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+            });
 
             const { test } = await examplesContentful
                 .default((op) =>
@@ -846,11 +824,10 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets the auth token with an async callback function in the .auth() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -862,9 +839,11 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+            });
 
             const { test } = await examplesContentful
                 .default((op) =>
@@ -898,11 +877,10 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets headers directly in the .auth() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -914,9 +892,11 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+            });
 
             const { test } = await examplesContentful
                 .default((op) =>
@@ -950,11 +930,10 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets headers using a sync function in the .auth() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -966,9 +945,11 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+            });
 
             const { test } = await examplesContentful
                 .default((op) =>
@@ -1004,11 +985,10 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets headers using an async function in the .auth() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -1020,9 +1000,11 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+            });
 
             const { test } = await examplesContentful
                 .default((op) =>
@@ -1058,17 +1040,17 @@ describe("Testing and validating features", () => {
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
 
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         const resetAuth = () => {
             RootOperation[OPTIONS]._auth_fn = undefined;
             RootOperation[OPTIONS]._auth_token = undefined;
             RootOperation[OPTIONS].headers = {};
+            RootOperation[OPTIONS].fetcher = undefined as any;
         };
 
         it("sets a static authToken for the sdk globally using the .init() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -1080,11 +1062,10 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
 
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 authToken,
             });
 
@@ -1117,11 +1098,10 @@ describe("Testing and validating features", () => {
             expect(test.description).toEqual("test description");
 
             resetAuth();
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets the auth token with a sync function for the sdk globally using the .init() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -1133,11 +1113,10 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
 
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 auth: () => authToken,
             });
 
@@ -1170,11 +1149,10 @@ describe("Testing and validating features", () => {
             expect(test.description).toEqual("test description");
 
             resetAuth();
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("sets the auth token with an async function for the sdk globally using the .init() method", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -1186,11 +1164,10 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
 
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 auth: async () => authToken,
             });
 
@@ -1223,11 +1200,10 @@ describe("Testing and validating features", () => {
             expect(test.description).toEqual("test description");
 
             resetAuth();
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("passes the .auth(source) argument into the global auth resolver per call", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockResolvedValue({
                 json: () =>
                     Promise.resolve({
@@ -1239,10 +1215,9 @@ describe("Testing and validating features", () => {
                         },
                     }),
             });
-            global.fetch = mockFetch as any;
-
             const seenSources: unknown[] = [];
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 auth: (source) => {
                     seenSources.push(source);
                     if (typeof source === "string") return source;
@@ -1272,11 +1247,10 @@ describe("Testing and validating features", () => {
             );
 
             resetAuth();
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
 
         it("isolates concurrent calls with different .auth(source) values under a global resolver", async () => {
-            const realFetch = global.fetch;
             const mockFetch = jest.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
                 // Simulate network latency so both requests are in flight together
                 await new Promise((r) => setTimeout(r, 20));
@@ -1293,9 +1267,8 @@ describe("Testing and validating features", () => {
                         }),
                 };
             });
-            global.fetch = mockFetch as any;
-
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 auth: (source) => (typeof source === "string" ? source : "Bearer default"),
             });
 
@@ -1323,7 +1296,7 @@ describe("Testing and validating features", () => {
             expect(authHeaders).toContain("Bearer user-B");
 
             resetAuth();
-            global.fetch = realFetch;
+            RootOperation[OPTIONS].fetcher = undefined as any;
         });
     });
 });
