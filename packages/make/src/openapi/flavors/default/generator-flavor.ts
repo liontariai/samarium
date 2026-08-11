@@ -1141,22 +1141,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 } as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
             };
 
-            ${
-                authConfig
-                    ? `type __AuthenticationArg__ =
-            | string
-            | { [key: string]: string }
-            | (() => string | { [key: string]: string })
-            | (() => Promise<string | { [key: string]: string }>);`
-                    : ""
-            }
             function __client__ <
                 T extends object,
                 F extends ReturnType<typeof _makeRootOperationInput>>(
                 this: any, 
                 s: (selection: F) => T
             ) {
-                const root = new OperationSelectionCollector(undefined, undefined, new RootOperation());
+                const rootOp = new RootOperation();
+                const root = new OperationSelectionCollector(undefined, undefined, rootOp);
                 const rootRef = { ref: root };
                 const selection: F = _makeRootOperationInput.bind(rootRef)() as any;
                 const r = s(selection);
@@ -1192,55 +1184,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         ? _TR
                         : Promise<_TR>;
 
-                let headers: Record<string, string> | undefined = undefined;
+                // Auth is resolved inside RootOperation.execute (global auth / authToken / per-call source)
                 let returnValue: finalReturnTypeBasedOnIfHasLazyPromises;
                 
                 if (Object.values(result).some((v) => typeof v !== "function")) {
                     returnValue = {
                         then: (resolve: any, reject: any) => {
-                            ${
-                                authConfig
-                                    ? `
-                                const doExecute = () => {
-                                    root.execute(headers)
-                                        .then(() => {
-                                            resolve(result);
-                                        })
-                                        .catch(reject);
-                                }
-                                if (typeof RootOperation[OPTIONS]._auth_fn === "function") {
-                                    const tokenOrPromise = RootOperation[OPTIONS]._auth_fn();
-                                    if (tokenOrPromise instanceof Promise) {
-                                        tokenOrPromise.then((t) => {
-                                            if (typeof t === "string")
-                                                headers = { "${authConfig.headerName}": t };
-                                            else headers = t;
-        
-                                            doExecute();
-                                        });
-                                    }
-                                    else if (typeof tokenOrPromise === "string") {
-                                        headers = { "${authConfig.headerName}": tokenOrPromise };
-
-                                        doExecute();
-                                    } else {
-                                        headers = tokenOrPromise;
-
-                                        doExecute();
-                                    }
-                                }
-                                else {
-                                    doExecute();
-                                }
-                            `
-                                    : `
-                                root.execute(headers)
+                            root.execute()
                                 .then(() => {
                                     resolve(result);
                                 })
                                 .catch(reject);
-                            `
-                            }
                         },
                     } as finalReturnTypeBasedOnIfHasLazyPromises;
                 }
@@ -1254,31 +1208,8 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 Object.defineProperty(returnValue, "auth", {
                     enumerable: false,
                     get: function () {
-                        return function (
-                            auth: __AuthenticationArg__,
-                        ) {
-                            if (typeof auth === "string") {
-                                headers = { "${authConfig.headerName}": auth };
-                            } else if (typeof auth === "function") {
-                                const tokenOrPromise = auth();
-                                if (tokenOrPromise instanceof Promise) {
-                                    return tokenOrPromise.then((t) => {
-                                        if (typeof t === "string")
-                                            headers = { "${authConfig.headerName}": t };
-                                        else headers = t;
-
-                                        return returnValue;
-                                    });
-                                }
-                                if (typeof tokenOrPromise === "string") {
-                                    headers = { "${authConfig.headerName}": tokenOrPromise };
-                                } else {
-                                    headers = tokenOrPromise;
-                                }
-                            } else {
-                                headers = auth;
-                            }
-
+                        return function (auth: AuthSource) {
+                            rootOp.setAuth(auth);
                             return returnValue;
                         };
                     },
@@ -1286,7 +1217,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
                 return returnValue as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
-                        auth: __AuthenticationArg__,
+                        auth: AuthSource,
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
                 };
                 `
@@ -1297,7 +1228,14 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             };
 
             const __init__ = (options: {
-                ${authConfig ? `auth?: __AuthenticationArg__;` : ""}
+                ${
+                    authConfig
+                        ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
+                auth?: AuthResolver;
+                /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
+                authToken?: string;`
+                        : ""
+                }
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1321,15 +1259,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                 ${
                     authConfig
                         ? `
-                if (typeof options.auth === "string") {
-                    RootOperation[OPTIONS].headers = {
-                        "${authConfig.headerName}": options.auth,
-                    };
-                } else if (typeof options.auth === "function" ) {
-                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                RootOperation.authHeaderName = "${authConfig.headerName}";
+                if (options.authToken !== undefined) {
+                    RootOperation[OPTIONS]._auth_token = options.authToken;
                 }
-                else if (options.auth) {
-                    RootOperation[OPTIONS].headers = options.auth;
+                if (typeof options.auth === "function") {
+                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                } else if (typeof options.auth === "string") {
+                    console.warn(
+                        "[samarium] init({ auth: string }) is deprecated; use init({ authToken: string }) for static tokens.",
+                    );
+                    RootOperation[OPTIONS]._auth_token = options.auth as unknown as string;
                 }
                 `
                         : ""
