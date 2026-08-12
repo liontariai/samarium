@@ -10,7 +10,6 @@
         "emitDeclarationOnly": true,
         "composite": true,
         "strict": true,
-        "downlevelIteration": true,
         "skipLibCheck": true,
         "jsx": "react-jsx",
         "allowSyntheticDefaultImports": true,
@@ -18,12 +17,11 @@
         "allowJs": true,
         "types": ["bun-types"],
         "rootDir": ".",
-        "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"],
             "@tests/*": ["./tests/*"]
         },
         "verbatimModuleSyntax": true
     },
-    "include": ["src/**/*", "src/**/*.json", "tests/**/*", "package.json", "bundle.ts"]
+    "include": ["src/**/*", "src/**/*.json", "tests/**/*", "package.json", "bundle.ts", "scripts/**/*"]
 }

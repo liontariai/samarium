@@ -485,7 +485,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        examplesDates.init({
+        examplesDates.default.init({
             fetcher: mockFetch as any,
             scalars: {
                 DateTime: (v) => new Date(new Date(v).getTime() * 1.2),
@@ -493,7 +493,7 @@ describe("Testing and validating features", () => {
         });
 
         const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 date: q.date,
             })),
         }));
@@ -575,7 +575,7 @@ describe("Testing and validating features", () => {
                     },
                 }),
         });
-        examplesDates.init({
+        examplesDates.default.init({
             fetcher: mockFetch as any,
             scalars: {
                 DateTime: (v) => new Date(new Date(v).getTime() * 1.2),
@@ -583,7 +583,7 @@ describe("Testing and validating features", () => {
         });
 
         const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 dates: q.dates,
                 nestedDates: q.nestedDates,
                 nestedDates2: q.nestedDates2,
