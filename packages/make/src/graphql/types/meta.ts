@@ -19,6 +19,23 @@ export interface CodegenOptions {
      */
     includeIntrospection?: boolean;
 }
+
+/**
+ * How the generated SDK obtains its runtime (SelectionWrapper, RootOperation, …).
+ *
+ * - `"embedded"` (default): inlines the full runtime into the generated file (published SDKs).
+ * - `"external"`: emits imports from a shared module instead — used by tests so traps/mocks
+ *   observe the same class instances as the test suite.
+ */
+export type SdkRuntimeMode = "embedded" | "external";
+
+export interface ExternalRuntimeConfig {
+    /**
+     * Module specifier for the wrapper runtime (SelectionWrapper, RootOperation, OPTIONS, …).
+     * Example: `"@/graphql/flavors/default/wrapper"`.
+     */
+    wrapperModule: string;
+}
 export interface RootFieldMeta {
     name: string;
     description?: string;

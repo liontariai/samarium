@@ -32,7 +32,8 @@ function getReconstructedData(data: any, prefixes: string[], keepRest = true, ho
         );
     return Object.fromEntries(newEntries);
 }
-function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
+/** Wrap response data so property access re-enters the SelectionWrapper proxy (arrays, nested objects). */
+export function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
     const aliases = Object.entries(slw[SLW_VALUE] || {})
         .map(([k, v]) => (v instanceof SelectionWrapperImpl ? v[SLW_ALIAS_PREFIX] : 0))
         .filter(Boolean) as string[];
@@ -76,11 +77,11 @@ type FnOrPromisOrPrimitive =
     | { [key: string]: string };
 
 /** Per-call source passed to `.auth(source)` and into the global `auth` resolver. */
-type AuthSource = unknown;
+export type AuthSource = unknown;
 /** Value returned by the global `auth` resolver (or a direct per-call token/headers). */
-type AuthResult = string | { [key: string]: string } | undefined;
+export type AuthResult = string | { [key: string]: string } | undefined;
 /** Global `init({ auth })` resolver — called per SDK request with the optional `.auth(source)` argument. */
-type AuthResolver =
+export type AuthResolver =
     | ((source?: AuthSource) => AuthResult)
     | ((source?: AuthSource) => Promise<AuthResult>);
 

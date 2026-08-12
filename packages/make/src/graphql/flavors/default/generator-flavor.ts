@@ -106,6 +106,59 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
     public static readonly FieldValueWrapperType = wrapperCode;
 
+    /**
+     * Import preamble used when `generate({ runtime: "external" })` is set.
+     * Tests share one wrapper module instance so traps and symbol identity work.
+     */
+    public static ExternalRuntimePreamble(wrapperModule: string): string {
+        return `
+// @samarium-runtime external — runtime is not inlined; imported for testability
+import {
+    _,
+    OPTIONS,
+    PLUGINS,
+    RootOperation,
+    OperationSelectionCollector,
+    type OperationSelectionCollectorRef,
+    type AuthSource,
+    type AuthResolver,
+    type AuthResult,
+    proxify,
+    SelectionWrapperImpl,
+    SelectionWrapper,
+    SLW_UID,
+    SLW_FIELD_NAME,
+    SLW_FIELD_TYPENAME,
+    SLW_FIELD_ARR_DEPTH,
+    SLW_IS_ROOT_TYPE,
+    SLW_IS_ON_TYPE_FRAGMENT,
+    SLW_IS_FRAGMENT,
+    SLW_VALUE,
+    SLW_ARGS,
+    SLW_ARGS_META,
+    SLW_DIRECTIVE,
+    SLW_DIRECTIVE_ARGS,
+    SLW_DIRECTIVE_ARGS_META,
+    SLW_PARENT_SLW,
+    SLW_LAZY_FLAG,
+    SLW_ALIAS_PREFIX,
+    OP,
+    ROOT_OP_COLLECTOR,
+    SLW_PARENT_COLLECTOR,
+    SLW_COLLECTOR,
+    SLW_OP_PATH,
+    SLW_REGISTER_PATH,
+    SLW_RENDER_WITH_ARGS,
+    SLW_OP_RESULT_DATA_OVERRIDE,
+    SLW_RECREATE_VALUE_CALLBACK,
+    SLW_SETTER_DATA_OVERRIDE,
+    SLW_NEEDS_CLONE,
+    SLW_CLONE,
+    SLW_IS_ASYNC_ITERABLE,
+} from "${wrapperModule}";
+`;
+    }
+
     public static EnumTypesMapped = (collector: Collector) => {
         return `export interface EnumTypesMapped {
             ${Array.from(collector.enumsTypes.keys())
@@ -1445,13 +1498,13 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             return resultProxy[_prop];
                         },
                     },
-                )`
-                : `resultProxy`
-            } as finalReturnTypeBasedOnIfHasLazyPromises & {
+                ) as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
                         auth: AuthSource,
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
-                };
+                }`
+                : `resultProxy as finalReturnTypeBasedOnIfHasLazyPromises`
+            };
             };
 
             const __init__ = (options: {
