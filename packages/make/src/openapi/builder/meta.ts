@@ -624,6 +624,9 @@ export const gatherMetaForType = (
                 int64: "Int",
                 number: "Float",
                 byte: "Int",
+                "date-time": "DateTime",
+                date: "Date",
+                time: "Time",
             };
             if (t.format && t.format.toLowerCase() in mapFormatToType) {
                 meta.name = mapFormatToType[t.format.toLowerCase() as keyof typeof mapFormatToType];
