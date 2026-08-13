@@ -271,7 +271,7 @@ import {
         this: any,
     ) => ToTArrayWithDepth<
         typeof OP_SCALAR_RESULT extends keyof FF
-            ? ToTArrayWithDepth<SLW_TPN_ToType<TNP>, TAD>
+            ? SLW_TPN_ToType<TNP>
             : never,
         TAD
     > & {
@@ -281,14 +281,14 @@ import {
                     EE[k],
                     ToTArrayWithDepth<
                         typeof OP_SCALAR_RESULT extends keyof FF
-                            ? ToTArrayWithDepth<SLW_TPN_ToType<TNP>, TAD>
+                            ? SLW_TPN_ToType<TNP>
                             : never,
                         TAD
                     >
                 >
                 : ToTArrayWithDepth<
                     typeof OP_SCALAR_RESULT extends keyof FF
-                        ? ToTArrayWithDepth<SLW_TPN_ToType<TNP>, TAD>
+                        ? SLW_TPN_ToType<TNP>
                         : never,
                     TAD
                 >
