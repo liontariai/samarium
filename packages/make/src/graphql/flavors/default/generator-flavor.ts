@@ -325,9 +325,9 @@ import {
             this: any,
             s: (selection: FF) => TT,
         ) => Prettify<
-            ConvertToPromise<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, AS_PROMISE> &
-                ReplacePlaceHoldersWithTNested<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, EE, REP>
-        >,
+            ConvertToPromise<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, AS_PROMISE>
+        > &
+        ReplacePlaceHoldersWithTNested<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, EE, REP>
     > = keyof F extends "$on"
         ? SLWFN_WITH_SELECTION
         : // Overload 1: No 's' provided -> return full transformed F
