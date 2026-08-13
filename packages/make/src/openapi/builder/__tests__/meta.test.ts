@@ -3,8 +3,8 @@ import { describe, it } from "bun:test";
 import { gatherMeta } from "../meta";
 import type { OpenAPI3 } from "openapi-typescript";
 
-import testapiJson from "./examples/testapi.json";
-import thingsboardJson from "./examples/thingsboard.json";
+import testapiJson from "../../flavors/default/__tests__/schemas/testapi.json";
+import thingsboardJson from "../../flavors/default/__tests__/schemas/thingsboard.json";
 
 import { Collector } from "../collector";
 import { inspect } from "util";
