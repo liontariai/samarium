@@ -262,6 +262,7 @@ export class RootOperation {
                 rootSlw = rootSlw[SLW_PARENT_SLW]!;
             }
 
+            rootSlw[SLW_REGISTER_PATH]([opName]);
             const selection = rootSlw[SLW_COLLECTOR]!.renderSelections(
                 [opName],
                 {},
