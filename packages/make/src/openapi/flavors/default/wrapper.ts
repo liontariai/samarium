@@ -2,7 +2,7 @@ const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
 
 /** Wrap real response data so property access re-enters the SelectionWrapper handler (Array.isArray works). */
-function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
+export function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
     const data = _data;
     const proxy = new Proxy(data as any | any[], {
         get(target: any[], prop: PropertyKey, receiver: any): any {

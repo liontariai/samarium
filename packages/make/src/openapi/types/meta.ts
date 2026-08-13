@@ -1,5 +1,19 @@
 export type CodegenOptions = {};
 
+/**
+ * How the generated SDK obtains its runtime (SelectionWrapper, RootOperation, …).
+ *
+ * - `"embedded"` (default): inlines the full runtime into the generated file (published SDKs).
+ * - `"external"`: emits imports from a shared module instead — used by tests so traps/mocks
+ *   observe the same class instances as the test suite.
+ */
+export type SdkRuntimeMode = "embedded" | "external";
+
+export interface ExternalRuntimeConfig {
+    /** e.g. `"@/openapi/flavors/default/wrapper"` */
+    wrapperModule: string;
+}
+
 export interface SchemaMeta {
     types: TypeMeta[];
     operations: OperationMeta[];

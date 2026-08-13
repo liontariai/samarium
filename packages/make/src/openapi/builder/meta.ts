@@ -26,6 +26,8 @@ import {
     type OperationMeta,
     type CodegenOptions,
     type OperationMethod,
+    type SdkRuntimeMode,
+    type ExternalRuntimeConfig,
 } from "../types/meta";
 export {
     type FieldMeta,
@@ -35,6 +37,8 @@ export {
     type OperationMeta,
     type CodegenOptions,
     type OperationMethod,
+    type SdkRuntimeMode,
+    type ExternalRuntimeConfig,
 };
 
 const camelCaps = (arr: string[], separator: string = "$") => {
