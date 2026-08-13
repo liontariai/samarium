@@ -577,8 +577,7 @@ import {
         const enumEnumBody = this.typeMeta.enumValues
             .map(
                 (e) =>
-                    `${
-                        e.description ? `/** ${e.description.replaceAll("*/", "\\*\\/")} */\n` : ""
+                    `${e.description ? `/** ${e.description.replaceAll("*/", "\\*\\/")} */\n` : ""
                     }${conformEnumName(e.name)} = "${e.name}",`,
             )
             .join("\n");
@@ -633,9 +632,9 @@ import {
                 this.ScalarTypeMap().get(fieldMeta.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "")) ??
                 (fieldMeta.scalarTSType
                     ? `ScalarTypeMapWithCustom["${fieldMeta.name
-                          .replaceAll("!", "")
-                          .replaceAll("[", "")
-                          .replaceAll("]", "")}"]`
+                        .replaceAll("!", "")
+                        .replaceAll("[", "")
+                        .replaceAll("]", "")}"]`
                     : "any");
         }
 
@@ -643,8 +642,8 @@ import {
             return `${Array.from({ length: fieldMeta.isList })
                 .map((_) => "Array<")
                 .join("")}${type}${Array.from({ length: fieldMeta.isList })
-                .map((_) => ">")
-                .join("")}`;
+                    .map((_) => ">")
+                    .join("")}`;
         }
         return type;
     }
@@ -685,12 +684,11 @@ import {
                 this.options,
             ).makeSelectionType();
 
-            return `${description}"${field.name}"${
-                field.type.isNonNull ? "" : "?"
-            }: ${this.originalTypeNameToTypescriptTypeName(
-                field.type.ofType.name,
-                !field.type.isInput && field.type.isList ? "Array" : "",
-            ).replaceAll("!", "")}`;
+            return `${description}"${field.name}"${field.type.isNonNull ? "" : "?"
+                }: ${this.originalTypeNameToTypescriptTypeName(
+                    field.type.ofType.name,
+                    !field.type.isInput && field.type.isList ? "Array" : "",
+                ).replaceAll("!", "")}`;
 
             // return `${description}${field.name}${
             //     field.type.isNonNull ? "" : "?"
@@ -708,11 +706,11 @@ import {
         const selectionTypeName = this.typeMeta.isInput
             ? `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(this.originalFullTypeName)}`
             : // : `${this.typeName}SelectionFields`; // indicate that this comes from an object-type
-              // actually, don't indicate it with a suffix, because it breaks scalar types referencing
-              // the object type in it's scalarTSType. E.g. Record<string, EntityId> where EntityId
-              // is an object type referenced from a scalar type, because we map such free-form types
-              // to custom scalar types to keep it somewhat similar to GraphQL.
-              this.typeName;
+            // actually, don't indicate it with a suffix, because it breaks scalar types referencing
+            // the object type in it's scalarTSType. E.g. Record<string, EntityId> where EntityId
+            // is an object type referenced from a scalar type, because we map such free-form types
+            // to custom scalar types to keep it somewhat similar to GraphQL.
+            this.typeName;
 
         if (this.collector.hasSelectionType(this.typeMeta)) {
             return selectionTypeName;
@@ -726,8 +724,8 @@ import {
                     t.isScalar || t.isEnum
                         ? this.makeSelectionTypeInputValueForFieldWrapperType(t.name, t)
                         : this.typeMeta.isInput
-                          ? `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(t.name)}`
-                          : `${this.originalTypeNameToTypescriptFriendlyName(t.name)}`,
+                            ? `${this.originalTypeNameToTypescriptTypeNameWithoutModifiers(t.name)}`
+                            : `${this.originalTypeNameToTypescriptFriendlyName(t.name)}`,
                 )
                 .join(" | ");
 
@@ -830,8 +828,7 @@ import {
             `;
         } else {
             helperFunctions = `
-            ${
-                typeHasScalars
+            ${typeHasScalars
                     ? `
             $scalars: () =>
                 selectScalars(
@@ -841,7 +838,7 @@ import {
                     >,
             `
                     : ""
-            }`;
+                }`;
         }
         const makeSelectionFunctionInputReturnTypeParts = new Map<string, string>();
 
@@ -849,43 +846,42 @@ import {
             export function make${selectionFunctionName}Input(this: any) ${this.typeMeta.isUnion ? "" : `: ReturnTypeFrom${selectionFunctionName}`} {
                 return {
                     ${this.typeMeta.fields
-                        .map(
-                            (field) =>
-                                [
-                                    field,
-                                    this.makeSelectionFunctionInputObjectValueForField(
-                                        field,
-                                        this.typeMeta.isInput ? [] : [this.typeName],
-                                    ),
-                                ] as const,
-                        )
-                        .map(([field, fieldSlfn]) => {
-                            makeSelectionFunctionInputReturnTypeParts.set(
-                                field.name,
-                                `${
-                                    field.type.isScalar ||
-                                    field.type.isEnum ||
-                                    (field.type.isUnion &&
-                                        field.type.possibleTypes.every((pt) => pt.isScalar || pt.isEnum))
-                                        ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${"undefined"}>`
-                                        : `ReturnType<
+                .map(
+                    (field) =>
+                        [
+                            field,
+                            this.makeSelectionFunctionInputObjectValueForField(
+                                field,
+                                this.typeMeta.isInput ? [] : [this.typeName],
+                            ),
+                        ] as const,
+                )
+                .map(([field, fieldSlfn]) => {
+                    makeSelectionFunctionInputReturnTypeParts.set(
+                        field.name,
+                        `${field.type.isScalar ||
+                            field.type.isEnum ||
+                            (field.type.isUnion &&
+                                field.type.possibleTypes.every((pt) => pt.isScalar || pt.isEnum))
+                            ? `SelectionWrapperImpl<"${field.name}", "${field.type.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}", ${field.type.isList}, {}, ${"undefined"}>`
+                            : `ReturnType<
                                             SLFN<
                                                 {},
                                                 ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
-                                                    field.type.name,
-                                                )}SelectionInput>,
+                                field.type.name,
+                            )}SelectionInput>,
                                                 "${super.originalTypeNameToTypescriptFriendlyName(field.type.name)}Selection",
                                                 "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(
-                                                    field.type.name,
-                                                )}",
+                                field.type.name,
+                            )}",
                                                 ${field.type.isList ?? 0}
                                             >
                                         >`
-                                }`,
-                            );
-                            return `${fieldSlfn},`;
-                        })
-                        .join("\n")}
+                        }`,
+                    );
+                    return `${fieldSlfn},`;
+                })
+                .join("\n")}
 
                     ${helperFunctions}
                 } as const;
@@ -905,12 +901,11 @@ import {
                 .map(([k, v]) => `"${k}": ${v}`)
                 .join("\n")}
         } & {
-            ${
-                typeHasScalars
-                    ? `
+            ${typeHasScalars
+                ? `
             $scalars: () => SLWsFromSelection<ReturnType<typeof ${`make${selectionFunctionName}Input`}>>;
             `
-                    : ""
+                : ""
             }
         };`;
         this.collector.addSelectionFunction(
@@ -1034,10 +1029,10 @@ import {
                             operation.args[0].type.isScalar && operation.args[0].type.scalarTSType
                                 ? `ScalarTypeMapWithCustom["${operation.args[0].type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "")}"]`
                                 : new GeneratorSelectionTypeFlavorDefault(
-                                      operation.args[0].type.name,
-                                      collector,
-                                      options,
-                                  ).makeSelectionType();
+                                    operation.args[0].type.name,
+                                    collector,
+                                    options,
+                                ).makeSelectionType();
                     } else {
                         const argsTypeBody = operation.args
                             .map((arg) => {
@@ -1099,10 +1094,10 @@ import {
                         ${argTypes ? `args` : "undefined"}
                     )`
                     : new GeneratorSelectionTypeFlavorDefault(
-                          operation.type.name,
-                          collector,
-                          options,
-                      ).makeSelectionFunction();
+                        operation.type.name,
+                        collector,
+                        options,
+                    ).makeSelectionFunction();
 
             const operationAsOpNameToFunction = `
                 "${operation.name}": (${argTypes ? `args: ${argTypes.argsTypeName}` : ""}) => 
@@ -1121,8 +1116,8 @@ import {
                             SLFN<
                                 {},
                                 ReturnType<typeof make${super.originalTypeNameToTypescriptFriendlyName(
-                                    operation.type.name,
-                                )}SelectionInput>,
+                    operation.type.name,
+                )}SelectionInput>,
                                 "${super.originalTypeNameToTypescriptFriendlyName(operation.type.name)}Selection",
                                 "${super.originalTypeNameToTypescriptTypeNameWithoutModifiers(operation.type.name)}",
                                 ${operation.type.isList ?? 0},
@@ -1170,8 +1165,8 @@ import {
         const rootOperationFunction = `
             export type ReturnTypeFromRootOperationWithoutScalarOps = {
                 ${Array.from(makeSelectionFunctionInputReturnTypeParts)
-                    .map(([k, v]) => `"${k}": ${v}`)
-                    .join("\n")}
+                .map(([k, v]) => `"${k}": ${v}`)
+                .join("\n")}
             };
             export function _makeRootOperationInput(this: any) {
                 const withoutScalarOps = {
@@ -1249,9 +1244,8 @@ import {
                     returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
                 }
                 
-                ${
-                    authConfig
-                        ? `
+                ${authConfig
+                ? `
                 Object.defineProperty(returnValue, "auth", {
                     enumerable: false,
                     get: function () {
@@ -1268,21 +1262,20 @@ import {
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
                 };
                 `
-                        : `
+                : `
                 return returnValue;
                 `
-                }
+            }
             };
 
             const __init__ = (options: {
-                ${
-                    authConfig
-                        ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
+                ${authConfig
+                ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
                 auth?: AuthResolver;
                 /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
                 authToken?: string;`
-                        : ""
-                }
+                : ""
+            }
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1303,9 +1296,8 @@ import {
                     ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
-                ${
-                    authConfig
-                        ? `
+                ${authConfig
+                ? `
                 RootOperation.authHeaderName = "${authConfig.headerName}";
                 if (options.authToken !== undefined) {
                     RootOperation[OPTIONS]._auth_token = options.authToken;
@@ -1319,8 +1311,8 @@ import {
                     RootOperation[OPTIONS]._auth_token = options.auth as unknown as string;
                 }
                 `
-                        : ""
-                }
+                : ""
+            }
 
                 if (options.headers) {
                     RootOperation[OPTIONS].headers = {
