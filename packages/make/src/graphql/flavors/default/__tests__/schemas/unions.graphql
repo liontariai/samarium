@@ -1,0 +1,20 @@
+# Schema for union / inline-fragment feature tests
+type Book {
+    title: String
+    author: String
+}
+
+type Article {
+    title: String
+    publisher: String
+    books(language: String): [Book]
+    rollDice(numDice: Int!, numSides: Int): [Int]
+}
+
+union SearchResult = Book | Article
+
+type Query {
+    books: [Book]
+    articles: [Article]
+    search(title: String): [SearchResult]
+}

@@ -7,12 +7,12 @@ import {
     SLW_COLLECTOR,
 } from "@/graphql/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
-import * as examplesBooksSimple from "@/graphql/flavors/default/__tests__/examples/books.simple";
-import * as examplesSpaceX from "@/graphql/flavors/default/__tests__/examples/spacex.with-test-slw";
-import * as examplesUnions from "@/graphql/flavors/default/__tests__/examples/unions.simple";
-import * as examplesDirectives from "@/graphql/flavors/default/__tests__/examples/directives.simple";
+import * as examplesBooksSimple from "@/graphql/flavors/default/__tests__/examples/books.generated";
+import * as examplesSpaceX from "@/graphql/flavors/default/__tests__/examples/spacex.generated";
+import * as examplesUnions from "@/graphql/flavors/default/__tests__/examples/unions.generated";
+import * as examplesDirectives from "@/graphql/flavors/default/__tests__/examples/directives.generated";
 import * as examplesDates from "@/graphql/flavors/default/__tests__/examples/dates.generated";
-import * as examplesContentful from "@/graphql/flavors/default/__tests__/examples/contentful.with-test-slw";
+import * as examplesContentful from "@/graphql/flavors/default/__tests__/examples/contentful.generated";
 
 describe("Testing and validating features", () => {
     beforeAll(() => {

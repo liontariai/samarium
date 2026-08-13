@@ -1,0 +1,24 @@
+# Schema for client directive feature tests (tag + standard include/skip)
+directive @tag(tag: String) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+type Book {
+    title: String
+    author: String
+}
+
+type Article {
+    title: String
+    publisher: String
+    books(language: String): [Book]
+    rollDice(numDice: Int!, numSides: Int): [Int]
+}
+
+union SearchResult = Book | Article
+
+type Query {
+    books: [Book]
+    articles: [Article]
+    search(title: String): [SearchResult]
+}

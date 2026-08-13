@@ -10,18 +10,18 @@ import {
     SLW_PARENT_SLW,
 } from "@/graphql/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
-import * as examplesBooksSimple from "./examples/books.simple";
+import * as examplesBooksSimple from "./examples/books.generated";
 
 describe("Internal structure and functionality of the SelectionWrapper and OperationSelectionCollector", () => {
     it("the hierarchical structure of the selection wrappers should be correct", () => {
         // example query based on available selection functions
         const slw1 = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     title,
                 })),
             })),
-            operation2: op.query((q) => ({
+            operation2: op.Query((q) => ({
                 bookAuthors: q.books(({ author }) => ({
                     author,
                 })),
@@ -117,18 +117,18 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
     it("It should render valid selections", () => {
         // example query based on available selection functions
         const slw1 = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     title,
                 })),
             })),
-            operation2: op.query((q) => ({
+            operation2: op.Query((q) => ({
                 bookAuthors: q.books(({ author }) => ({
                     author,
                 })),
             })),
 
-            mutation1: op.mutation((m) => ({
+            mutation1: op.Mutation((m) => ({
                 createBook: m.createBooks({
                     titles: ["book1", "book2"],
                     authors: ["author1", "author2"],
@@ -186,18 +186,18 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
 
     it("should correctly assign the operation types Query and Mutation to the operations", () => {
         const slw1 = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     title,
                 })),
             })),
-            operation2: op.query((q) => ({
+            operation2: op.Query((q) => ({
                 bookAuthors: q.books(({ author }) => ({
                     author,
                 })),
             })),
 
-            mutation1: op.mutation((m) => ({
+            mutation1: op.Mutation((m) => ({
                 createBook: m.createBooks({
                     titles: ["book1", "book2"],
                     authors: ["author1", "author2"],
