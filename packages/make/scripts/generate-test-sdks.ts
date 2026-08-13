@@ -19,6 +19,7 @@ import {
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import prettier from "prettier";
 import { Generator } from "../src/graphql/builder/generator";
 import { GeneratorSelectionTypeFlavorDefault } from "../src/graphql/flavors/default/generator-flavor";
 
@@ -129,7 +130,17 @@ async function generateFixture(fixture: Fixture): Promise<string> {
         },
     });
 
-    return `${HEADER}// fixture: ${fixture.id}\n${code}\n`;
+    const raw = `${HEADER}// fixture: ${fixture.id}\n${code}\n`;
+    return formatTypescript(raw, path.join(TESTS_ROOT, fixture.outPath));
+}
+
+async function formatTypescript(code: string, filepath: string): Promise<string> {
+    const config = (await prettier.resolveConfig(filepath)) ?? {};
+    return prettier.format(code, {
+        ...config,
+        filepath,
+        parser: "typescript",
+    });
 }
 
 async function refreshRemoteSchemas(fixtures: Fixture[]) {
