@@ -444,7 +444,7 @@ describe("Testing and validating features", () => {
             first10Launches: [{ id: "1" }, { id: "2" }, { id: "3" }],
         });
 
-        const { first10Launches } = await examplesSpaceX.default((op) =>
+        const { first10Launches } = examplesSpaceX.default((op) =>
             op.Query((q) => ({
                 first10Launches: q.launches({ limit: 10 })(({ id }) => ({ id })).$lazy,
             })),
