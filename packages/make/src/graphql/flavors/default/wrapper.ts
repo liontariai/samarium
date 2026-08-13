@@ -968,16 +968,12 @@ export class SelectionWrapper<
 
                 return {
                     // implement ProxyHandler methods
-                    ownKeys(target) {
-                        if (target[SLW_FIELD_ARR_DEPTH]) {
-                            return Reflect.ownKeys(new Array(target[SLW_FIELD_ARR_DEPTH]));
-                        }
+                    ownKeys() {
+                        // Do not fake Array ownKeys (`length` is non-configurable); the target is
+                        // SelectionWrapperImpl. Result arrays are handled by `get` + `proxify`.
                         return Reflect.ownKeys(value ?? {});
                     },
-                    getOwnPropertyDescriptor(target, prop) {
-                        if (target[SLW_FIELD_ARR_DEPTH]) {
-                            return Reflect.getOwnPropertyDescriptor(new Array(target[SLW_FIELD_ARR_DEPTH]), prop);
-                        }
+                    getOwnPropertyDescriptor(_target, prop) {
                         return Reflect.getOwnPropertyDescriptor(value ?? {}, prop);
                     },
                     has(target, prop) {
