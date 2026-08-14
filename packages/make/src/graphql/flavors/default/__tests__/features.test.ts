@@ -153,12 +153,10 @@ describe("Testing and validating features", () => {
         });
     });
 
-    it("selects all scalars by using the $scalars() helper", async () => {
+    it("selects all fields by omitting the selection callback (default $all)", async () => {
         const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
             operation1: op.Query((q) => ({
-                bookTitles: q.books(({ $scalars }) => ({
-                    ...$scalars(),
-                })),
+                bookTitles: q.books(),
             })),
         }));
         const mockFetch = installMockFetch();

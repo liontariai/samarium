@@ -117,9 +117,7 @@ describe("real-world OpenAPI schemas", () => {
         it("searches content with query args", async () => {
             const { calls } = installMockFetch([{ title: "Heat" }]);
             const slw = rootSLWFactory(examplesReelgood._makeRootOperationInput, (op) => ({
-                hits: op.GetV1_0ContentSearch({ term: "heat", region: "us" })(({ $scalars }) => ({
-                    ...$scalars(),
-                })),
+                hits: op.GetV1_0ContentSearch({ term: "heat", region: "us" })(),
             }));
 
             await slw[ROOT_OP_COLLECTOR]!.ref.execute();
