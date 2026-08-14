@@ -82,6 +82,12 @@ describe("real-world OpenAPI schemas", () => {
             expect(collectCriticalTypeErrors(path.join(EXAMPLES_DIR, "reelgood.generated.ts"))).toEqual([]);
         });
 
+        it("lets a user JToken augmentation override the any default", () => {
+            expect(
+                collectCriticalTypeErrors(path.join(import.meta.dir, "scalar-override.check.ts")),
+            ).toEqual([]);
+        });
+
         it("fetches a movie by id and applies the x-api-key auth header", async () => {
             const movie = {
                 id: "11111111-1111-1111-1111-111111111111",

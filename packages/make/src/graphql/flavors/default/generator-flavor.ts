@@ -6,6 +6,54 @@ import { DirectiveLocation } from "graphql";
 // @ts-ignore
 import wrapperCode from "./wrapper.ts" with { type: "text" };
 
+const TS_TYPE_INTRINSICS = new Set([
+    "string",
+    "number",
+    "boolean",
+    "any",
+    "unknown",
+    "never",
+    "void",
+    "object",
+    "undefined",
+    "null",
+    "Record",
+    "Array",
+    "Date",
+    "Promise",
+    "Map",
+    "Set",
+    "Readonly",
+    "Partial",
+    "Required",
+    "Pick",
+    "Omit",
+]);
+
+/**
+ * Named types referenced by a custom-scalar TS type that are not themselves
+ * generated (e.g. `@typedef {JToken}`). Do **not** put `JToken: any` on
+ * `ScalarTypeMapWithCustom` — declaration merging would keep `any`
+ * (`any & AnotherType` is `any`). Emit a type alias that is `any` only when
+ * the user has not augmented the interface.
+ */
+function unresolvedTypeNamesInCustomScalars(customScalars: TypeMeta[]): string[] {
+    const declared = new Set(
+        customScalars.map((cs) => cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")),
+    );
+    const unresolved = new Set<string>();
+    const ident = /\b([A-Za-z_$][\w$]*)\b/g;
+    for (const cs of customScalars) {
+        const tsType = cs.scalarTSType ?? "";
+        for (const match of tsType.matchAll(ident)) {
+            const name = match[1];
+            if (TS_TYPE_INTRINSICS.has(name) || declared.has(name)) continue;
+            unresolved.add(name);
+        }
+    }
+    return [...unresolved];
+}
+
 /**
  * Default selection type flavor implementation.
  * A selection type flavor is a class that generates the code for a selection type.
@@ -169,13 +217,28 @@ import {
         };`;
     };
 
-    public static readonly HelperTypes = (customScalars: TypeMeta[]) => `
-    export interface ScalarTypeMapWithCustom {
-        ${customScalars
-            .map((cs) => `"${cs.name.replaceAll("!", "")}": ${cs.scalarTSType?.replaceAll("!", "")};`)
+    public static readonly HelperTypes = (customScalars: TypeMeta[]) => {
+        const stripped = customScalars.map((cs) => ({
+            ...cs,
+            name: cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", ""),
+            scalarTSType: cs.scalarTSType?.replaceAll("!", ""),
+        }));
+        const interfaceBody = stripped
+            .map((cs) => `"${cs.name}": ${cs.scalarTSType};`)
             .filter((cs, i, arr) => arr.findIndex((c) => c === cs) === i)
-            .join("\n")}
+            .join("\n");
+        const unresolved = unresolvedTypeNamesInCustomScalars(stripped);
+        const unresolvedAliases = unresolved.length
+            ? `    type CustomScalarOrAny<K extends string> = K extends keyof ScalarTypeMapWithCustom
+        ? ScalarTypeMapWithCustom[K]
+        : any;
+${unresolved.map((name) => `    export type ${name} = CustomScalarOrAny<"${name}">;`).join("\n")}`
+            : "";
+        return `
+    export interface ScalarTypeMapWithCustom {
+        ${interfaceBody}
     }
+${unresolvedAliases}
     export interface ScalarTypeMapDefault {
         ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
             .map(([k, v]) => `"${k}": ${v};`)
@@ -352,6 +415,7 @@ import {
         SLFN_typeArrDepth: TAD,
     ) => SLFNReturned<T, F, E, TAD, AS_PROMISE, AS_ASYNC_ITER, REP>;
     `;
+    };
     public static readonly HelperFunctions = `
     const selectScalars = (selection: Record<string, any>) =>
         Object.fromEntries(

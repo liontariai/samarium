@@ -53,6 +53,33 @@ describe("GraphQL generate runtime: external", () => {
         ).rejects.toThrow(/wrapperModule/);
     });
 
+    it("emits CustomScalarOrAny aliases for unresolved @typedef names (user override wins)", async () => {
+        const sdl = `
+"""
+@typedef {JToken}
+"""
+scalar OpaqueToken
+type Query {
+    token: OpaqueToken
+}
+`;
+        const generator = new Generator(GeneratorSelectionTypeFlavorDefault);
+        const code = await generator.generate({
+            schema: buildSchema(sdl),
+            options: {},
+            runtime: "external",
+            externalRuntime: {
+                wrapperModule: "@/graphql/flavors/default/wrapper",
+            },
+        });
+
+        expect(code).toContain('type CustomScalarOrAny<K extends string>');
+        expect(code).toContain('export type JToken = CustomScalarOrAny<"JToken">');
+        expect(code).toMatch(/OpaqueToken":\s*JToken/);
+        // Must not pin JToken: any on the interface — that would win over user augmentation
+        expect(code).not.toMatch(/interface ScalarTypeMapWithCustom\s*\{[^}]*JToken:\s*any/);
+    });
+
     it("still embeds runtime classes when runtime is embedded (default)", async () => {
         const generator = new Generator(GeneratorSelectionTypeFlavorDefault);
         const code = await generator.generate({

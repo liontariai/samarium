@@ -103,6 +103,12 @@ export const graphqlTestFixtures: GraphqlFixture[] = [
         outPath: "examples/spacex.generated.ts",
         introspectionUrl: "https://spacex-production.up.railway.app/graphql",
     },
+    {
+        flavor: "graphql",
+        id: "custom-scalars",
+        schemaPath: "schemas/custom-scalars.graphql",
+        outPath: "examples/custom-scalars.generated.ts",
+    },
 ];
 
 /** Catalog of fixtures to generate for OpenAPI flavor tests. */
