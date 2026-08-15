@@ -1,4 +1,5 @@
 import { type CodegenOptions, gatherMeta } from "./meta";
+import type { ExternalRuntimeConfig, SdkRuntimeMode } from "../types/meta";
 import { Collector } from "./collector";
 
 import type { GeneratorSelectionTypeFlavorDefault } from "../flavors/default/generator-flavor";
@@ -12,7 +13,7 @@ export class Generator {
 
     /**
      * Generate the query builder's code.
-     * @param schema GraphQL schema
+     * @param schema OpenAPI schema
      * @param options Codegen options
      * @returns
      */
@@ -20,13 +21,29 @@ export class Generator {
         schema,
         options,
         authConfig,
+        runtime = "embedded",
+        externalRuntime,
     }: {
         schema: OpenAPI3;
         options: CodegenOptions;
         authConfig?: {
             headerName: string;
         };
+        /**
+         * `"embedded"` (default): single-file SDK with inlined runtime.
+         * `"external"`: import runtime from `externalRuntime.wrapperModule` (for tests).
+         */
+        runtime?: SdkRuntimeMode;
+        /**
+         * Required when `runtime === "external"`.
+         */
+        externalRuntime?: ExternalRuntimeConfig;
     }): Promise<string> {
+        if (runtime === "external" && !externalRuntime?.wrapperModule) {
+            throw new Error(
+                'generate({ runtime: "external" }) requires externalRuntime.wrapperModule',
+            );
+        }
         const collector = new Collector();
         const schemaMeta = gatherMeta(schema, options, collector);
 
@@ -58,8 +75,13 @@ export class Generator {
             authConfig,
         );
 
+        const runtimePreamble =
+            runtime === "external"
+                ? this.Codegen.ExternalRuntimePreamble(externalRuntime!.wrapperModule)
+                : this.Codegen.FieldValueWrapperType;
+
         const code = [
-            this.Codegen.FieldValueWrapperType,
+            runtimePreamble,
             this.Codegen.HelperTypes(Array.from(collector.customScalars.values())),
             this.Codegen.HelperFunctions,
             ...[...collector.enumsTypes.entries()]

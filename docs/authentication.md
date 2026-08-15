@@ -1,60 +1,63 @@
 # Authentication
 
-The SDK provides multiple ways to handle authentication for your GraphQL requests. You can set authentication tokens or headers globally or on a per-request basis.
+The SDK provides multiple ways to handle authentication for your GraphQL requests. You can set authentication tokens or resolvers globally, or pass a per-request source into `.auth(...)`.
 
-## Usage
+## Global configuration (`sdk.init`)
 
-### Setting Authentication Globally
+### 1. Static token (`authToken`) — CLI / scripts / tests
 
-There are several ways to set authentication globally for one sdk:
-
-1. String token:
+Use a fixed string token when there is a single process-wide credential (CLI tools, one-off scripts, unit tests).
 
 ```typescript
 import sdk from "./sdks/spacex";
 
 sdk.init({
-    auth: "YOUR_TOKEN_HERE",
+    authToken: "YOUR_TOKEN_HERE",
 });
 ```
 
-2. Function returning a token:
+**Do not** re-call `init({ authToken })` per HTTP request in multi-user SSR. That stores one shared token and concurrent requests can cross-contaminate.
+
+### 2. Auth resolver (`auth`) — apps (SSR + browser)
+
+`auth` is a function that is invoked **on every SDK call**. It receives the optional argument passed to `.auth(source)`, or `undefined` when `.auth()` is omitted.
 
 ```typescript
 import sdk from "./sdks/spacex";
+import { accessTokenFromCookie } from "@cobalt27/auth/react/rr7"; // example helper
 
 sdk.init({
-    auth: () => "YOUR_TOKEN_HERE",
-});
-```
-
-3. Function returning a promise resolving to a token:
-
-```typescript
-import sdk from "./sdks/spacex";
-
-sdk.init({
-    auth: async () => await Promise.resolve("YOUR_TOKEN_HERE"),
-});
-```
-
-4. Headers object:
-
-```typescript
-import sdk from "./sdks/spacex";
-
-sdk.init({
-    auth: {
-        Authorization: "YOUR_TOKEN_HERE",
+    auth: (source?: string | Request) => {
+        if (typeof source === "string") return source;
+        if (source instanceof Request) {
+            // SSR: extract token from this request's cookies
+            return accessTokenFromCookie("accessToken", source);
+        }
+        // Browser / client: read cookie from document
+        return accessTokenFromCookie();
     },
 });
 ```
 
-5. Function returning a headers object:
+The resolver may return:
+
+- a **string** token (sent as the configured auth header, usually `Authorization`)
+- a **headers object** (`{ Authorization: "…" }` or custom headers)
+- a **Promise** of either of the above
+- `undefined` (no auth header)
 
 ```typescript
-import sdk from "./sdks/spacex";
+// Sync
+sdk.init({
+    auth: () => "YOUR_TOKEN_HERE",
+});
 
+// Async
+sdk.init({
+    auth: async () => await Promise.resolve("YOUR_TOKEN_HERE"),
+});
+
+// Headers object
 sdk.init({
     auth: () => ({
         Authorization: "YOUR_TOKEN_HERE",
@@ -62,73 +65,95 @@ sdk.init({
 });
 ```
 
-6. Function returning a promise resolving to a headers object:
+### 3. Extra static headers
+
+Non-auth headers (or a static Authorization when you intentionally want it always present) go through `headers`:
 
 ```typescript
-import sdk from "./sdks/spacex";
-
 sdk.init({
-    auth: async () =>
-        await Promise.resolve({
-            Authorization: "YOUR_TOKEN_HERE",
-        }),
+    headers: {
+        "X-Custom-Header": "value",
+    },
 });
 ```
 
-### Setting Authentication on a Per-Request Basis
+Resolved auth headers always win over static `headers` for the same header name.
 
-You can also set authentication on a per-request basis. This is useful if you want to authenticate a request with a different token or header than the global authentication.
+## Per-request authentication (`.auth`)
 
-1. String token:
+### With a global `auth` resolver (recommended for SSR)
+
+Pass a **source** (request, token string, or any value your resolver understands). The global `auth` function is called with that source for this call only — no process-wide mutation.
 
 ```typescript
+// SSR loader
+export async function loader({ request }: LoaderArgs) {
+    const profile = await sdk.query.profile(/* selector */).auth(request);
+    return { profile };
+}
+```
+
+```typescript
+// Explicit token for this call only
+await sdk.query.profile(/* selector */).auth("Bearer user-specific-token");
+```
+
+### Without a global `auth` resolver
+
+`.auth(...)` still accepts a token, headers object, or function and applies it to that call only:
+
+```typescript
+// String token
 const result = await sdk((op) => ({
     // Your query here
 })).auth("Bearer token");
-```
 
-2. Headers object:
-
-```typescript
+// Headers object
 const result = await sdk((op) => ({
     // Your query here
 })).auth({ Authorization: "Bearer token" });
-```
 
-3. Function returning a token:
-
-```typescript
+// Sync / async factories
 const result = await sdk((op) => ({
     // Your query here
 })).auth(() => "Bearer token");
-```
 
-4. Function returning a promise resolving to a token:
-
-```typescript
 const result = await sdk((op) => ({
     // Your query here
 })).auth(async () => await Promise.resolve("Bearer token"));
 ```
 
-5. Function returning a headers object:
+## SSR multi-user pattern (important)
+
+| Setting | Safe for concurrent multi-user SSR? |
+|--------|--------------------------------------|
+| `init({ auth: (source) => … })` + `.auth(request)` | Yes |
+| `init({ authToken: string })` once in a CLI | Yes (single user) |
+| `init({ authToken })` inside `onAuth` / per request | **No** — race across users |
+
+Recommended React Router / Cobalt style:
 
 ```typescript
-const result = await sdk((op) => ({
-    // Your query here
-})).auth(() => ({ Authorization: "Bearer token" }));
+// root.tsx — configure once
+sdk.init({
+    auth: (source?: string | Request) => {
+        if (typeof source === "string") return source;
+        if (source instanceof Request) return accessTokenFromCookie("accessToken", source);
+        return accessTokenFromCookie();
+    },
+});
+
+// root loader: gatekeeping only (redirects, refresh) — do not stash tokens in init
+export const loader = makeAuthLoader(config, undefined, onError);
+
+// route loaders / server code
+await sdk.query.profile(sel).auth(request);
 ```
 
-6. Function returning a promise resolving to a headers object:
+## Notes
 
-```typescript
-const result = await sdk((op) => ({
-    // Your query here
-})).auth(async () => await Promise.resolve({ Authorization: "Bearer token" }));
-```
-
-### Notes
-
--   If you set authentication globally, it will be used for all requests.
--   If you set authentication per-request, it will override the global authentication for that request.
--   If you set authentication per-request, it will not be used on other requests.
+- Global `auth` runs **per SDK call** with the current `.auth(source)` argument (or `undefined`).
+- Per-call `.auth(source)` with a global resolver **does not** overwrite a shared module-level token.
+- Static `authToken` is for single-credential environments only.
+- Deprecated: `init({ auth: "string" })` — use `authToken` instead (a runtime warning is emitted).
+- Deprecated: `init({ auth: { Authorization: "…" } })` — use `headers` or `authToken`.

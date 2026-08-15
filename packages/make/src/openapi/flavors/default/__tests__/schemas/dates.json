@@ -1,0 +1,113 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Dates",
+        "description": "Spec for DateTime scalar + nested array deserialization tests",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/date": {
+            "get": {
+                "operationId": "getDate",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": { "type": "string", "format": "date-time" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dates": {
+            "get": {
+                "operationId": "getDates",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "type": "string", "format": "date-time" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nested-dates": {
+            "get": {
+                "operationId": "getNestedDates",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "array",
+                                        "items": { "type": "string", "format": "date-time" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/nested-dates-2": {
+            "get": {
+                "operationId": "getNestedDates2",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "array",
+                                            "items": { "type": "string", "format": "date-time" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event": {
+            "get": {
+                "operationId": "getEvent",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": { "$ref": "#/components/schemas/Event" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Event": {
+                "type": "object",
+                "properties": {
+                    "date": { "type": "string", "format": "date-time" }
+                }
+            }
+        }
+    }
+}

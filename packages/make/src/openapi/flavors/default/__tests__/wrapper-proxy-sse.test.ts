@@ -11,11 +11,18 @@ import { gatherMetaForPathOperation } from "../../../builder/meta";
 import { Collector } from "../../../builder/collector";
 import type { OpenAPI3, OperationObject } from "openapi-typescript";
 
+function resetRootOptions() {
+    RootOperation[OPTIONS].fetcher = undefined as any;
+    RootOperation[OPTIONS].sseFetchTransform = undefined as any;
+    RootOperation[OPTIONS].headers = {};
+    RootOperation[OPTIONS]._auth_fn = undefined;
+    RootOperation[OPTIONS]._auth_token = undefined;
+    RootOperation.authHeaderName = "Authorization";
+}
+
 describe("OpenAPI SelectionWrapper proxy + SSE", () => {
     afterEach(() => {
-        RootOperation[OPTIONS].fetcher = undefined as any;
-        RootOperation[OPTIONS].sseFetchTransform = undefined as any;
-        RootOperation[OPTIONS].headers = {};
+        resetRootOptions();
     });
 
     function makeRootWithOps(
@@ -290,5 +297,137 @@ describe("OpenAPI SelectionWrapper proxy + SSE", () => {
         const meta = gatherMetaForPathOperation(schema, "/json", "get", operation, {}, collector);
         expect(meta?.isEventStream).toBe(false);
         expect(meta?.responseContentType).toBe("application/json");
+    });
+});
+
+describe("OpenAPI auth pattern (auth / authToken / .auth(source))", () => {
+    afterEach(() => {
+        resetRootOptions();
+    });
+
+    function makeAuthOp(rootOp?: RootOperation) {
+        const op = rootOp ?? new RootOperation();
+        const root = new OperationSelectionCollector(undefined, undefined, op);
+        const rootRef = { ref: root };
+        const opCollector = new OperationSelectionCollector("me", rootRef);
+        // Field collector must be a child of opCollector (not the same instance)
+        const idCollector = new OperationSelectionCollector("id", opCollector);
+        const id = new SelectionWrapper("id", "String", 0, undefined as any, idCollector, opCollector);
+        opCollector.registerSelection("id", id as any);
+        const slw = new SelectionWrapper("me", "User", 0, { id }, opCollector, opCollector);
+        slw[ROOT_OP_META] = { path: "/me", method: "get" };
+        slw[SLW_OP_PATH] = "me";
+        (slw as any).id = id;
+        root.registerSelection("me", slw as any);
+        opCollector.renderSelections(["me"]);
+        return { root, rootOp: op };
+    }
+
+    it("uses static authToken from OPTIONS", async () => {
+        const { root } = makeAuthOp();
+        RootOperation[OPTIONS]._auth_token = "Bearer static";
+
+        const mockFetch = async (_url: string, init?: RequestInit) => {
+            expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer static");
+            return {
+                ok: true,
+                json: async () => ({ id: "1" }),
+            } as Response;
+        };
+        RootOperation[OPTIONS].fetcher = mockFetch as any;
+
+        await root.execute();
+    });
+
+    it("passes .auth(source) into the global auth resolver", async () => {
+        const { root, rootOp } = makeAuthOp();
+        const seen: unknown[] = [];
+        RootOperation[OPTIONS]._auth_fn = (source) => {
+            seen.push(source);
+            return typeof source === "string" ? source : "Bearer default";
+        };
+
+        RootOperation[OPTIONS].fetcher = (async (_url: string, init?: RequestInit) => {
+            expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer from-request");
+            return {
+                ok: true,
+                json: async () => ({ id: "1" }),
+            } as Response;
+        }) as any;
+
+        rootOp.setAuth("Bearer from-request");
+        await root.execute();
+        expect(seen).toEqual(["Bearer from-request"]);
+    });
+
+    it("isolates concurrent calls with different .auth(source) values", async () => {
+        RootOperation[OPTIONS]._auth_fn = (source) =>
+            typeof source === "string" ? source : "Bearer default";
+
+        const authHeaders: string[] = [];
+        RootOperation[OPTIONS].fetcher = (async (_url: string, init?: RequestInit) => {
+            await new Promise((r) => setTimeout(r, 15));
+            const auth = (init?.headers as Record<string, string>).Authorization;
+            authHeaders.push(auth);
+            return {
+                ok: true,
+                json: async () => ({ id: auth }),
+            } as Response;
+        }) as any;
+
+        const call = async (token: string) => {
+            const { root, rootOp } = makeAuthOp();
+            rootOp.setAuth(token);
+            await root.execute();
+        };
+
+        await Promise.all([call("Bearer user-A"), call("Bearer user-B")]);
+        expect(authHeaders).toContain("Bearer user-A");
+        expect(authHeaders).toContain("Bearer user-B");
+    });
+
+    it("uses per-call string token when no global auth resolver is set", async () => {
+        const { root, rootOp } = makeAuthOp();
+        RootOperation[OPTIONS].fetcher = (async (_url: string, init?: RequestInit) => {
+            expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer direct");
+            return {
+                ok: true,
+                json: async () => ({ id: "1" }),
+            } as Response;
+        }) as any;
+
+        rootOp.setAuth("Bearer direct");
+        await root.execute();
+    });
+
+    it("applies auth headers to SSE subscribe as well", async () => {
+        const { root, rootOp } = makeAuthOp();
+        // mark op as event stream
+        const me = root.selections.get("me")!;
+        me[ROOT_OP_META] = { path: "/events", method: "get", isEventStream: true };
+
+        RootOperation[OPTIONS]._auth_fn = (source) =>
+            typeof source === "string" ? source : "Bearer default";
+
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.enqueue(encoder.encode('data: {"id":"1"}\n\n'));
+                controller.close();
+            },
+        });
+
+        RootOperation[OPTIONS].fetcher = (async (_url: string, init?: RequestInit) => {
+            expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer sse");
+            expect((init?.headers as Record<string, string>).Accept).toBe("text/event-stream");
+            return {
+                ok: true,
+                body: stream,
+                text: async () => "",
+            } as Response;
+        }) as any;
+
+        rootOp.setAuth("Bearer sse");
+        await root.execute();
     });
 });

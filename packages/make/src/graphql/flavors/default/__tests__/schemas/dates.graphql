@@ -1,0 +1,9 @@
+# Schema for custom scalar + nested array DateTime tests
+scalar DateTime
+
+type Query {
+    date: DateTime
+    dates: [DateTime]
+    nestedDates: [[DateTime]]
+    nestedDates2: [[[DateTime]]]
+}

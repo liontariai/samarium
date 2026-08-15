@@ -26,6 +26,8 @@ import {
     type OperationMeta,
     type CodegenOptions,
     type OperationMethod,
+    type SdkRuntimeMode,
+    type ExternalRuntimeConfig,
 } from "../types/meta";
 export {
     type FieldMeta,
@@ -35,6 +37,8 @@ export {
     type OperationMeta,
     type CodegenOptions,
     type OperationMethod,
+    type SdkRuntimeMode,
+    type ExternalRuntimeConfig,
 };
 
 const camelCaps = (arr: string[], separator: string = "$") => {
@@ -620,6 +624,9 @@ export const gatherMetaForType = (
                 int64: "Int",
                 number: "Float",
                 byte: "Int",
+                "date-time": "DateTime",
+                date: "Date",
+                time: "Time",
             };
             if (t.format && t.format.toLowerCase() in mapFormatToType) {
                 meta.name = mapFormatToType[t.format.toLowerCase() as keyof typeof mapFormatToType];

@@ -1,37 +1,102 @@
-import { beforeAll, describe, expect, it, jest } from "bun:test";
+import { afterEach, beforeAll, describe, expect, it, jest } from "bun:test";
 import {
     OPTIONS,
     ROOT_OP_COLLECTOR,
     RootOperation,
     SelectionWrapper,
-    SLW_COLLECTOR,
 } from "@/graphql/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
-import * as examplesBooksSimple from "@/graphql/flavors/default/__tests__/examples/books.simple";
-import * as examplesSpaceX from "@/graphql/flavors/default/__tests__/examples/spacex.with-test-slw";
-import * as examplesUnions from "@/graphql/flavors/default/__tests__/examples/unions.simple";
-import * as examplesDirectives from "@/graphql/flavors/default/__tests__/examples/directives.simple";
+import * as examplesBooksSimple from "@/graphql/flavors/default/__tests__/examples/books.generated";
+import * as examplesSpaceX from "@/graphql/flavors/default/__tests__/examples/spacex.generated";
+import * as examplesUnions from "@/graphql/flavors/default/__tests__/examples/unions.generated";
+import * as examplesDirectives from "@/graphql/flavors/default/__tests__/examples/directives.generated";
 import * as examplesDates from "@/graphql/flavors/default/__tests__/examples/dates.generated";
-import * as examplesContentful from "@/graphql/flavors/default/__tests__/examples/contentful.with-test-slw";
+import * as examplesContentful from "@/graphql/flavors/default/__tests__/examples/contentful.generated";
+
+type GraphqlCall = {
+    query: string;
+    variables?: Record<string, unknown>;
+    headers?: Record<string, string>;
+};
+
+function installMockFetch(data: unknown = { mockData: "test" }) {
+    const mockFetch = jest.fn().mockResolvedValue({
+        json: () => Promise.resolve({ data }),
+    });
+    RootOperation[OPTIONS].fetcher = mockFetch as any;
+    return mockFetch;
+}
+function expectGraphqlPost(mockFetch: ReturnType<typeof jest.fn>, call: GraphqlCall, nth?: number) {
+    const expected = ["[ENDPOINT]", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...RootOperation[OPTIONS].headers,
+            ...call.headers,
+        },
+        body: JSON.stringify({
+            query: call.query,
+            variables: call.variables ?? {},
+        }),
+    }] as const;
+    if (nth != null) {
+        expect(mockFetch).toHaveBeenNthCalledWith(nth, ...expected);
+    } else {
+        expect(mockFetch).toHaveBeenCalledWith(...expected);
+    }
+}
+
+function executeRoot(slw: { [ROOT_OP_COLLECTOR]?: { ref: { op?: { execute: () => Promise<any> }; execute: () => Promise<any> } } }) {
+    return slw[ROOT_OP_COLLECTOR]!.ref.op!.execute();
+}
+
+async function executeRootAndExpectGraphql(
+    slw: Parameters<typeof executeRoot>[0],
+    mockFetch: ReturnType<typeof jest.fn>,
+    calls: GraphqlCall[],
+) {
+    const result = await executeRoot(slw);
+    expect(mockFetch).toHaveBeenCalledTimes(calls.length);
+    calls.forEach((call, i) => expectGraphqlPost(mockFetch, call, i + 1));
+    return result;
+}
+
+/** Re-run the collector so SLW proxies read deserialized scalar data. */
+function hydrateSlw<T>(slw: T & { [ROOT_OP_COLLECTOR]?: { ref: { execute: () => Promise<any> } } }) {
+    return new Promise<T>((resolve) => {
+        slw[ROOT_OP_COLLECTOR]!.ref.execute().then(() => resolve(slw));
+    });
+}
+
+function resetSdkOptions() {
+    RootOperation[OPTIONS].fetcher = undefined as any;
+    RootOperation[OPTIONS]._auth_fn = undefined;
+    RootOperation[OPTIONS]._auth_token = undefined;
+    RootOperation[OPTIONS].headers = {};
+}
 
 describe("Testing and validating features", () => {
     beforeAll(() => {
         RootOperation.authHeaderName = "Authorization";
     });
 
+    afterEach(() => {
+        resetSdkOptions();
+    });
+
     it("executes multiple operations and returns results", async () => {
         const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     title,
                 })),
             })),
-            operation2: op.query((q) => ({
+            operation2: op.Query((q) => ({
                 bookAuthors: q.books(({ author }) => ({
                     author,
                 })),
             })),
-            mutation1: op.mutation((m) => ({
+            mutation1: op.Mutation((m) => ({
                 created: m.createBooks({
                     titles: ["book1", "book2"],
                     authors: ["author1", "author2"],
@@ -40,163 +105,69 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
+        const mockFetch = installMockFetch();
 
         expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
         expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        // right now each operation results in a fetch call
-        // this is because the operations are executed in order
-        // and you cannot mix query and mutation in the same operation
-        expect(mockFetch).toHaveBeenCalledTimes(3);
-
-        // query operation1
-        expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation1 { bookTitles: books { title } }`,
-                variables: {},
-            }),
-        });
-        // query operation2
-        expect(mockFetch).toHaveBeenNthCalledWith(2, "[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation2 { bookAuthors: books { author } }`,
-                variables: {},
-            }),
-        });
-
-        // mutation
-        expect(mockFetch).toHaveBeenNthCalledWith(3, "[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
+        // Each operation is its own fetch (query and mutation cannot be mixed)
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            { query: `query operation1 { bookTitles: books { title } }` },
+            { query: `query operation2 { bookAuthors: books { author } }` },
+            {
                 query: `mutation mutation1 ($titles: [String]!, $authors: [String]!) { created: createBooks(titles: $titles, authors: $authors) { title } }`,
                 variables: {
                     titles: ["book1", "book2"],
                     authors: ["author1", "author2"],
                 },
-            }),
-        });
+            },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
-            operation2: {
-                mockData: "test",
-            },
-            mutation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
+            operation2: { mockData: "test" },
+            mutation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("works with aliases", async () => {
         const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     nameOfBook: title,
                 })),
             })),
         }));
-
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () =>
-                Promise.resolve({
-                    data: {
-                        bookTitles: [{ nameOfBook: "title1" }],
-                    },
-                }),
+        const mockFetch = installMockFetch({
+            bookTitles: [{ nameOfBook: "title1" }],
         });
-        global.fetch = mockFetch as any;
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation1 { bookTitles: books { nameOfBook: title } }`,
-                variables: {},
-            }),
-        });
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            { query: `query operation1 { bookTitles: books { nameOfBook: title } }` },
+        ]);
 
         expect(result).toEqual({
             operation1: {
                 bookTitles: [{ nameOfBook: "title1" }],
             },
         });
-
-        global.fetch = realFetch;
     });
 
-    it("selects all scalars by using the $scalars() helper", async () => {
+    it("selects all fields by omitting the selection callback (default $all)", async () => {
         const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
-                bookTitles: q.books(({ $scalars }) => ({
-                    ...$scalars(),
-                })),
+            operation1: op.Query((q) => ({
+                bookTitles: q.books(),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation1 { bookTitles: books { title author } }`,
-                variables: {},
-            }),
-        });
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            { query: `query operation1 { bookTitles: books { title author } }` },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("works with inline (implicit) fragments", async () => {
@@ -207,42 +178,21 @@ describe("Testing and validating features", () => {
         }
 
         const slw = rootSLWFactory(examplesBooksSimple._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     ...titleOnly(),
                 })),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation1 { bookTitles: books { titleFromFragment: title } }`,
-                variables: {},
-            }),
-        });
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            { query: `query operation1 { bookTitles: books { titleFromFragment: title } }` },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("adds fragments to the operation text before the operation selection", async () => {
@@ -253,7 +203,7 @@ describe("Testing and validating features", () => {
         }
 
         const slw = rootSLWFactory(examplesSpaceX._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 withFragment: q.launches({
                     limit: 10,
                 })(({ $fragment }) => ({
@@ -261,40 +211,18 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        expect(slw[ROOT_OP_COLLECTOR]).toBeDefined();
-        expect(slw[ROOT_OP_COLLECTOR]!.ref.op).toBeDefined();
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            {
                 query: `fragment launchFragment_ on Launch { id }\n query operation1 ($limit: Int) { withFragment: launches(limit: $limit) { ...launchFragment_ } }`,
-                variables: {
-                    limit: 10,
-                },
-            }),
-        });
+                variables: { limit: 10 },
+            },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("handles arguments that are being used in fragments (parameterized fragments)", async () => {
@@ -307,41 +235,22 @@ describe("Testing and validating features", () => {
         }
 
         const slw = rootSLWFactory(examplesSpaceX._makeRootOperationInput, (op) => ({
-            operation1: op.query(({ $fragment }) => ({
+            operation1: op.Query(({ $fragment }) => ({
                 ...$fragment(launchQueryFragment)(10),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            {
                 query: `fragment launchQueryFragment_limit on Query { firstNLaunches: launches(limit: $limit) { id } }\n query operation1 ($limit: Int) { ...launchQueryFragment_limit }`,
-                variables: {
-                    limit: 10,
-                },
-            }),
-        });
+                variables: { limit: 10 },
+            },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("handles multiple uses of the same fragment with different arguments (parameterized fragments)", async () => {
@@ -357,7 +266,7 @@ describe("Testing and validating features", () => {
         }
 
         const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
-            operation1: op.query((s) => ({
+            operation1: op.Query((s) => ({
                 b: s.books((s) => ({
                     title: s.title,
                 })),
@@ -369,43 +278,26 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenNthCalledWith(1, "[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            {
                 query: `fragment titleOnly_language on Article { titleFromFragment: title books: books(language: $language) { title author } }\nfragment titleOnly_language_1 on Article { titleFromFragment: title books: books(language: $language_1) { title author } }\n query operation1 ($language: String, $language_1: String) { b: books { title } a_DE: articles { ...titleOnly_language } a_EN: articles { ...titleOnly_language_1 } }`,
                 variables: {
                     language: "de",
                     language_1: "en",
                 },
-            }),
-        });
+            },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("works with inline ...on fragments for union types", async () => {
         const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 all: q.search({ title: "test" })(({ $on }) => ({
                     ...$on.Book((s) => ({
                         ...s.$scalars(),
@@ -416,44 +308,24 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            {
                 query: `query operation1 ($title: String) { all: search(title: $title) { ... on Book { title author } ... on Article { title publisher } } }`,
-                variables: {
-                    title: "test",
-                },
-            }),
-        });
+                variables: { title: "test" },
+            },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
-
-        global.fetch = realFetch;
     });
 
     it("supports directives", async () => {
         const tag = examplesDirectives.$directives.tag;
         const slw = rootSLWFactory(examplesDirectives._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 bookTitles: q.books(({ title }) => ({
                     title: tag({
                         tag: "Fragment!!",
@@ -461,187 +333,87 @@ describe("Testing and validating features", () => {
                 })),
             })),
         }));
+        const mockFetch = installMockFetch();
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () => Promise.resolve({ data: { mockData: "test" } }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            {
                 query: `query operation1 ($tag: String) { bookTitles: books { title: title @tag(tag: $tag) } }`,
-                variables: {
-                    tag: "Fragment!!",
-                },
-            }),
-        });
+                variables: { tag: "Fragment!!" },
+            },
+        ]);
 
         expect(result).toEqual({
-            operation1: {
-                mockData: "test",
-            },
+            operation1: { mockData: "test" },
         });
     });
 
     it("supports custom scalars and lazily transforms them (with custom deserialization function) when accessed (for objects)", async () => {
-        examplesDates.init({
+        const date = new Date();
+        const mockFetch = installMockFetch({
+            date: date.toISOString(),
+        });
+        examplesDates.default.init({
+            fetcher: mockFetch as any,
             scalars: {
                 DateTime: (v) => new Date(new Date(v).getTime() * 1.2),
             },
         });
 
         const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 date: q.date,
             })),
         }));
 
-        const date = new Date();
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () =>
-                Promise.resolve({
-                    data: {
-                        date: date.toISOString(),
-                    },
-                }),
-        });
-        global.fetch = mockFetch as any;
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            { query: `query operation1 { date }` },
+        ]);
 
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation1 { date }`,
-                variables: {},
-            }),
-        });
-
-        // at this point the root selection wrapper has not been awaited, only the root operation
-        // has been executed. Normally, in the generated sdk the default export is an async function that
-        // serves as the sdk client function. When awaited, this function executes the root operation,
-        // and the root selection wrapper is resolved from a promise. Thus calling .then() on the
-        // root selection wrapper. This signals that proxy object shall now look up the result of the
-        // in the executed root operation and therefore subsequently accessing properties on the root
-        // selection wrapper will retrieve the data from the server response. If the accessed property
-        // is a custom scalar, the proxy object will transform it using the transformation function
-        // that was passed to the init function of the generated sdk.
-
-        // So here we are expecting that the result of the operation is NOT the transformed data, but
-        // the data as it is returned from the server. Thus it is still a string for all the dates.
+        // execute() returns raw JSON; DateTime is still a string until the SLW is hydrated
         expect(result).toEqual({
             operation1: {
-                date: date.toISOString(), // here the custom scalar transformation function has not been applied yet
+                date: date.toISOString(),
             },
         });
 
-        // Now we access the data for the first time, by executing the root operation collector
-        // and awaiting its result. This will subsequently trigger the transformation of the dates to the transformed data,
-        // because the root operation collector will be set in the state 'executed'.
-        const result2 = await (new Promise((resolve) => {
-            slw[ROOT_OP_COLLECTOR]!.ref.execute().then(() => {
-                resolve(slw);
-            });
-        }) as unknown as Promise<typeof slw>);
-
-        // the type here is still the SelectionWrapper<string, string, number, ...>
-        // because we've manually split the operation and the selection wrapper.
-        // The client function normally handles this as explained above and also unwraps
-        // the type. Let's do it manually here.
-
-        type RSLW = typeof result2;
-        type Retrieved =
-            RSLW extends SelectionWrapper<infer FN, infer TTNP, infer TTAD, infer VT, infer AT> ? VT : never;
-
+        const result2 = await hydrateSlw(slw);
+        type Retrieved = (typeof result2) extends SelectionWrapper<infer FN, infer TTNP, infer TTAD, infer VT, infer AT>
+            ? VT
+            : never;
         const retrieved = result2 as unknown as Retrieved;
 
-        expect(retrieved.operation1.date).toEqual(
-            // match the custom scalar transformation function, as it's applied here
-            RootOperation[OPTIONS].scalars.DateTime(date.toISOString()),
-        );
-
-        global.fetch = realFetch;
+        expect(retrieved.operation1.date).toEqual(RootOperation[OPTIONS].scalars.DateTime(date.toISOString()));
     });
 
     it("supports custom scalars and lazily transforms them (with custom deserialization function) when accessed (for arrays with depth = n)", async () => {
-        examplesDates.init({
+        const date = new Date();
+        const dates = [date, date];
+        const nestedDates = [[date, date]];
+        const nestedDates2 = [[[date], [date]]];
+        const mockFetch = installMockFetch({
+            dates: dates.map((d) => d.toISOString()),
+            nestedDates: nestedDates.map((d) => d.map((d) => d.toISOString())),
+            nestedDates2: nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString()))),
+        });
+        examplesDates.default.init({
+            fetcher: mockFetch as any,
             scalars: {
                 DateTime: (v) => new Date(new Date(v).getTime() * 1.2),
             },
         });
 
         const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
-            operation1: op.query((q) => ({
+            operation1: op.Query((q) => ({
                 dates: q.dates,
                 nestedDates: q.nestedDates,
                 nestedDates2: q.nestedDates2,
             })),
         }));
 
-        const date = new Date();
-        const dates = [date, date];
-        const nestedDates = [[date, date]];
-        const nestedDates2 = [[[date], [date]]];
+        const result = await executeRootAndExpectGraphql(slw, mockFetch, [
+            { query: `query operation1 { dates nestedDates nestedDates2 }` },
+        ]);
 
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () =>
-                Promise.resolve({
-                    data: {
-                        dates: dates.map((d) => d.toISOString()),
-                        nestedDates: nestedDates.map((d) => d.map((d) => d.toISOString())),
-                        nestedDates2: nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString()))),
-                    },
-                }),
-        });
-        global.fetch = mockFetch as any;
-
-        const rootOp = slw[ROOT_OP_COLLECTOR]!.ref.op!;
-        const result = await rootOp.execute();
-
-        expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query operation1 { dates nestedDates nestedDates2 }`,
-                variables: {},
-            }),
-        });
-
-        // at this point the root selection wrapper has not been awaited, only the root operation
-        // has been executed. Normally, in the generated sdk the default export is an async function that
-        // serves as the sdk client function.
-        // When awaited, this function executes the root operation *through the root operation _collector_*,
-        // and the root selection wrapper is resolved from a promise. Thus calling .then() on the
-        // root selection wrapper. This signals that proxy object shall now look up the result of the
-        // in the executed root operation and therefore subsequently accessing properties on the root
-        // selection wrapper will retrieve the data from the server response. If the accessed property
-        // is a custom scalar, the proxy object will transform it using the transformation function
-        // that was passed to the init function of the generated sdk.
-
-        // So here we are expecting that the result of the operation is NOT the transformed data, but
-        // the data as it is returned from the server. Thus it is still a string for all the dates.
         expect(result).toEqual({
             operation1: {
                 dates: dates.map((d) => d.toISOString()),
@@ -650,24 +422,10 @@ describe("Testing and validating features", () => {
             },
         });
 
-        // Now we access the data for the first time, by executing the root operation collector
-        // and awaiting its result. This will subsequently trigger the transformation of the dates to the transformed data,
-        // because the root operation collector will be set in the state 'executed'.
-        const result2 = await (new Promise((resolve) => {
-            slw[ROOT_OP_COLLECTOR]!.ref.execute().then(() => {
-                resolve(slw);
-            });
-        }) as unknown as Promise<typeof slw>);
-
-        // the type here is still the SelectionWrapper<string, string, number, ...>
-        // because we've manually split the operation and the selection wrapper.
-        // The client function normally handles this as explained above and also unwraps
-        // the type. Let's do it manually here.
-
-        type RSLW = typeof result2;
-        type Retrieved =
-            RSLW extends SelectionWrapper<infer FN, infer TTNP, infer TTAD, infer VT, infer AT> ? VT : never;
-
+        const result2 = await hydrateSlw(slw);
+        type Retrieved = (typeof result2) extends SelectionWrapper<infer FN, infer TTNP, infer TTAD, infer VT, infer AT>
+            ? VT
+            : never;
         const retrieved = result2 as unknown as Retrieved;
 
         expect(retrieved.operation1).toEqual({
@@ -677,24 +435,15 @@ describe("Testing and validating features", () => {
                 d.map((d) => d.map((d) => RootOperation[OPTIONS].scalars.DateTime(d.toISOString()))),
             ),
         });
-
-        global.fetch = realFetch;
     });
 
     it("supports lazy execution of operations, using the magic .$lazy property", async () => {
-        const realFetch = global.fetch;
-        const mockFetch = jest.fn().mockResolvedValue({
-            json: () =>
-                Promise.resolve({
-                    data: {
-                        first10Launches: [{ id: "1" }, { id: "2" }, { id: "3" }],
-                    },
-                }),
+        const mockFetch = installMockFetch({
+            first10Launches: [{ id: "1" }, { id: "2" }, { id: "3" }],
         });
-        global.fetch = mockFetch as any;
 
-        const { first10Launches } = await examplesSpaceX.default((op) =>
-            op.query((q) => ({
+        const { first10Launches } = examplesSpaceX.default((op) =>
+            op.Query((q) => ({
                 first10Launches: q.launches({ limit: 10 })(({ id }) => ({ id })).$lazy,
             })),
         );
@@ -702,531 +451,248 @@ describe("Testing and validating features", () => {
         expect(mockFetch).not.toHaveBeenCalled();
         expect(first10Launches).toBeInstanceOf(Function);
 
-        // the lazy operation has it's default argument set to { limit: 10 }, so if not
-        // specified, it will use that value
         const result = await first10Launches({});
-
         expect(mockFetch).toHaveBeenCalledTimes(1);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query launches ($limit: Int) { first10Launches: launches(limit: $limit) { id } }`,
-                variables: { limit: 10 },
-                // thus the variables object is not empty object, but has the default value
-            }),
+        expectGraphqlPost(mockFetch, {
+            query: `query launches ($limit: Int) { first10Launches: launches(limit: $limit) { id } }`,
+            variables: { limit: 10 },
         });
-
-        // since the result is not a true array but a proxy object, we need to convert it to an array in order to test it
-        expect(Array.from(result)).toBeArray();
-        expect(Array.from(result)).toHaveLength(3);
         expect(Array.from(result)).toEqual([{ id: "1" }, { id: "2" }, { id: "3" }]);
 
         const result2 = await first10Launches({ limit: 22 });
-
         expect(mockFetch).toHaveBeenCalledTimes(2);
-        expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...RootOperation[OPTIONS].headers,
-            },
-            body: JSON.stringify({
-                query: `query launches ($limit: Int) { first10Launches: launches(limit: $limit) { id } }`,
-                variables: { limit: 22 },
-            }),
+        expectGraphqlPost(mockFetch, {
+            query: `query launches ($limit: Int) { first10Launches: launches(limit: $limit) { id } }`,
+            variables: { limit: 22 },
         });
-
-        // since the result is not a true array but a proxy object, we need to convert it to an array in order to test it
-        expect(Array.from(result2)).toBeArray();
-        expect(Array.from(result2)).toHaveLength(3);
         expect(Array.from(result2)).toEqual([{ id: "1" }, { id: "2" }, { id: "3" }]);
-
-        global.fetch = realFetch;
     });
 
     describe("provides multiple ways for authentication", () => {
-        it("sets the auth token as string with the .auth() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
-            });
-            global.fetch = mockFetch as any;
+        const assetQuery = `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`;
+        const assetVariables = {
+            id: "test",
+            locale: "en-US",
+            locale_1: "en-US",
+        };
 
-            const authToken = "Bearer test token";
-
-            const { test } = await examplesContentful
-                .default((op) =>
-                    op.query((q) => ({
-                        test: q.asset({ id: "test" })(({ title, description }) => ({
-                            title: title({ locale: "en-US" }),
-                            description: description({ locale: "en-US" }),
-                        })),
+        function queryTestAsset() {
+            return examplesContentful.default((op) =>
+                op.Query((q) => ({
+                    test: q.asset({ id: "test" })(({ title, description }) => ({
+                        title: title({ locale: "en-US" }),
+                        description: description({ locale: "en-US" }),
                     })),
-                )
-                .auth(authToken);
+                })),
+            );
+        }
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
+        function expectAssetCall(mockFetch: ReturnType<typeof jest.fn>, authorization?: string) {
+            expectGraphqlPost(mockFetch, {
+                query: assetQuery,
+                variables: assetVariables,
+                headers: authorization ? { Authorization: authorization } : undefined,
             });
+        }
 
+        it("sets the auth token as string with the .auth() method", async () => {
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
+            });
+            const authToken = "Bearer test token";
+            examplesContentful.default.init({ fetcher: mockFetch as any });
+
+            const { test } = await queryTestAsset().auth(authToken);
+
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            global.fetch = realFetch;
         });
 
         it("sets the auth token with a sync callback function in the .auth() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+            examplesContentful.default.init({ fetcher: mockFetch as any });
 
-            const { test } = await examplesContentful
-                .default((op) =>
-                    op.query((q) => ({
-                        test: q.asset({ id: "test" })(({ title, description }) => ({
-                            title: title({ locale: "en-US" }),
-                            description: description({ locale: "en-US" }),
-                        })),
-                    })),
-                )
-                .auth(() => authToken);
+            const { test } = await queryTestAsset().auth(() => authToken);
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            global.fetch = realFetch;
         });
 
         it("sets the auth token with an async callback function in the .auth() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+            examplesContentful.default.init({ fetcher: mockFetch as any });
 
-            const { test } = await examplesContentful
-                .default((op) =>
-                    op.query((q) => ({
-                        test: q.asset({ id: "test" })(({ title, description }) => ({
-                            title: title({ locale: "en-US" }),
-                            description: description({ locale: "en-US" }),
-                        })),
-                    })),
-                )
-                .auth(async () => {
-                    return authToken;
-                });
+            const { test } = await queryTestAsset().auth(async () => authToken);
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            global.fetch = realFetch;
         });
 
         it("sets headers directly in the .auth() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+            examplesContentful.default.init({ fetcher: mockFetch as any });
 
-            const { test } = await examplesContentful
-                .default((op) =>
-                    op.query((q) => ({
-                        test: q.asset({ id: "test" })(({ title, description }) => ({
-                            title: title({ locale: "en-US" }),
-                            description: description({ locale: "en-US" }),
-                        })),
-                    })),
-                )
-                .auth({
-                    Authorization: authToken,
-                });
-
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
+            const { test } = await queryTestAsset().auth({
+                Authorization: authToken,
             });
 
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            global.fetch = realFetch;
         });
 
         it("sets headers using a sync function in the .auth() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+            examplesContentful.default.init({ fetcher: mockFetch as any });
 
-            const { test } = await examplesContentful
-                .default((op) =>
-                    op.query((q) => ({
-                        test: q.asset({ id: "test" })(({ title, description }) => ({
-                            title: title({ locale: "en-US" }),
-                            description: description({ locale: "en-US" }),
-                        })),
-                    })),
-                )
-                .auth(() => {
-                    return {
-                        Authorization: authToken,
-                    };
-                });
+            const { test } = await queryTestAsset().auth(() => ({
+                Authorization: authToken,
+            }));
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            global.fetch = realFetch;
         });
 
         it("sets headers using an async function in the .auth() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
+            examplesContentful.default.init({ fetcher: mockFetch as any });
 
-            const { test } = await examplesContentful
-                .default((op) =>
-                    op.query((q) => ({
-                        test: q.asset({ id: "test" })(({ title, description }) => ({
-                            title: title({ locale: "en-US" }),
-                            description: description({ locale: "en-US" }),
-                        })),
-                    })),
-                )
-                .auth(async () => {
-                    return {
-                        Authorization: authToken,
-                    };
-                });
+            const { test } = await queryTestAsset().auth(async () => ({
+                Authorization: authToken,
+            }));
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            global.fetch = realFetch;
         });
 
-        it("sets the auth token for the sdk globally using the .init() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+        it("sets a static authToken for the sdk globally using the .init() method", async () => {
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
-
             examplesContentful.default.init({
-                auth: authToken,
+                fetcher: mockFetch as any,
+                authToken,
             });
 
-            const { test } = await examplesContentful.default((op) =>
-                op.query((q) => ({
-                    test: q.asset({ id: "test" })(({ title, description }) => ({
-                        title: title({ locale: "en-US" }),
-                        description: description({ locale: "en-US" }),
-                    })),
-                })),
-            );
+            const { test } = await queryTestAsset();
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            // reset the auth token because it's set globally in the local RootOperation which is used in other tests
-            examplesContentful.default.init({
-                auth: {},
-            });
-            global.fetch = realFetch;
         });
 
-        it("sets the auth token with an sync function for the sdk globally using the .init() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+        it("sets the auth token with a sync function for the sdk globally using the .init() method", async () => {
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
-
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 auth: () => authToken,
             });
 
-            const { test } = await examplesContentful.default((op) =>
-                op.query((q) => ({
-                    test: q.asset({ id: "test" })(({ title, description }) => ({
-                        title: title({ locale: "en-US" }),
-                        description: description({ locale: "en-US" }),
-                    })),
-                })),
-            );
+            const { test } = await queryTestAsset();
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
-
-            // reset the auth token because it's set globally in the local RootOperation which is used in other tests
-            examplesContentful.default.init({
-                auth: {},
-            });
-            global.fetch = realFetch;
         });
 
         it("sets the auth token with an async function for the sdk globally using the .init() method", async () => {
-            const realFetch = global.fetch;
-            const mockFetch = jest.fn().mockResolvedValue({
-                json: () =>
-                    Promise.resolve({
-                        data: {
-                            test: {
-                                title: "test title",
-                                description: "test description",
-                            },
-                        },
-                    }),
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = mockFetch as any;
-
             const authToken = "Bearer test token";
-
             examplesContentful.default.init({
+                fetcher: mockFetch as any,
                 auth: async () => authToken,
             });
 
-            const { test } = await examplesContentful.default((op) =>
-                op.query((q) => ({
-                    test: q.asset({ id: "test" })(({ title, description }) => ({
-                        title: title({ locale: "en-US" }),
-                        description: description({ locale: "en-US" }),
-                    })),
-                })),
-            );
+            const { test } = await queryTestAsset();
 
-            expect(mockFetch).toHaveBeenCalledWith("[ENDPOINT]", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: authToken,
-                },
-                body: JSON.stringify({
-                    query: `query test ($id: String!, $locale: String, $locale_1: String) { test: asset(id: $id) { title: title(locale: $locale) description: description(locale: $locale_1) } }`,
-                    variables: {
-                        id: "test",
-                        locale: "en-US",
-                        locale_1: "en-US",
-                    },
-                }),
-            });
-
+            expectAssetCall(mockFetch, authToken);
             expect(test.title).toEqual("test title");
             expect(test.description).toEqual("test description");
+        });
 
-            // reset the auth token because it's set globally in the local RootOperation which is used in other tests
-            examplesContentful.default.init({
-                auth: {},
+        it("passes the .auth(source) argument into the global auth resolver per call", async () => {
+            const mockFetch = installMockFetch({
+                test: { title: "test title", description: "test description" },
             });
-            global.fetch = realFetch;
+            const seenSources: unknown[] = [];
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+                auth: (source) => {
+                    seenSources.push(source);
+                    if (typeof source === "string") return source;
+                    return "Bearer default";
+                },
+            });
+
+            await queryTestAsset().auth("Bearer from-source");
+
+            expect(seenSources).toEqual(["Bearer from-source"]);
+            expectGraphqlPost(mockFetch, {
+                query: assetQuery,
+                variables: assetVariables,
+                headers: { Authorization: "Bearer from-source" },
+            });
+        });
+
+        it("isolates concurrent calls with different .auth(source) values under a global resolver", async () => {
+            const mockFetch = jest.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+                await new Promise((r) => setTimeout(r, 20));
+                const auth = (init?.headers as Record<string, string>)?.Authorization;
+                return {
+                    json: () =>
+                        Promise.resolve({
+                            data: {
+                                test: {
+                                    title: auth ?? "none",
+                                    description: "test description",
+                                },
+                            },
+                        }),
+                };
+            });
+            examplesContentful.default.init({
+                fetcher: mockFetch as any,
+                auth: (source) => (typeof source === "string" ? source : "Bearer default"),
+            });
+
+            const [a, b] = await Promise.all([
+                queryTestAsset().auth("Bearer user-A"),
+                queryTestAsset().auth("Bearer user-B"),
+            ]);
+
+            expect(a.test.title).toEqual("Bearer user-A");
+            expect(b.test.title).toEqual("Bearer user-B");
+            const authHeaders = mockFetch.mock.calls.map(
+                (c: any[]) => (c[1]?.headers as Record<string, string>)?.Authorization,
+            );
+            expect(authHeaders).toContain("Bearer user-A");
+            expect(authHeaders).toContain("Bearer user-B");
         });
     });
 });

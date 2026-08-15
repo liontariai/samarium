@@ -1,0 +1,9 @@
+# Custom scalar whose @typedef name is not generated
+"""
+@typedef {JToken}
+"""
+scalar OpaqueToken
+
+type Query {
+    token: OpaqueToken
+}

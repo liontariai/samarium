@@ -1,0 +1,26 @@
+# Minimal Contentful-shaped schema covering fields used in auth / feature tests
+# (asset by id with localized title/description). Not a full Contentful export.
+directive @include(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+type Asset {
+    title(locale: String): String
+    description(locale: String): String
+    contentType(locale: String): String
+    fileName(locale: String): String
+    size(locale: String): Int
+    url(locale: String, transform: ImageTransformOptions): String
+    width(locale: String): Int
+    height(locale: String): Int
+}
+
+input ImageTransformOptions {
+    width: Int
+    height: Int
+    quality: Int
+    format: String
+}
+
+type Query {
+    asset(id: String!, preview: Boolean, locale: String): Asset
+}

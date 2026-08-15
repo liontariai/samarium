@@ -6,6 +6,54 @@ import { DirectiveLocation } from "graphql";
 // @ts-ignore
 import wrapperCode from "./wrapper.ts" with { type: "text" };
 
+const TS_TYPE_INTRINSICS = new Set([
+    "string",
+    "number",
+    "boolean",
+    "any",
+    "unknown",
+    "never",
+    "void",
+    "object",
+    "undefined",
+    "null",
+    "Record",
+    "Array",
+    "Date",
+    "Promise",
+    "Map",
+    "Set",
+    "Readonly",
+    "Partial",
+    "Required",
+    "Pick",
+    "Omit",
+]);
+
+/**
+ * Named types referenced by a custom-scalar TS type that are not themselves
+ * generated (e.g. `@typedef {JToken}`). Do **not** put `JToken: any` on
+ * `ScalarTypeMapWithCustom` — declaration merging would keep `any`
+ * (`any & AnotherType` is `any`). Emit a type alias that is `any` only when
+ * the user has not augmented the interface.
+ */
+function unresolvedTypeNamesInCustomScalars(customScalars: TypeMeta[]): string[] {
+    const declared = new Set(
+        customScalars.map((cs) => cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")),
+    );
+    const unresolved = new Set<string>();
+    const ident = /\b([A-Za-z_$][\w$]*)\b/g;
+    for (const cs of customScalars) {
+        const tsType = cs.scalarTSType ?? "";
+        for (const match of tsType.matchAll(ident)) {
+            const name = match[1];
+            if (TS_TYPE_INTRINSICS.has(name) || declared.has(name)) continue;
+            unresolved.add(name);
+        }
+    }
+    return [...unresolved];
+}
+
 /**
  * Default selection type flavor implementation.
  * A selection type flavor is a class that generates the code for a selection type.
@@ -106,6 +154,59 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
 
     public static readonly FieldValueWrapperType = wrapperCode;
 
+    /**
+     * Import preamble used when `generate({ runtime: "external" })` is set.
+     * Tests share one wrapper module instance so traps and symbol identity work.
+     */
+    public static ExternalRuntimePreamble(wrapperModule: string): string {
+        return `
+// @samarium-runtime external — runtime is not inlined; imported for testability
+import {
+    _,
+    OPTIONS,
+    PLUGINS,
+    RootOperation,
+    OperationSelectionCollector,
+    type OperationSelectionCollectorRef,
+    type AuthSource,
+    type AuthResolver,
+    type AuthResult,
+    proxify,
+    SelectionWrapperImpl,
+    SelectionWrapper,
+    SLW_UID,
+    SLW_FIELD_NAME,
+    SLW_FIELD_TYPENAME,
+    SLW_FIELD_ARR_DEPTH,
+    SLW_IS_ROOT_TYPE,
+    SLW_IS_ON_TYPE_FRAGMENT,
+    SLW_IS_FRAGMENT,
+    SLW_VALUE,
+    SLW_ARGS,
+    SLW_ARGS_META,
+    SLW_DIRECTIVE,
+    SLW_DIRECTIVE_ARGS,
+    SLW_DIRECTIVE_ARGS_META,
+    SLW_PARENT_SLW,
+    SLW_LAZY_FLAG,
+    SLW_ALIAS_PREFIX,
+    OP,
+    ROOT_OP_COLLECTOR,
+    SLW_PARENT_COLLECTOR,
+    SLW_COLLECTOR,
+    SLW_OP_PATH,
+    SLW_REGISTER_PATH,
+    SLW_RENDER_WITH_ARGS,
+    SLW_OP_RESULT_DATA_OVERRIDE,
+    SLW_RECREATE_VALUE_CALLBACK,
+    SLW_SETTER_DATA_OVERRIDE,
+    SLW_NEEDS_CLONE,
+    SLW_CLONE,
+    SLW_IS_ASYNC_ITERABLE,
+} from "${wrapperModule}";
+`;
+    }
+
     public static EnumTypesMapped = (collector: Collector) => {
         return `export interface EnumTypesMapped {
             ${Array.from(collector.enumsTypes.keys())
@@ -116,13 +217,28 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         };`;
     };
 
-    public static readonly HelperTypes = (customScalars: TypeMeta[]) => `
-    export interface ScalarTypeMapWithCustom {
-        ${customScalars
-            .map((cs) => `"${cs.name.replaceAll("!", "")}": ${cs.scalarTSType?.replaceAll("!", "")};`)
+    public static readonly HelperTypes = (customScalars: TypeMeta[]) => {
+        const stripped = customScalars.map((cs) => ({
+            ...cs,
+            name: cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", ""),
+            scalarTSType: cs.scalarTSType?.replaceAll("!", ""),
+        }));
+        const interfaceBody = stripped
+            .map((cs) => `"${cs.name}": ${cs.scalarTSType};`)
             .filter((cs, i, arr) => arr.findIndex((c) => c === cs) === i)
-            .join("\n")}
+            .join("\n");
+        const unresolved = unresolvedTypeNamesInCustomScalars(stripped);
+        const unresolvedAliases = unresolved.length
+            ? `    type CustomScalarOrAny<K extends string> = K extends keyof ScalarTypeMapWithCustom
+        ? ScalarTypeMapWithCustom[K]
+        : any;
+${unresolved.map((name) => `    export type ${name} = CustomScalarOrAny<"${name}">;`).join("\n")}`
+            : "";
+        return `
+    export interface ScalarTypeMapWithCustom {
+        ${interfaceBody}
     }
+${unresolvedAliases}
     export interface ScalarTypeMapDefault {
         ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
             .map(([k, v]) => `"${k}": ${v};`)
@@ -272,9 +388,9 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             this: any,
             s: (selection: FF) => TT,
         ) => Prettify<
-            ConvertToPromise<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, AS_PROMISE> &
-                ReplacePlaceHoldersWithTNested<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, EE, REP>
-        >,
+            ConvertToPromise<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, AS_PROMISE>
+        > &
+        ReplacePlaceHoldersWithTNested<ConvertToAsyncIter<ToTArrayWithDepth<inferedResult, TAD>, AS_ASYNC_ITER>, EE, REP>
     > = keyof F extends "$on"
         ? SLWFN_WITH_SELECTION
         : // Overload 1: No 's' provided -> return full transformed F
@@ -299,6 +415,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
         SLFN_typeArrDepth: TAD,
     ) => SLFNReturned<T, F, E, TAD, AS_PROMISE, AS_ASYNC_ITER, REP>;
     `;
+    };
     public static readonly HelperFunctions = `
     const selectScalars = (selection: Record<string, any>) =>
         Object.fromEntries(
@@ -1215,11 +1332,11 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                                 { 
                                                     ${lazyModiferType} ${this.authConfig
                                     ? `& {
-                                                        auth: (auth: FnOrPromisOrPrimitive) => Promise<"T">;
+                                                        auth: (auth: AuthSource) => Promise<"T">;
                                                     }`
                                     : ""
                                 };
-                                                    ${this.authConfig ? `auth: (auth: FnOrPromisOrPrimitive) => Promise<"T"> & {${lazyModiferType}}` : ""}
+                                                    ${this.authConfig ? `auth: (auth: AuthSource) => Promise<"T"> & {${lazyModiferType}}` : ""}
                                                 },
                                                 "$lazy" ${this.authConfig ? `| "auth"` : ""},
                                                 AS_PROMISE
@@ -1437,7 +1554,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                     {
                         get(_t, _prop) {
                             if (String(_prop) === "auth") {
-                                return (auth: FnOrPromisOrPrimitive) => {
+                                return (auth: AuthSource) => {
                                     root.op!.setAuth(auth);
                                     return resultProxy;
                                 };
@@ -1445,17 +1562,22 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             return resultProxy[_prop];
                         },
                     },
-                )`
-                : `resultProxy`
-            } as finalReturnTypeBasedOnIfHasLazyPromises & {
+                ) as finalReturnTypeBasedOnIfHasLazyPromises & {
                     auth: (
-                        auth: FnOrPromisOrPrimitive,
+                        auth: AuthSource,
                     ) => finalReturnTypeBasedOnIfHasLazyPromises;
-                };
+                }`
+                : `resultProxy as finalReturnTypeBasedOnIfHasLazyPromises`
+            };
             };
 
             const __init__ = (options: {
-                ${authConfig ? `auth?: FnOrPromisOrPrimitive;` : ""}
+                ${authConfig
+                ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
+                auth?: AuthResolver;
+                /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
+                authToken?: string;`
+                : ""}
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1477,15 +1599,17 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
             }) => {
                 ${authConfig
                 ? `
-                if (typeof options.auth === "string") {
-                    RootOperation[OPTIONS].headers = {
-                        "${authConfig.headerName}": options.auth,
-                    };
-                } else if (typeof options.auth === "function" ) {
-                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                if (options.authToken !== undefined) {
+                    RootOperation[OPTIONS]._auth_token = options.authToken;
                 }
-                else if (options.auth) {
-                    RootOperation[OPTIONS].headers = options.auth;
+                if (typeof options.auth === "function") {
+                    RootOperation[OPTIONS]._auth_fn = options.auth;
+                } else if (typeof options.auth === "string") {
+                    // Deprecated: use authToken for static tokens
+                    console.warn(
+                        "[samarium] init({ auth: string }) is deprecated; use init({ authToken: string }) for static tokens.",
+                    );
+                    RootOperation[OPTIONS]._auth_token = options.auth;
                 }
                 `
                 : ""
@@ -1713,7 +1837,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                 {
                                     get(_t, _prop) {
                                         if (String(_prop) === "auth") {
-                                            return (auth: FnOrPromisOrPrimitive) => {
+                                            return (auth: AuthSource) => {
                                                 root.op!.setAuth(auth);
                                                 return resultProxy;
                                             };
@@ -1846,7 +1970,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                         {
                             get(_t, _prop) {
                                 if (String(_prop) === "auth") {
-                                    return (auth: FnOrPromisOrPrimitive) => {
+                                    return (auth: AuthSource) => {
                                         root.op!.setAuth(auth);
                                         return resultProxy;
                                     };
@@ -1916,7 +2040,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         > ${authConfig
                             ? `& {
                                                     auth: (
-                                                        auth: FnOrPromisOrPrimitive,
+                                                        auth: AuthSource,
                                                     ) => Promise<
                                                         ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                                     >
@@ -1925,7 +2049,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             : ""
                         };
                                         ${authConfig
-                            ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                            ? `auth: (token: AuthSource) => Promise<"T"> & {
                                             $lazy: () => Promise<
                                                 ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<TTNP>, TTAD>")}
                                             >;
@@ -1952,7 +2076,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                                         > ${authConfig
                             ? `& {
                                                     auth: (
-                                                        auth: FnOrPromisOrPrimitive,
+                                                        auth: AuthSource,
                                                     ) => Promise<
                                                         ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                                     >;
@@ -1961,7 +2085,7 @@ export class GeneratorSelectionTypeFlavorDefault extends GeneratorSelectionTypeF
                             : ""
                         };
                                         ${authConfig
-                            ? `auth: (token: FnOrPromisOrPrimitive) => Promise<"T"> & {
+                            ? `auth: (token: AuthSource) => Promise<"T"> & {
                                             $lazy: () => Promise<
                                                 ${wrapForAsyncIter("ToTArrayWithDepth<SLW_TPN_ToType<_TTNP>, _TTAD>")}
                                             >;

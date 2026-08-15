@@ -1,0 +1,36 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Events",
+        "description": "Spec for text/event-stream (SSE) feature tests",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/events": {
+            "get": {
+                "operationId": "onEvent",
+                "responses": {
+                    "200": {
+                        "description": "stream",
+                        "content": {
+                            "text/event-stream": {
+                                "schema": { "$ref": "#/components/schemas/Event" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Event": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "at": { "type": "string", "format": "date-time" }
+                }
+            }
+        }
+    }
+}

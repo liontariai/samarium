@@ -52,7 +52,9 @@
         "prettier": "prettier --write .",
         "bundle": "bun bundle.ts && tsc && rm -rf `find ./dist/ -type d -name __tests__`",
         "prepublishOnly": "bun run bundle",
-        "test": "bun test"
+        "test": "bun run generate:test-sdks && bun test",
+        "generate:test-sdks": "bun scripts/generate-test-sdks.ts",
+        "generate:test-sdks:check": "bun scripts/generate-test-sdks.ts --check"
     },
     "prettier": {
         "tabWidth": 4,

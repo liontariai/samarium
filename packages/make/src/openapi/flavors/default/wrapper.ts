@@ -2,7 +2,7 @@ const Proxy = globalThis.Proxy;
 Proxy.prototype = {};
 
 /** Wrap real response data so property access re-enters the SelectionWrapper handler (Array.isArray works). */
-function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
+export function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
     const data = _data;
     const proxy = new Proxy(data as any | any[], {
         get(target: any[], prop: PropertyKey, receiver: any): any {
@@ -30,6 +30,21 @@ function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>)
     return proxy as unknown as any & ArrayLike<any>;
 }
 
+type FnOrPromisOrPrimitive =
+    | (() => string | { [key: string]: string } | undefined)
+    | (() => Promise<string | { [key: string]: string } | undefined>)
+    | string
+    | { [key: string]: string };
+
+/** Per-call source passed to `.auth(source)` and into the global `auth` resolver. */
+export type AuthSource = unknown;
+/** Value returned by the global `auth` resolver (or a direct per-call token/headers). */
+export type AuthResult = string | { [key: string]: string } | undefined;
+/** Global `init({ auth })` resolver — called per SDK request with the optional `.auth(source)` argument. */
+export type AuthResolver =
+    | ((source?: AuthSource) => AuthResult)
+    | ((source?: AuthSource) => Promise<AuthResult>);
+
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 
@@ -47,12 +62,83 @@ type OpenAPIRequest = {
 };
 
 export class RootOperation {
+    public static authHeaderName = "Authorization";
+
+    private mapAuthResultToHeaders = (result?: AuthResult) => {
+        if (result === undefined || result === null) return undefined;
+        if (typeof result === "string") {
+            return { [RootOperation.authHeaderName]: result };
+        }
+        return result;
+    };
+
+    private resolveFnOrPromisOrPrimitiveHeaders = (arg?: FnOrPromisOrPrimitive) => {
+        if (!arg) return undefined;
+        let headers: Record<string, string> | undefined = undefined;
+        if (typeof arg === "string") {
+            headers = { [RootOperation.authHeaderName]: arg };
+        } else if (typeof arg === "function") {
+            const tokenOrPromise = arg();
+            if (tokenOrPromise instanceof Promise) {
+                return tokenOrPromise.then((t) => {
+                    if (typeof t === "string") headers = { [RootOperation.authHeaderName]: t };
+                    else headers = t;
+                    return headers;
+                });
+            }
+            if (typeof tokenOrPromise === "string") {
+                headers = { [RootOperation.authHeaderName]: tokenOrPromise };
+            } else {
+                headers = tokenOrPromise;
+            }
+        } else {
+            headers = arg;
+        }
+        return headers;
+    };
+
+    /**
+     * Resolve auth headers for this request.
+     * 1. Global `auth` resolver (with optional per-call source)
+     * 2. Per-call `.auth(token|headers|fn)` when no global resolver
+     * 3. Static `authToken` from init
+     */
+    private resolveAuthHeaders = async (
+        authArg?: AuthSource,
+    ): Promise<Record<string, string> | undefined> => {
+        const authFn = RootOperation[OPTIONS]._auth_fn;
+        if (authFn) {
+            const result = await authFn(authArg);
+            return this.mapAuthResultToHeaders(result);
+        }
+        if (authArg !== undefined && authArg !== null) {
+            if (
+                typeof authArg === "string" ||
+                typeof authArg === "function" ||
+                (typeof authArg === "object" && authArg !== null && !(authArg instanceof Request))
+            ) {
+                return this.resolveFnOrPromisOrPrimitiveHeaders(authArg as FnOrPromisOrPrimitive);
+            }
+            return undefined;
+        }
+        if (RootOperation[OPTIONS]._auth_token !== undefined) {
+            return { [RootOperation.authHeaderName]: RootOperation[OPTIONS]._auth_token };
+        }
+        return undefined;
+    };
+
+    constructor(public authArg?: AuthSource) { }
+
+    public setAuth(auth: AuthSource) {
+        this.authArg = auth;
+        return this;
+    }
+
     public static [OPTIONS] = {
         headers: {} as Record<string, string>,
-        _auth_fn: undefined as
-            | (() => string | { [key: string]: string })
-            | (() => Promise<string | { [key: string]: string }>)
-            | undefined,
+        _auth_fn: undefined as AuthResolver | undefined,
+        /** Static token for CLI/scripts — never set this per SSR request. */
+        _auth_token: undefined as string | undefined,
         fetcher: undefined as unknown as (
             input: string | URL | globalThis.Request,
             init?: RequestInit,
@@ -96,6 +182,17 @@ export class RootOperation {
         if (!this.rootCollector) {
             throw new Error("RootOperation has no registered collector");
         }
+
+        // Auth wins over static OPTIONS.headers and execute() arg headers
+        const authHeaders = await this.resolveAuthHeaders(this.authArg);
+        const staticHeaders = {
+            ...RootOperation[OPTIONS].headers,
+            ...headers,
+        };
+        headers = {
+            ...staticHeaders,
+            ...authHeaders,
+        };
 
         type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
         const operations: {
@@ -770,7 +867,13 @@ export class SelectionWrapper<
                             ) {
                                 const { parentSlw, key } = this;
                                 const newRootOpCollectorRef = {
-                                    ref: new OperationSelectionCollector(undefined, undefined, new RootOperation()),
+                                    ref: new OperationSelectionCollector(
+                                        undefined,
+                                        undefined,
+                                        new RootOperation(
+                                            that[ROOT_OP_COLLECTOR]?.ref.op?.authArg,
+                                        ),
+                                    ),
                                 };
 
                                 const newThisCollector = new OperationSelectionCollector(

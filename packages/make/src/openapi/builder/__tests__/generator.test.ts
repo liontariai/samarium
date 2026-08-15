@@ -2,10 +2,10 @@ import fs from "fs";
 import { describe, it } from "bun:test";
 import type { OpenAPI3 } from "openapi-typescript";
 
-import thingsboardJson from "./examples/thingsboard.json";
-import testapiJson from "./examples/testapi.json";
-import spotifyJson from "./examples/spotify.json";
-import reelgoodJson from "./examples/reelgood.json";
+import thingsboardJson from "../../flavors/default/__tests__/schemas/thingsboard.json";
+import testapiJson from "../../flavors/default/__tests__/schemas/testapi.json";
+import spotifyJson from "../../flavors/default/__tests__/schemas/spotify.json";
+import reelgoodJson from "../../flavors/default/__tests__/schemas/reelgood.json";
 
 import { GeneratorSelectionTypeFlavorDefault } from "../../flavors/default/generator-flavor";
 import { Generator } from "../generator";

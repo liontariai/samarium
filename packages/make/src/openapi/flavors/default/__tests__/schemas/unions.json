@@ -1,0 +1,103 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Unions",
+        "description": "Spec for oneOf / $on / $scalars feature tests",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/books": {
+            "get": {
+                "operationId": "listBooks",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Book" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/articles": {
+            "get": {
+                "operationId": "listArticles",
+                "parameters": [
+                    {
+                        "name": "language",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "$ref": "#/components/schemas/Article" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/search": {
+            "get": {
+                "operationId": "search",
+                "parameters": [
+                    {
+                        "name": "title",
+                        "in": "query",
+                        "required": false,
+                        "schema": { "type": "string" }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "oneOf": [
+                                            { "$ref": "#/components/schemas/Book" },
+                                            { "$ref": "#/components/schemas/Article" }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Book": {
+                "type": "object",
+                "properties": {
+                    "title": { "type": "string" },
+                    "author": { "type": "string" }
+                }
+            },
+            "Article": {
+                "type": "object",
+                "properties": {
+                    "title": { "type": "string" },
+                    "publisher": { "type": "string" }
+                }
+            }
+        }
+    }
+}

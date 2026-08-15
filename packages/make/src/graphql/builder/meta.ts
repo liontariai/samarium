@@ -32,6 +32,8 @@ import {
     type TypeMeta,
     type CodegenOptions,
     type DirectiveMeta,
+    type SdkRuntimeMode,
+    type ExternalRuntimeConfig,
 } from "../types/meta";
 export {
     type ArgumentMeta,
@@ -41,6 +43,8 @@ export {
     type SchemaMeta,
     type TypeMeta,
     type CodegenOptions,
+    type SdkRuntimeMode,
+    type ExternalRuntimeConfig,
 };
 
 const createACustomScalarType = (

@@ -32,7 +32,8 @@ function getReconstructedData(data: any, prefixes: string[], keepRest = true, ho
         );
     return Object.fromEntries(newEntries);
 }
-function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
+/** Wrap response data so property access re-enters the SelectionWrapper proxy (arrays, nested objects). */
+export function proxify(_data: any, slw: SelectionWrapperImpl<any, any, any, any, any>): any & ArrayLike<any> {
     const aliases = Object.entries(slw[SLW_VALUE] || {})
         .map(([k, v]) => (v instanceof SelectionWrapperImpl ? v[SLW_ALIAS_PREFIX] : 0))
         .filter(Boolean) as string[];
@@ -74,11 +75,30 @@ type FnOrPromisOrPrimitive =
     | (() => Promise<string | { [key: string]: string } | undefined>)
     | string
     | { [key: string]: string };
+
+/** Per-call source passed to `.auth(source)` and into the global `auth` resolver. */
+export type AuthSource = unknown;
+/** Value returned by the global `auth` resolver (or a direct per-call token/headers). */
+export type AuthResult = string | { [key: string]: string } | undefined;
+/** Global `init({ auth })` resolver — called per SDK request with the optional `.auth(source)` argument. */
+export type AuthResolver =
+    | ((source?: AuthSource) => AuthResult)
+    | ((source?: AuthSource) => Promise<AuthResult>);
+
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 export const PLUGINS = Symbol("PLUGINS");
 export class RootOperation {
     public static authHeaderName = "[AUTH_HEADER_NAME]";
+
+    private mapAuthResultToHeaders = (result?: AuthResult) => {
+        if (result === undefined || result === null) return undefined;
+        if (typeof result === "string") {
+            return { [RootOperation.authHeaderName]: result };
+        }
+        return result;
+    };
+
     private resolveFnOrPromisOrPrimitiveHeaders = (arg?: FnOrPromisOrPrimitive) => {
         if (!arg) return undefined;
         let headers: Record<string, string> | undefined = undefined;
@@ -106,11 +126,43 @@ export class RootOperation {
         return headers;
     };
 
+    /**
+     * Resolve auth headers for this request.
+     * 1. Global `auth` resolver (with optional per-call source)
+     * 2. Per-call `.auth(token|headers|fn)` when no global resolver
+     * 3. Static `authToken` from init
+     */
+    private resolveAuthHeaders = async (
+        authArg?: AuthSource,
+    ): Promise<Record<string, string> | undefined> => {
+        const authFn = RootOperation[OPTIONS]._auth_fn;
+        if (authFn) {
+            const result = await authFn(authArg);
+            return this.mapAuthResultToHeaders(result);
+        }
+        if (authArg !== undefined && authArg !== null) {
+            // Direct per-call token / headers / no-arg factory (no global resolver)
+            if (
+                typeof authArg === "string" ||
+                typeof authArg === "function" ||
+                (typeof authArg === "object" && authArg !== null && !(authArg instanceof Request))
+            ) {
+                return this.resolveFnOrPromisOrPrimitiveHeaders(authArg as FnOrPromisOrPrimitive);
+            }
+            // Non-token source without a global resolver cannot be interpreted
+            return undefined;
+        }
+        if (RootOperation[OPTIONS]._auth_token !== undefined) {
+            return { [RootOperation.authHeaderName]: RootOperation[OPTIONS]._auth_token };
+        }
+        return undefined;
+    };
+
     constructor(
-        public authArg?: FnOrPromisOrPrimitive,
+        public authArg?: AuthSource,
         public headers?: FnOrPromisOrPrimitive,
     ) { }
-    public setAuth(auth: FnOrPromisOrPrimitive) {
+    public setAuth(auth: AuthSource) {
         this.authArg = auth;
         return this;
     }
@@ -130,10 +182,9 @@ export class RootOperation {
             init?: RequestInit,
         ) => Promise<[string | URL | globalThis.Request, RequestInit | undefined]>,
 
-        _auth_fn: undefined as
-            | (() => string | { [key: string]: string } | undefined)
-            | (() => Promise<string | { [key: string]: string } | undefined>)
-            | undefined,
+        _auth_fn: undefined as AuthResolver | undefined,
+        /** Static token for CLI/scripts — never set this per SSR request. */
+        _auth_token: undefined as string | undefined,
         scalars: {
             DateTime: (value: string) => new Date(value),
             DateTimeISO: (value: string) => new Date(value),
@@ -181,17 +232,18 @@ export class RootOperation {
             throw new Error("RootOperation has no registered collector");
         }
 
-        const authHeaders = await this.rootCollector.op!.resolveFnOrPromisOrPrimitiveHeaders(
-            this.rootCollector.op!.authArg ?? RootOperation[OPTIONS]._auth_fn,
+        const authHeaders = await this.rootCollector.op!.resolveAuthHeaders(
+            this.rootCollector.op!.authArg,
         );
         const headersHeaders = await this.rootCollector.op!.resolveFnOrPromisOrPrimitiveHeaders(
             this.rootCollector.op!.headers ?? RootOperation[OPTIONS].headers,
         );
 
+        // Auth wins over static headers so per-call / resolver Authorization is not overwritten
         headers = {
-            ...authHeaders,
             ...headersHeaders,
             ...headers,
+            ...authHeaders,
         };
 
         type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
@@ -210,6 +262,7 @@ export class RootOperation {
                 rootSlw = rootSlw[SLW_PARENT_SLW]!;
             }
 
+            rootSlw[SLW_REGISTER_PATH]([opName]);
             const selection = rootSlw[SLW_COLLECTOR]!.renderSelections(
                 [opName],
                 {},
@@ -916,16 +969,12 @@ export class SelectionWrapper<
 
                 return {
                     // implement ProxyHandler methods
-                    ownKeys(target) {
-                        if (target[SLW_FIELD_ARR_DEPTH]) {
-                            return Reflect.ownKeys(new Array(target[SLW_FIELD_ARR_DEPTH]));
-                        }
+                    ownKeys() {
+                        // Do not fake Array ownKeys (`length` is non-configurable); the target is
+                        // SelectionWrapperImpl. Result arrays are handled by `get` + `proxify`.
                         return Reflect.ownKeys(value ?? {});
                     },
-                    getOwnPropertyDescriptor(target, prop) {
-                        if (target[SLW_FIELD_ARR_DEPTH]) {
-                            return Reflect.getOwnPropertyDescriptor(new Array(target[SLW_FIELD_ARR_DEPTH]), prop);
-                        }
+                    getOwnPropertyDescriptor(_target, prop) {
                         return Reflect.getOwnPropertyDescriptor(value ?? {}, prop);
                     },
                     has(target, prop) {
@@ -1119,7 +1168,7 @@ export class SelectionWrapper<
                                     {
                                         get(_t, _prop) {
                                             if (String(_prop) === "auth") {
-                                                return (auth: FnOrPromisOrPrimitive) => {
+                                                return (auth: AuthSource) => {
                                                     newRootOpCollectorRef.ref.op!.setAuth(auth);
                                                     return resultProxy;
                                                 };
