@@ -244,8 +244,8 @@ ${unresolved.map((name) => `    export type ${name} = CustomScalarOrAny<"${name}
 ${unresolvedAliases}
     export interface ScalarTypeMapDefault {
         ${Array.from(GeneratorSelectionTypeFlavorDefault.ScalarTypeMap)
-            .map(([k, v]) => `"${k}": ${v};`)
-            .join("\n")}
+                .map(([k, v]) => `"${k}": ${v};`)
+                .join("\n")}
     };
 
     type SelectionFnParent = {
@@ -1502,16 +1502,30 @@ ${unresolvedAliases}
                         options,
                     ).makeSelectionFunction();
 
-            const operationAsOpNameToFunction = `
-                "${operation.name}": (${argTypes ? `args: ${argTypes.argsTypeName}` : ""}) => 
-                    ${returnTypeSelectionFunctionNameOrScalarOrEnum}.bind({
-                        collector: this,
+            const boundSelection = `${returnTypeSelectionFunctionNameOrScalarOrEnum}.bind({
+                        collector: that,
                         fieldName: "${operation.name}",
                         opPath: "${operation.path}",
                         method: "${operation.method}",
                         isEventStream: ${operation.isEventStream ? "true" : "false"},
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
-                    })${operation.type.isScalar || operation.type.isEnum ? "()" : ""},
+                    })${operation.type.isScalar || operation.type.isEnum ? "()" : ""}`;
+
+            // No-arg ops skip the extra () — same as GraphQL: q.books(sel) not q.books()(sel).
+            // No-arg scalars are getters so the SLW is only created when accessed (q.date).
+            const operationAsOpNameToFunction = argTypes
+                ? `
+                "${operation.name}": (args: ${argTypes.argsTypeName}) =>
+                    ${boundSelection},
+            `
+                : operation.type.isScalar || operation.type.isEnum
+                    ? `
+                get "${operation.name}"() {
+                    return ${boundSelection};
+                },
+            `
+                    : `
+                "${operation.name}": ${boundSelection},
             `;
 
             if (!operation.type.isScalar && !operation.type.isEnum) {
@@ -1534,8 +1548,9 @@ ${unresolvedAliases}
                         >`;
                 makeSelectionFunctionInputReturnTypeParts.set(
                     operation.name,
-                    `(
-                    ${argTypes ? `args: ${argTypes.argsTypeName}` : ""}
+                    argTypes
+                        ? `(
+                    args: ${argTypes.argsTypeName}
                     ) =>
                         ${objectReturnType},`
                         : `${objectReturnType},`,
@@ -1573,6 +1588,7 @@ ${unresolvedAliases}
                 .join("\n")}
             };
             export function _makeRootOperationInput(this: any) {
+                const that = this;
                 const withoutScalarOps = {
                     ${fnsWithoutScalarOps.join("\n")}
                 } as const;
@@ -1581,10 +1597,11 @@ ${unresolvedAliases}
                     ${fnsScalarOps.join("\n")}
                 } as const;
 
-                return {
-                    ...withoutScalarOps,
-                    ...withScalarOps,
-                } as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
+                // Copy descriptors so scalar getters are not invoked by object spread
+                return Object.defineProperties(
+                    { ...withoutScalarOps },
+                    Object.getOwnPropertyDescriptors(withScalarOps),
+                ) as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
             };
 
             function __client__ <

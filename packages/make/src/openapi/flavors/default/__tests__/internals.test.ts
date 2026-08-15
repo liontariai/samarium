@@ -150,7 +150,7 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         });
 
         const events = rootSLWFactory(examplesEvents._makeRootOperationInput, (op) => ({
-            stream: op.onEvent()(({ id }) => ({ id })),
+            stream: op.onEvent(({ id }) => ({ id })),
         }));
         const stream = events[ROOT_OP_COLLECTOR]!.ref.selections.get("stream")!;
         expect(stream[ROOT_OP_META]).toEqual({

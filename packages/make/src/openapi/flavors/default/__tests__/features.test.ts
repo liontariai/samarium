@@ -166,7 +166,7 @@ describe("Testing and validating features", () => {
 
     it("selects all fields by omitting the selection callback (default $all)", async () => {
         const slw = rootSLWFactory(examplesUnions._makeRootOperationInput, (op) => ({
-            operation1: op.listBooks()(),
+            operation1: op.listBooks(),
         }));
         const mockFetch = installMockFetch();
 
@@ -203,7 +203,7 @@ describe("Testing and validating features", () => {
         const slw = rootSLWFactory(examplesTestapi._makeRootOperationInput, (op) => ({
             hello: op.postHelloById({ id: "abc" }),
             helloObject: op.postHelloObjectById({ id: "xyz" })(({ message }) => ({ message })),
-            index: op.getIndex(),
+            index: op.getIndex,
         }));
         const mockFetch = installMockFetch("ok");
 
@@ -233,7 +233,7 @@ describe("Testing and validating features", () => {
         });
 
         const slw = rootSLWFactory(examplesDates._makeRootOperationInput, (op) => ({
-            operation1: op.getEvent()(({ date }) => ({
+            operation1: op.getEvent(({ date }) => ({
                 date,
             })),
         }));
@@ -268,10 +268,10 @@ describe("Testing and validating features", () => {
                 path === "/dates"
                     ? dates.map((d) => d.toISOString())
                     : path === "/nested-dates"
-                      ? nestedDates.map((d) => d.map((d) => d.toISOString()))
-                      : path === "/nested-dates-2"
-                        ? nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString())))
-                        : null;
+                        ? nestedDates.map((d) => d.map((d) => d.toISOString()))
+                        : path === "/nested-dates-2"
+                            ? nestedDates2.map((d) => d.map((d) => d.map((d) => d.toISOString())))
+                            : null;
             return {
                 ok: true,
                 json: async () => body,
@@ -286,9 +286,9 @@ describe("Testing and validating features", () => {
         });
 
         const result = await examplesDates.default((op) => ({
-            dates: op.getDates(),
-            nestedDates: op.getNestedDates(),
-            nestedDates2: op.getNestedDates2(),
+            dates: op.getDates,
+            nestedDates: op.getNestedDates,
+            nestedDates2: op.getNestedDates2,
         }));
 
         expectRestCalls(mockFetch, [
@@ -349,16 +349,14 @@ describe("Testing and validating features", () => {
             body: stream,
             text: async () => "",
         });
-        RootOperation[OPTIONS].fetcher = mockFetch as any;
+        examplesEvents.default.init({ fetcher: mockFetch as any });
 
-        const slw = rootSLWFactory(examplesEvents._makeRootOperationInput, (op) => ({
-            onEvent: op.onEvent()(({ id, at }) => ({ id, at })),
+        const { onEvent } = await examplesEvents.default((op) => ({
+            onEvent: op.onEvent(({ id, at }) => ({ id, at })),
         }));
 
-        await executeRoot(slw);
-
-        const events: any[] = [];
-        for await (const ev of (slw as any).onEvent) {
+        const events: Array<{ id: string; at: Date }> = [];
+        for await (const ev of onEvent) {
             events.push(ev);
         }
 

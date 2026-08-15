@@ -55,7 +55,7 @@ describe("real-world OpenAPI schemas", () => {
         it("executes path-param and scalar operations", async () => {
             const { calls } = installMockFetch("hello");
             const slw = rootSLWFactory(examplesTestapi._makeRootOperationInput, (op) => ({
-                index: op.getIndex(),
+                index: op.getIndex,
                 hello: op.postHelloById({ id: "abc" }),
                 helloObject: op.postHelloObjectById({ id: "xyz" })(({ message }) => ({ message })),
             }));
@@ -141,7 +141,7 @@ describe("real-world OpenAPI schemas", () => {
             });
 
             const { markets } = await examplesSpotify.default((op) => ({
-                markets: op.get_available_markets()(({ markets }) => ({ markets })),
+                markets: op.get_available_markets(({ markets }) => ({ markets })),
             }));
 
             expect(calls).toHaveLength(1);
@@ -186,7 +186,7 @@ describe("real-world OpenAPI schemas", () => {
             });
 
             const { flags } = await examplesThingsboard.default((op) => ({
-                flags: op.getFeaturesInfo()(({ smsEnabled, emailEnabled }) => ({
+                flags: op.getFeaturesInfo(({ smsEnabled, emailEnabled }) => ({
                     smsEnabled,
                     emailEnabled,
                 })),
