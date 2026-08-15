@@ -1234,7 +1234,7 @@ ${unresolvedAliases}
             $all: (opts?: any, collector = undefined) =>
                 selectAll(
                     make${selectionFunctionName}Input.bind(that)() as any,
-                    "${this.originalTypeNameToTypescriptTypeName(this.originalFullTypeName)}",
+                    "${this.typeName}",
                     opts as any,
                     collector
                 ) as any
@@ -1309,7 +1309,7 @@ ${unresolvedAliases}
             `
                 : ""
             }
-            $all: selectAllFunc<AllNonFuncFieldsFromType<${this.originalTypeNameToTypescriptTypeName(this.originalFullTypeName)}>, "${this.originalTypeNameToTypescriptTypeName(this.originalFullTypeName)}">;
+            $all: selectAllFunc<AllNonFuncFieldsFromType<${this.typeName}>, "${this.typeName}">;
         };`;
         this.collector.addSelectionFunction(
             this.typeMeta,
