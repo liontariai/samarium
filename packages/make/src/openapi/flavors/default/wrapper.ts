@@ -127,7 +127,7 @@ export class RootOperation {
         return undefined;
     };
 
-    constructor(public authArg?: AuthSource) {}
+    constructor(public authArg?: AuthSource) { }
 
     public setAuth(auth: AuthSource) {
         this.authArg = auth;
