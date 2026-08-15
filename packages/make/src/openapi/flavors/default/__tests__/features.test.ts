@@ -12,6 +12,8 @@ import * as examplesUnions from "./examples/unions.generated";
 import * as examplesAuth from "./examples/auth.generated";
 import * as examplesEvents from "./examples/events.generated";
 import * as examplesTestapi from "./examples/testapi.generated";
+import { collectCriticalTypeErrors } from "./utils/typecheck";
+import path from "node:path";
 
 type RestCall = {
     path: string;
@@ -371,6 +373,10 @@ describe("Testing and validating features", () => {
         expect(events[0].id).toBe("1");
         expect(events[0].at).toBeInstanceOf(Date);
         expect(events[1].id).toBe("2");
+    });
+
+    it("types SSE operations as selection functions that yield AsyncIterable results", () => {
+        expect(collectCriticalTypeErrors(path.join(import.meta.dir, "sse-types.check.ts"))).toEqual([]);
     });
 
     describe("provides multiple ways for authentication", () => {

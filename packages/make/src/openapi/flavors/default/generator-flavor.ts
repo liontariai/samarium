@@ -309,6 +309,7 @@ ${unresolvedAliases}
     type ToTArrayWithDepth<T, D extends number> = D extends 0
         ? T
         : ToTArrayWithDepth<T[], Prev[D]>;
+    type ConvertToAsyncIter<T, skip = 1> = skip extends 0 ? T : AsyncIterable<T>;
 
     export type SLFNScalarOp<
         F extends object,
@@ -379,28 +380,30 @@ ${unresolvedAliases}
         TAD extends number,
         REP extends string | number | symbol,
         TNP,
+        AS_ASYNC_ITER = 0,
         inferedAll = "$all" extends keyof F
             ? F["$all"] extends (...args: any) => infer R
                 ? R
                 : never
             : never,
+        allResult = ConvertToAsyncIter<ToTArrayWithDepth<inferedAll, TAD>, AS_ASYNC_ITER>,
         SLWFN_NO_SELECTION = (
             this: any,
-        ) => ToTArrayWithDepth<inferedAll, TAD> & {
+        ) => allResult & {
             [k in keyof E]: k extends REP
                 ? E[k] extends (...args: any) => any
-                    ? ReplaceReturnType<E[k], ToTArrayWithDepth<inferedAll, TAD>>
-                    : ToTArrayWithDepth<inferedAll, TAD>
+                    ? ReplaceReturnType<E[k], allResult>
+                    : allResult
                 : E[k];
         },
         SLWFN_WITH_SELECTION = <TT = T, FF = F, EE = E>(
             this: any,
             s: (selection: FF) => TT,
-        ) => SLFNSelectionResult<TT, TNP, TAD> & {
+        ) => ConvertToAsyncIter<SLFNSelectionResult<TT, TNP, TAD>, AS_ASYNC_ITER> & {
             [k in keyof EE]: k extends REP
                 ? EE[k] extends (...args: any) => any
-                    ? ReplaceReturnType<EE[k], SLFNSelectionResult<TT, TNP, TAD>>
-                    : SLFNSelectionResult<TT, TNP, TAD>
+                    ? ReplaceReturnType<EE[k], ConvertToAsyncIter<SLFNSelectionResult<TT, TNP, TAD>, AS_ASYNC_ITER>>
+                    : ConvertToAsyncIter<SLFNSelectionResult<TT, TNP, TAD>, AS_ASYNC_ITER>
                 : EE[k];
         },
     > = keyof F extends "$on"
@@ -415,12 +418,13 @@ ${unresolvedAliases}
         TAD extends number,
         E extends { [key: string | number | symbol]: any } = {},
         REP extends string | number | symbol = never,
+        AS_ASYNC_ITER = 0,
     > = (
         makeSLFNInput: () => F,
         SLFN_name: N,
         SLFN_typeNamePure: TNP,
         SLFN_typeArrDepth: TAD,
-    ) => SLFNReturned<T, F, E, TAD, REP, TNP>;
+    ) => SLFNReturned<T, F, E, TAD, REP, TNP, AS_ASYNC_ITER>;
     `;
     };
 
@@ -849,7 +853,7 @@ ${unresolvedAliases}
 
     const makeSLFN = <
         T extends object,
-        F,
+        F extends object,
         N extends string,
         TNP extends string,
         TAD extends number,
@@ -1525,7 +1529,7 @@ ${unresolvedAliases}
                                         ${argTypes ? `args: ${argTypes.argsTypeName}` : ""}
                                     ) => Promise<"T">
                                 },
-                                "$lazy"
+                                "$lazy"${operation.isEventStream ? ", 1" : ""}
                             >
                         >`;
                 makeSelectionFunctionInputReturnTypeParts.set(
@@ -1533,7 +1537,8 @@ ${unresolvedAliases}
                     `(
                     ${argTypes ? `args: ${argTypes.argsTypeName}` : ""}
                     ) =>
-                        ${operation.isEventStream ? `AsyncIterable<${objectReturnType}>` : objectReturnType},`,
+                        ${objectReturnType},`
+                        : `${objectReturnType},`,
                 );
             }
 
