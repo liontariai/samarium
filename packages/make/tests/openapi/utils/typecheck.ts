@@ -1,7 +1,7 @@
 import path from "node:path";
 import ts from "typescript";
 
-const MAKE_ROOT = path.resolve(import.meta.dir, "../../../../../..");
+const MAKE_ROOT = path.resolve(import.meta.dir, "../../..");
 
 /**
  * Parse / name-resolution failures that mean the generated SDK is not usable.

@@ -1,8 +1,8 @@
 import fs from "fs";
 import { describe, it } from "bun:test";
 
-import { GeneratorSelectionTypeFlavorDefault } from "../../flavors/default/generator-flavor";
-import { Generator } from "../generator";
+import { GeneratorSelectionTypeFlavorDefault } from "@/graphql/flavors/default/generator-flavor";
+import { Generator } from "@/graphql/builder/generator";
 import { introspectGraphQLSchema } from "./util";
 
 describe.only("generate", () => {

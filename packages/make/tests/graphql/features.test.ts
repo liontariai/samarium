@@ -6,12 +6,12 @@ import {
     SelectionWrapper,
 } from "@/graphql/flavors/default/wrapper";
 import { rootSLWFactory } from "./utils";
-import * as examplesBooksSimple from "@/graphql/flavors/default/__tests__/examples/books.generated";
-import * as examplesSpaceX from "@/graphql/flavors/default/__tests__/examples/spacex.generated";
-import * as examplesUnions from "@/graphql/flavors/default/__tests__/examples/unions.generated";
-import * as examplesDirectives from "@/graphql/flavors/default/__tests__/examples/directives.generated";
-import * as examplesDates from "@/graphql/flavors/default/__tests__/examples/dates.generated";
-import * as examplesContentful from "@/graphql/flavors/default/__tests__/examples/contentful.generated";
+import * as examplesBooksSimple from "@tests/graphql/examples/books.generated";
+import * as examplesSpaceX from "@tests/graphql/examples/spacex.generated";
+import * as examplesUnions from "@tests/graphql/examples/unions.generated";
+import * as examplesDirectives from "@tests/graphql/examples/directives.generated";
+import * as examplesDates from "@tests/graphql/examples/dates.generated";
+import * as examplesContentful from "@tests/graphql/examples/contentful.generated";
 
 type GraphqlCall = {
     query: string;

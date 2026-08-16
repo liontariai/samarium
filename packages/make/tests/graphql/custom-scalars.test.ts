@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import path from "node:path";
-import { collectCriticalTypeErrors } from "@/openapi/flavors/default/__tests__/utils/typecheck";
+import { collectCriticalTypeErrors } from "@tests/openapi/utils/typecheck";
 import * as examplesCustomScalars from "./examples/custom-scalars.generated";
 
 describe("GraphQL custom scalars (ScalarTypeMapWithCustom)", () => {

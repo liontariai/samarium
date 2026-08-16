@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { buildSchema } from "graphql";
-import { Generator } from "../generator";
-import { GeneratorSelectionTypeFlavorDefault } from "../../flavors/default/generator-flavor";
+import { Generator } from "@/graphql/builder/generator";
+import { GeneratorSelectionTypeFlavorDefault } from "@/graphql/flavors/default/generator-flavor";
 
 const booksSdl = `
 type Book {

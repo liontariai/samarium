@@ -73,7 +73,7 @@ const { first10Launches } = await sdk((op) =>
 <br/>
 Additonally, you can take a look at the **examples in the [examples folder](https://github.com/liontariai/samarium/blob/main/examples)**.
 
-If you are interested in the technical details, you can take a look at the [tests](https://github.com/liontariai/samarium/blob/main/src/lib/codegen/flavors/default/__tests__/features.test.ts).
+If you are interested in the technical details, you can take a look at the [tests](https://github.com/liontariai/samarium/blob/main/packages/make/tests/graphql/features.test.ts).
 <br/>
 They are commented and cover all the features.
 

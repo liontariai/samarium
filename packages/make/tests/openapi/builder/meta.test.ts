@@ -1,12 +1,12 @@
 import fs from "fs";
 import { describe, it } from "bun:test";
-import { gatherMeta } from "../meta";
+import { gatherMeta } from "@/openapi/builder/meta";
 import type { OpenAPI3 } from "openapi-typescript";
 
-import testapiJson from "../../flavors/default/__tests__/schemas/testapi.json";
-import thingsboardJson from "../../flavors/default/__tests__/schemas/thingsboard.json";
+import testapiJson from "@tests/openapi/schemas/testapi.json";
+import thingsboardJson from "@tests/openapi/schemas/thingsboard.json";
 
-import { Collector } from "../collector";
+import { Collector } from "@/openapi/builder/collector";
 import { inspect } from "util";
 
 describe.only("gatherMetaForType", () => {
