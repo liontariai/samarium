@@ -269,7 +269,25 @@ export const gatherMetaForType = (
             collector,
         );
     }
+
     const { schema: normalized, isNullable: schemaNullable } = normalizeOpenAPISchema(schema, _type);
+    if (normalized && typeof normalized === "object" && "$ref" in normalized) {
+        return applyNullable(
+            gatherMetaForType(
+                schema,
+                name,
+                normalized,
+                typeType,
+                {
+                    isNonNull: options.isNonNull,
+                    operationResponseType: options.operationResponseType,
+                },
+                collector,
+            ),
+            schemaNullable,
+        );
+    }
+
     const type = normalized as OpenAPISchemaNode;
 
     const isObjectType =
