@@ -20,6 +20,7 @@ import { Collector } from "./collector";
 import {
     normalizeOpenAPISchema,
     parseTypescriptTypeFromDescription,
+    pickContentSchema,
     type OpenAPISchemaNode,
 } from "./normalize";
 
@@ -224,6 +225,36 @@ export const gatherMetaForType = (
 
         throw new Error(`Reference ${_type.$ref} not found`);
     }
+
+    // OAS 3.1 query/header/cookie params may use `content` instead of `schema`.
+    // Unwrap here so they classify as the inner schema (not as Input types).
+    // Request bodies keep the isInput + content path below.
+    const isParameterLike =
+        ("in" in _type && typeof (_type as ParameterObject).in === "string") ||
+        typeType === "parameters" ||
+        typeType === "headers";
+    if (
+        isParameterLike &&
+        "content" in _type &&
+        !("schema" in _type) &&
+        (_type as ParameterObject | HeaderObject).content
+    ) {
+        const mediaSchema = pickContentSchema((_type as ParameterObject | HeaderObject).content);
+        if (mediaSchema) {
+            return gatherMetaForType(
+                schema,
+                name,
+                mediaSchema,
+                "schemas",
+                {
+                    isNonNull: options.isNonNull,
+                    operationResponseType: options.operationResponseType,
+                },
+                collector,
+            );
+        }
+    }
+
     if ("schema" in _type) {
         const t = _type as MediaTypeObject;
         return gatherMetaForType(

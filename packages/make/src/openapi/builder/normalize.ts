@@ -30,6 +30,19 @@ export function parseTypescriptTypeFromDescription(description: string | undefin
     if (atType) return atType.trim();
     return undefined;
 }
+export function pickContentSchema(
+    content: Record<string, { schema?: SchemaObject | ReferenceObject } | ReferenceObject> | undefined,
+): SchemaObject | ReferenceObject | undefined {
+    if (!content) return undefined;
+    const preferred = content["application/json"] ?? content["application/json; charset=utf-8"];
+    const media = preferred ?? Object.values(content).find(Boolean);
+    if (!media) return undefined;
+    if (typeof media === "object" && "$ref" in media && !("schema" in media)) {
+        return media as ReferenceObject;
+    }
+    return (media as { schema?: SchemaObject | ReferenceObject }).schema;
+}
+
 function shallowClone<T extends object>(node: T): T {
     const copy = { ...node } as T & {
         type?: unknown;
