@@ -19,6 +19,41 @@ export type NormalizedOpenAPISchema = {
     schema: OpenAPISchemaNode | ReferenceObject;
     isNullable: boolean;
 };
+
+const JSON_SCHEMA_TYPE_TO_SCALAR: Record<string, string> = {
+    string: "String",
+    String: "String",
+    number: "Float",
+    Number: "Float",
+    integer: "Int",
+    Integer: "Int",
+    boolean: "Boolean",
+    Boolean: "Boolean",
+    float: "Float",
+    Float: "Float",
+    int: "Int",
+    Int: "Int",
+    Date: "Date",
+    DateTime: "DateTime",
+    Time: "Time",
+    JSON: "JSON",
+};
+
+const FORMAT_TO_SCALAR: Record<string, string> = {
+    double: "Float",
+    float: "Float",
+    integer: "Int",
+    long: "Int",
+    int32: "Int",
+    int64: "Int",
+    number: "Float",
+    byte: "Int",
+    "date-time": "DateTime",
+    datetime: "DateTime",
+    date: "Date",
+    time: "Time",
+};
+
 const TYPEDEF_RE = /@typedef\s*{(.*)}/;
 const TYPE_RE = /@type\s*{(.*)}/;
 
@@ -30,6 +65,30 @@ export function parseTypescriptTypeFromDescription(description: string | undefin
     if (atType) return atType.trim();
     return undefined;
 }
+
+export function parseTypescriptTypeFromSchema(schema: OpenAPISchemaNode | undefined): string | undefined {
+    if (!schema) return undefined;
+    const ext = schema["x-typescript-type"] ?? schema["x-ts-type"];
+    if (typeof ext === "string" && ext.trim()) return ext.trim();
+    return parseTypescriptTypeFromDescription(schema.description);
+}
+
+export function mapJsonSchemaTypeToSamariumScalar(schema: {
+    type?: unknown;
+    format?: string;
+}): string | undefined {
+    const format = typeof schema.format === "string" ? schema.format.toLowerCase() : undefined;
+    if (format && format in FORMAT_TO_SCALAR) {
+        return FORMAT_TO_SCALAR[format];
+    }
+    if (typeof schema.type !== "string") return undefined;
+    return JSON_SCHEMA_TYPE_TO_SCALAR[schema.type] ?? JSON_SCHEMA_TYPE_TO_SCALAR[capitalize(schema.type)];
+}
+
+function capitalize(s: string): string {
+    return s.length ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
 export function pickContentSchema(
     content: Record<string, { schema?: SchemaObject | ReferenceObject } | ReferenceObject> | undefined,
 ): SchemaObject | ReferenceObject | undefined {

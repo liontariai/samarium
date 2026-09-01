@@ -18,8 +18,10 @@ import type {
 } from "openapi-typescript";
 import { Collector } from "./collector";
 import {
+    mapJsonSchemaTypeToSamariumScalar,
     normalizeOpenAPISchema,
     parseTypescriptTypeFromDescription,
+    parseTypescriptTypeFromSchema,
     pickContentSchema,
     type OpenAPISchemaNode,
 } from "./normalize";
@@ -135,10 +137,49 @@ const createACustomScalarType = (
 
     return meta;
 };
+
+const SAMARIUM_SCALAR_TO_TS: Record<string, string> = {
+    String: "string",
+    Int: "number",
+    Float: "number",
+    Boolean: "boolean",
+    ID: "string",
+    Date: "Date",
+    DateTime: "Date",
+    DateTimeISO: "Date",
+    Time: "Date",
+    JSON: "Record<string, any>",
+};
+
 const applyNullable = (meta: TypeMeta, isNullable: boolean): TypeMeta => {
     if (!isNullable || meta.isNullable) return meta;
     return { ...meta, isNullable: true };
 };
+
+const typeMetaToTypescript = (meta: TypeMeta): string => {
+    if (meta.scalarTSType) {
+        let ts = meta.scalarTSType;
+        if (meta.isList) {
+            ts = `${"Array<".repeat(meta.isList)}${ts}${">".repeat(meta.isList)}`;
+        }
+        return ts;
+    }
+    const pure = meta.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "");
+    let ts =
+        SAMARIUM_SCALAR_TO_TS[pure] ??
+        (meta.isEnum
+            ? meta.enumValues.map((e) => enumValueToTsLiteral(e.value !== undefined ? e.value : e.name)).join(" | ") ||
+            pure
+            : pure);
+    if (meta.isList) {
+        ts = `${"Array<".repeat(meta.isList)}${ts}${">".repeat(meta.isList)}`;
+    }
+    if (meta.isNonNull && meta.isNullable) {
+        ts = `${ts} | null`;
+    }
+    return ts;
+};
+
 export const enumValueToTsLiteral = (value: unknown): string => {
     if (typeof value === "string") return JSON.stringify(value);
     if (value === null) return "null";
@@ -648,22 +689,22 @@ export const gatherMetaForType = (
     }
 
     if (meta.isScalar) {
-        const t = type as SchemaObject;
-        if (t.type === "array") {
-            // the name added up until now can in no way be the final name, because
-            // it will either be something not existing and having it in the collector
-            // will prevent it from being collected in the next step
-            // or it will not reflect the final name anyways because we will add the
-            // array brackets to the name
-            // however, there are schemas that have direct self-referencing array-types,
-            // so we will need to check if $ref in items is the same as the name of the current type
-            // and if so, we will not remove the type from the collector
-            const isRefObject = ("$ref" in (type as ArraySubtype).items!) as unknown as ReferenceObject;
+        const t = type as OpenAPISchemaNode;
+        // the name added up until now can in no way be the final name, because
+        // it will either be something not existing and having it in the collector
+        // will prevent it from being collected in the next step
+        // or it will not reflect the final name anyways because we will add the
+        // array brackets to the name
+        // however, there are schemas that have direct self-referencing array-types,
+        // so we will need to check if $ref in items is the same as the name of the current type
+        // and if so, we will not remove the type from the collector
+            const items = (t as ArraySubtype).items;
+            const itemsIsObject = !!items && typeof items === "object";
+            const isRefObject = itemsIsObject && "$ref" in items;
 
             if (
                 !isRefObject ||
-                ((type as ArraySubtype).items as ReferenceObject).$ref !==
-                    `#/components/${typeType}/${identifyingTypeName}`
+                (items as ReferenceObject).$ref !== `#/components/${typeType}/${identifyingTypeName}`
             ) {
                 collector.removeType(identifyingTypeName);
             }
@@ -683,30 +724,33 @@ export const gatherMetaForType = (
             meta = { ...arraymeta, isList: depth, name: `[${arraymeta.name}]` };
             meta.ofType = meta;
         } else if (typeof t.type === "string") {
+            const tsOverride = parseTypescriptTypeFromSchema(t);
+            const mappedName = mapJsonSchemaTypeToSamariumScalar(t);
+
             collector.removeType(identifyingTypeName);
 
-            meta.name = camelCaps([t.type]);
-
-            const mapFormatToType = {
-                double: "Float",
-                float: "Float",
-                integer: "Int",
-                long: "Int",
-                int32: "Int",
-                int64: "Int",
-                number: "Float",
-                byte: "Int",
-                "date-time": "DateTime",
-                date: "Date",
-                time: "Time",
-            };
-            if (t.format && t.format.toLowerCase() in mapFormatToType) {
-                meta.name = mapFormatToType[t.format.toLowerCase() as keyof typeof mapFormatToType];
+            if (tsOverride) {
+                const typedefToSamarium: Record<string, string> = {
+                    string: "String",
+                    number: "Float",
+                    boolean: "Boolean",
+                    ...Object.fromEntries(Object.keys(SAMARIUM_SCALAR_TO_TS).map((k) => [k, k])),
+                };
+                const knownScalar = typedefToSamarium[tsOverride];
+                if (knownScalar) {
+                    meta.name = knownScalar;
+                } else {
+                    const scalarName = identifyingTypeName.replace(/!$/, "");
+                    meta.scalarTSType = tsOverride;
+                    meta.name = scalarName;
+                    meta.ofType = meta;
+                    collector.addCustomScalar(meta);
+                }
+            } else if (mappedName) {
+                meta.name = mappedName;
+            } else if (typeof t.type === "string") {
+                meta.name = camelCaps([t.type]);
             }
-        } else if (Array.isArray(t)) {
-            collector.removeType(identifyingTypeName);
-
-            meta.name = camelCaps(t);
         }
 
         if (options.isNonNull && !meta.name.endsWith("!")) {

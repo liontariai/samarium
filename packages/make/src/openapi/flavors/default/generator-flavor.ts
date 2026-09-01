@@ -50,7 +50,9 @@ function unresolvedTypeNamesInCustomScalars(customScalars: TypeMeta[]): string[]
     const unresolved = new Set<string>();
     const ident = /\b([A-Za-z_$][\w$]*)\b/g;
     for (const cs of customScalars) {
-        const tsType = cs.scalarTSType ?? "";
+        // Drop labeled-tuple labels (`[name: string]`) and object keys so they
+        // are not treated as unresolved type names.
+        const tsType = (cs.scalarTSType ?? "").replace(/\b[A-Za-z_$][\w$]*\s*:/g, "");
         for (const match of tsType.matchAll(ident)) {
             const name = match[1];
             if (TS_TYPE_INTRINSICS.has(name) || declared.has(name)) continue;
@@ -1409,11 +1411,17 @@ ${unresolvedAliases}
                     const isEnum = arg.type.isEnum;
                     const isInput = arg.type.isInput;
                     const argKey = `${conformToTypeKey(arg.name)}${arg.type.isNonNull ? "" : "?"}`;
+                    const pureName = arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "");
 
                     let argType = "any";
                     if (isScalar) {
-                        argType = this.ScalarTypeMap.get(arg.type.name.replaceAll("!", "")) ?? "any";
-                    } else if (isInput || isEnum) {
+                        argType = arg.type.scalarTSType
+                            ? `ScalarTypeMapWithCustom["${pureName}"]`
+                            : (GeneratorSelectionTypeFlavorDefault.ScalarTypeMap.get(pureName) ?? "any");
+                        if (arg.type.isList) {
+                            argType = `${"Array<".repeat(arg.type.isList)}${argType}${">".repeat(arg.type.isList)}`;
+                        }
+                    } else if (isInput || isEnum || arg.type.isObject || arg.type.isUnion) {
                         argType = `${this.originalTypeNameToTypescriptTypeName(arg.type.name)}`;
                     }
 
