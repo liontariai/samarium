@@ -81,4 +81,6 @@ export interface EnumValueMeta {
     name: string;
     description: string | undefined;
     type: TypeMeta;
+    /** Original enum/`const` value so mixed enums emit `"ok" | 1`, not `"ok" | "1"`. */
+    value?: string | number | boolean | null;
 }

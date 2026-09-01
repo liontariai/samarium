@@ -139,6 +139,12 @@ const applyNullable = (meta: TypeMeta, isNullable: boolean): TypeMeta => {
     if (!isNullable || meta.isNullable) return meta;
     return { ...meta, isNullable: true };
 };
+export const enumValueToTsLiteral = (value: unknown): string => {
+    if (typeof value === "string") return JSON.stringify(value);
+    if (value === null) return "null";
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    return JSON.stringify(String(value));
+};
 
 const makeIdentifyingTypeName = (meta: TypeMeta, override?: { isInput?: boolean; isNonNull?: boolean }): string => {
     const isInput = override?.isInput ?? meta.isInput;
@@ -341,6 +347,7 @@ export const gatherMetaForType = (
                 name: String(enumValue as any),
                 description: type.description,
                 type: gatherMetaForType(schema, name, type, typeType, { isNonNull: options.isNonNull }, collector),
+                value: enumValue as string | number | boolean | null,
             });
         }
     }

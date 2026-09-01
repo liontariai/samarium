@@ -6,6 +6,7 @@ import {
     type FieldMeta,
     type OperationMeta,
     type ParameterMeta,
+    enumValueToTsLiteral,
 } from "../../builder/meta";
 
 // @ts-ignore
@@ -962,15 +963,18 @@ ${unresolvedAliases}
             return str.replace(/[^a-zA-Z0-9_]/g, "_").replace(/^[0-9]/, "_$&");
         };
 
+        const enumLiteral = (e: (typeof this.typeMeta.enumValues)[number]) =>
+            enumValueToTsLiteral(e.value !== undefined ? e.value : e.name);
+
         const enumTypeBody =
             this.typeMeta.enumValues.length === 0
                 ? "undefined" // handle empty enums (even though they shouldn't exist, they sometimes do)
-                : this.typeMeta.enumValues.map((e) => `"${e.name}"`).join(" | ");
+                : this.typeMeta.enumValues.map(enumLiteral).join(" | ");
         const enumEnumBody = this.typeMeta.enumValues
             .map(
                 (e) =>
                     `${e.description ? `/** ${e.description.replaceAll("*/", "\\*\\/")} */\n` : ""
-                    }${conformEnumName(e.name)} = "${e.name}",`,
+                    }${conformEnumName(e.name)} = ${enumLiteral(e)},`,
             )
             .join("\n");
 
