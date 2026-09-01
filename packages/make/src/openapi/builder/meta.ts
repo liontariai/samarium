@@ -754,21 +754,31 @@ export const gatherMetaForType = (
                 collector.removeType(identifyingTypeName);
             }
 
-            meta.isList++;
-            const arraymeta = gatherMetaForType(
-                schema,
-                // it will get the name of the ref object if it is a ref object
-                isRefObject ? "" : name,
-                (type as ArraySubtype).items as ReferenceObject | SchemaObject,
-                "schemas",
-                { isNonNull: options.isNonNull },
-                collector,
-            );
+            if (!itemsIsObject) {
+                const unknownArr = createACustomScalarType(
+                    identifyingTypeName.replace(/!$/, ""),
+                    t.description,
+                    "unknown[]",
+                    collector,
+                );
+                meta = unknownArr;
+                meta.isNonNull = options.isNonNull;
+            } else {
+                meta.isList++;
+                const arraymeta = gatherMetaForType(
+                    schema,
+                    isRefObject ? "" : name,
+                    items as ReferenceObject | SchemaObject,
+                    "schemas",
+                    { isNonNull: options.isNonNull },
+                    collector,
+                );
 
-            const depth = (meta.isList += arraymeta?.isList ?? 0);
-            meta = { ...arraymeta, isList: depth, name: `[${arraymeta.name}]` };
-            meta.ofType = meta;
-        } else if (typeof t.type === "string") {
+                const depth = (meta.isList += arraymeta?.isList ?? 0);
+                meta = { ...arraymeta, isList: depth, name: `[${arraymeta.name}]` };
+                meta.ofType = meta;
+            }
+        } else {
             const tsOverride = parseTypescriptTypeFromSchema(t);
             const mappedName = mapJsonSchemaTypeToSamariumScalar(t);
 
