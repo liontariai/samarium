@@ -46,6 +46,13 @@ export interface TypeMeta {
     description: string | undefined;
     isList: number;
     isNonNull: boolean;
+    /**
+     * Schema-level nullability (`type: ["T","null"]`, `nullable: true`,
+     * `anyOf`/`oneOf` with `{ type: "null" }`). Distinct from `isNonNull`
+     * (OpenAPI `required`): required + nullable → `T | null`; optional +
+     * nullable → `T?`.
+     */
+    isNullable?: boolean;
     isScalar: boolean; // type with "format"
     scalarTSType?: string;
 

@@ -18,7 +18,9 @@ import type {
 } from "openapi-typescript";
 import { Collector } from "./collector";
 import {
+    normalizeOpenAPISchema,
     parseTypescriptTypeFromDescription,
+    type OpenAPISchemaNode,
 } from "./normalize";
 
 import {
@@ -132,6 +134,10 @@ const createACustomScalarType = (
 
     return meta;
 };
+const applyNullable = (meta: TypeMeta, isNullable: boolean): TypeMeta => {
+    if (!isNullable || meta.isNullable) return meta;
+    return { ...meta, isNullable: true };
+};
 
 const makeIdentifyingTypeName = (meta: TypeMeta, override?: { isInput?: boolean; isNonNull?: boolean }): string => {
     const isInput = override?.isInput ?? meta.isInput;
@@ -232,24 +238,22 @@ export const gatherMetaForType = (
             collector,
         );
     }
-    const type = _type as SchemaObject | ParameterObject | ResponseObject | RequestBodyObject | HeaderObject;
+    const { schema: normalized, isNullable: schemaNullable } = normalizeOpenAPISchema(schema, _type);
+    const type = normalized as OpenAPISchemaNode;
 
-    // fix corrupted type definition, seems to occur sometimes
-    if ("properties" in type && !("type" in type)) {
-        (type as ObjectSubtype)["type"] = "object";
-    }
+    const isObjectType =
+        type.type === "object" ||
+        (!!(type as { properties?: unknown }).properties && type.type !== "array" && !type.oneOf && !type.anyOf);
 
     let meta: TypeMeta = {
         name: options.operationResponseType ? name : options.isNonNull ? `${name}!` : name,
 
         description: type.description,
 
-        isObject:
-            "type" in type &&
-            (type.type === "object" || JSON.stringify(type.type) === JSON.stringify(["object", "null"])),
+        isObject: isObjectType,
         fields: [],
 
-        isUnion: !!(type as SchemaObject).oneOf || !!(type as SchemaObject).anyOf || !!(type as SchemaObject).allOf,
+        isUnion: !!type.oneOf || !!type.anyOf,
         possibleTypes: [],
 
         isList: 0,
@@ -257,13 +261,7 @@ export const gatherMetaForType = (
         isScalar: false,
         scalarTSType: undefined,
 
-        isEnum: {
-            schemas: !!(type as SchemaObject).enum,
-            parameters: false,
-            responses: false,
-            requestBodies: false,
-            headers: false,
-        }[typeType],
+        isEnum: !!type.enum,
 
         enumValues: [],
 
@@ -277,7 +275,7 @@ export const gatherMetaForType = (
     const identifyingTypeName = makeIdentifyingTypeName(meta);
     // Handle already processed types
     if (collector.hasType(identifyingTypeName)) {
-        return collector.getType(identifyingTypeName);
+        return applyNullable(collector.getType(identifyingTypeName), schemaNullable);
     } else {
         meta.name = identifyingTypeName;
         collector.addType(meta);
@@ -327,12 +325,12 @@ export const gatherMetaForType = (
                     collector.removeType(identifyingTypeName);
                     meta = bodyType.fields[0].type;
                     collector.addType(meta);
-                    return meta;
+                    return applyNullable(meta, schemaNullable);
                 } else {
                     collector.removeType(identifyingTypeName);
                     meta = bodyType;
                     collector.addType(meta);
-                    return meta;
+                    return applyNullable(meta, schemaNullable);
                 }
             }
         }
@@ -508,8 +506,8 @@ export const gatherMetaForType = (
                     typescriptConformTypeOfRefWithoutArray +
                     (valueTypeMeta.isList
                         ? Array.from({ length: valueTypeMeta.isList })
-                              .map((_) => "[]")
-                              .join("")
+                            .map((_) => "[]")
+                            .join("")
                         : "");
 
                 if (valueTypeMeta.isScalar && valueTypeMeta.scalarTSType) {
@@ -538,7 +536,7 @@ export const gatherMetaForType = (
         if (additionalFieldsType && meta.fields.length === 1) {
             collector.removeType(identifyingTypeName);
             collector.addType(additionalFieldsType);
-            return additionalFieldsType;
+            return applyNullable(additionalFieldsType, schemaNullable);
         }
     }
 
@@ -652,7 +650,7 @@ export const gatherMetaForType = (
 
     collector.addType(meta);
 
-    return meta;
+    return applyNullable(meta, schemaNullable);
 };
 
 export const gatherMetaForParameter = (

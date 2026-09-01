@@ -1051,7 +1051,9 @@ ${unresolvedAliases}
 
             this.collector.addSelectionType(field.type, selectionType);
 
-            return `${description}${field.name}${field.type.isNonNull ? "" : "?"}: ${selectionType};`;
+            return `${description}${field.name}${field.type.isNonNull ? "" : "?"}: ${selectionType}${
+                field.type.isNonNull && field.type.isNullable ? " | null" : ""
+            };`;
 
             //
         } else if (field.type.isUnion && field.type.possibleTypes.every((pt) => pt.isScalar || pt.isEnum)) {
@@ -1066,7 +1068,7 @@ ${unresolvedAliases}
                     length: field.type.isList,
                 })
                     .map((_) => ">")
-                    .join("")};`;
+                    .join("")}${field.type.isNonNull && field.type.isNullable ? " | null" : ""};`;
 
             //
         } else if (field.type.ofType) {
@@ -1080,7 +1082,7 @@ ${unresolvedAliases}
                 }: ${this.originalTypeNameToTypescriptTypeName(
                     field.type.ofType.name,
                     !field.type.isInput && field.type.isList ? "Array" : "",
-                ).replaceAll("!", "")}`;
+                ).replaceAll("!", "")}${field.type.isNonNull && field.type.isNullable ? " | null" : ""}`;
 
             // return `${description}${field.name}${
             //     field.type.isNonNull ? "" : "?"
@@ -1409,6 +1411,10 @@ ${unresolvedAliases}
                         argType = this.ScalarTypeMap.get(arg.type.name.replaceAll("!", "")) ?? "any";
                     } else if (isInput || isEnum) {
                         argType = `${this.originalTypeNameToTypescriptTypeName(arg.type.name)}`;
+                    }
+
+                    if (arg.type.isNonNull && arg.type.isNullable) {
+                        argType = `${argType} | null`;
                     }
 
                     return {
