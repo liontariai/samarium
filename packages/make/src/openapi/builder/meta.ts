@@ -18,6 +18,7 @@ import type {
 } from "openapi-typescript";
 import { Collector } from "./collector";
 import {
+    isTupleSchema,
     mapJsonSchemaTypeToSamariumScalar,
     normalizeOpenAPISchema,
     parseTypescriptTypeFromDescription,
@@ -698,6 +699,50 @@ export const gatherMetaForType = (
         // however, there are schemas that have direct self-referencing array-types,
         // so we will need to check if $ref in items is the same as the name of the current type
         // and if so, we will not remove the type from the collector
+
+        if (isTupleSchema(t)) {
+            collector.removeType(identifyingTypeName);
+
+            const elements = (t.prefixItems ?? []).map((item, i) => {
+                const itemSchema = item as OpenAPISchemaNode | ReferenceObject;
+                const title =
+                    itemSchema && typeof itemSchema === "object" && !("$ref" in itemSchema)
+                        ? (itemSchema as OpenAPISchemaNode).title
+                        : undefined;
+                const elMeta = gatherMetaForType(
+                    schema,
+                    title ? camelCaps([name, title]) : camelCaps([name, `El${i}`]),
+                    item,
+                    "schemas",
+                    { isNonNull: true },
+                    collector,
+                );
+                const elTs = typeMetaToTypescript(elMeta);
+                return title ? `${title}: ${elTs}` : elTs;
+            });
+
+            const restItems: unknown = (t as { items?: unknown }).items;
+            let tupleTS = `[${elements.join(", ")}]`;
+            if (restItems && restItems !== false && typeof restItems === "object") {
+                const restMeta = gatherMetaForType(
+                    schema,
+                    camelCaps([name, "Rest"]),
+                    restItems as ReferenceObject | SchemaObject,
+                    "schemas",
+                    { isNonNull: false },
+                    collector,
+                );
+                tupleTS = `[${elements.join(", ")}, ...${typeMetaToTypescript(restMeta)}[]]`;
+            }
+
+            const tupleName = identifyingTypeName.replace(/!$/, "");
+            meta = createACustomScalarType(tupleName, t.description, tupleTS, collector);
+            meta.isNonNull = options.isNonNull;
+            if (options.isNonNull && !meta.name.endsWith("!")) {
+                meta = { ...meta, name: `${meta.name}!`, isNonNull: true };
+                meta.ofType = meta;
+            }
+        } else if (t.type === "array") {
             const items = (t as ArraySubtype).items;
             const itemsIsObject = !!items && typeof items === "object";
             const isRefObject = itemsIsObject && "$ref" in items;

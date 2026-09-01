@@ -102,6 +102,10 @@ export function pickContentSchema(
     return (media as { schema?: SchemaObject | ReferenceObject }).schema;
 }
 
+export function isTupleSchema(schema: OpenAPISchemaNode | undefined): boolean {
+    return !!schema && Array.isArray(schema.prefixItems);
+}
+
 function shallowClone<T extends object>(node: T): T {
     const copy = { ...node } as T & {
         type?: unknown;
