@@ -473,6 +473,20 @@ export const gatherMetaForType = (
     // Handle object types
     if (meta.isObject) {
         const t = type as ObjectSubtype;
+        const propCount = Object.keys(t.properties ?? {}).length;
+        if (
+            propCount === 0 &&
+            (t.additionalProperties === true || JSON.stringify(t.additionalProperties) === JSON.stringify({}))
+        ) {
+            collector.removeType(identifyingTypeName);
+            meta.isObject = false;
+            meta.isScalar = true;
+            meta.name = options.isNonNull ? "JSON!" : "JSON";
+            meta.name = makeIdentifyingTypeName(meta);
+            collector.addType(meta);
+            return applyNullable(meta, schemaNullable);
+        }
+
         // Gather meta for each field
         const fields = t.properties;
         for (const [key, value] of Object.entries(fields ?? {})) {
