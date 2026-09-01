@@ -17,6 +17,9 @@ import type {
     OperationObject,
 } from "openapi-typescript";
 import { Collector } from "./collector";
+import {
+    parseTypescriptTypeFromDescription,
+} from "./normalize";
 
 import {
     type FieldMeta,
@@ -101,15 +104,16 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
 
 const createACustomScalarType = (
     name: string,
-    description: string,
+    description: string | undefined,
     scalarTSType: string,
     collector: Collector,
 ): TypeMeta => {
+    const fromTypedef = parseTypescriptTypeFromDescription(description);
     const meta: TypeMeta = {
         name,
         description,
         isScalar: true,
-        scalarTSType,
+        scalarTSType: fromTypedef ?? scalarTSType,
         isEnum: false,
         isObject: false,
         isUnion: false,
