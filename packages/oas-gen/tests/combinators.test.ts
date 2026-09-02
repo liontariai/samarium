@@ -58,4 +58,19 @@ describe("combinators", () => {
             }
         }
     });
+
+    it("schema-heavy emits composition and discriminator", () => {
+        const spec = generate({ seed: 3, dialect: "3.1", profile: "schema-heavy" });
+        const json = documentToJson(spec.ir) as Record<string, unknown>;
+        const schemas = ((json.components as { schemas?: Record<string, Record<string, unknown>> } | undefined)?.schemas ??
+            {}) as Record<string, Record<string, unknown>>;
+        expect(Object.values(schemas).some((s) => Array.isArray(s.allOf))).toBe(true);
+        expect(Object.values(schemas).some((s) => Array.isArray(s.oneOf) && isObj(s.discriminator))).toBe(true);
+        expect(spec.meta.features).toContain("schema.discriminator");
+        expect(spec.meta.features).toContain("schema.format.uuid");
+    });
 });
+
+function isObj(x: unknown): x is Record<string, unknown> {
+    return !!x && typeof x === "object" && !Array.isArray(x);
+}

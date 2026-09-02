@@ -58,6 +58,17 @@ export type SchemaIR =
           properties: Record<string, Ref<SchemaIR>>;
           required?: string[];
           additionalProperties?: boolean | Ref<SchemaIR>;
+          patternProperties?: Record<string, Ref<SchemaIR>>;
+          propertyNames?: Ref<SchemaIR>;
+          dependentRequired?: Record<string, string[]>;
+          discriminator?: DiscriminatorIR;
+          xml?: XmlIR;
+          readOnly?: boolean;
+          writeOnly?: boolean;
+          deprecated?: boolean;
+          if?: Ref<SchemaIR>;
+          then?: Ref<SchemaIR>;
+          else?: Ref<SchemaIR>;
           nullable?: boolean;
           description?: string;
           extensions?: Extensions;
@@ -65,13 +76,41 @@ export type SchemaIR =
     | {
           kind: "array";
           items: Ref<SchemaIR>;
+          prefixItems?: Ref<SchemaIR>[];
           minItems?: number;
           maxItems?: number;
           uniqueItems?: boolean;
+          xml?: XmlIR;
           nullable?: boolean;
           description?: string;
           extensions?: Extensions;
+      }
+    | {
+          kind: "composition";
+          combiner: "allOf" | "anyOf" | "oneOf";
+          schemas: Ref<SchemaIR>[];
+          discriminator?: DiscriminatorIR;
+          nullable?: boolean;
+          description?: string;
+          extensions?: Extensions;
+      }
+    | {
+          kind: "not";
+          schema: Ref<SchemaIR>;
+          description?: string;
+          extensions?: Extensions;
       };
+
+export type DiscriminatorIR = {
+    propertyName: string;
+    mapping?: Record<string, string>;
+};
+
+export type XmlIR = {
+    name?: string;
+    wrapped?: boolean;
+    attribute?: boolean;
+};
 
 export type ExampleIR = {
     summary?: string;

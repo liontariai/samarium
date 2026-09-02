@@ -47,3 +47,10 @@ export function phase1CoverageGap(docs: GeneratedSpec[], dialect: Dialect): stri
         .map((f) => f.id)
         .filter((id) => !seen.has(id));
 }
+
+export function phase2CoverageGap(docs: GeneratedSpec[], dialect?: Dialect): string[] {
+    const seen = new Set(docs.flatMap((d) => d.meta.features));
+    return FEATURES.filter((f) => f.implemented && f.phase === 2 && (dialect == null || f.oas.includes(dialect)))
+        .map((f) => f.id)
+        .filter((id) => !seen.has(id));
+}

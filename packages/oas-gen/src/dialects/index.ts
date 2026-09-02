@@ -104,3 +104,39 @@ export function jsonPointerEscape(segment: string): string {
 export function componentRef(table: string, name: string): string {
     return `#/components/${table}/${jsonPointerEscape(name)}`;
 }
+
+export type ParamIn = "path" | "query" | "header" | "cookie";
+export type ParamSchemaKind = "primitive" | "array" | "object";
+
+/** Sparse legal cells. Do not sample style/explode without this table. */
+export type ParamCell = {
+    inn: ParamIn;
+    style: string;
+    explode: boolean;
+    schemaKind: ParamSchemaKind;
+    content?: boolean;
+    allowEmptyValue?: boolean;
+    allowReserved?: boolean;
+};
+
+export const PARAM_MATRIX_CELLS: ParamCell[] = [
+    { inn: "path", style: "simple", explode: false, schemaKind: "primitive" },
+    { inn: "path", style: "simple", explode: true, schemaKind: "array" },
+    { inn: "path", style: "label", explode: false, schemaKind: "primitive" },
+    { inn: "path", style: "label", explode: true, schemaKind: "primitive" },
+    { inn: "path", style: "matrix", explode: false, schemaKind: "primitive" },
+    { inn: "path", style: "matrix", explode: true, schemaKind: "array" },
+    { inn: "query", style: "form", explode: true, schemaKind: "primitive" },
+    { inn: "query", style: "form", explode: false, schemaKind: "array" },
+    { inn: "query", style: "form", explode: true, schemaKind: "object" },
+    { inn: "query", style: "spaceDelimited", explode: false, schemaKind: "array" },
+    { inn: "query", style: "pipeDelimited", explode: false, schemaKind: "array" },
+    { inn: "query", style: "deepObject", explode: true, schemaKind: "object" },
+    { inn: "header", style: "simple", explode: false, schemaKind: "primitive" },
+    { inn: "header", style: "simple", explode: true, schemaKind: "array" },
+    { inn: "cookie", style: "form", explode: true, schemaKind: "primitive" },
+    { inn: "cookie", style: "form", explode: false, schemaKind: "primitive" },
+    { inn: "query", style: "form", explode: true, schemaKind: "primitive", content: true },
+    { inn: "query", style: "form", explode: true, schemaKind: "primitive", allowEmptyValue: true },
+    { inn: "query", style: "form", explode: true, schemaKind: "primitive", allowReserved: true },
+];

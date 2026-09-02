@@ -16,5 +16,7 @@ export const SIZE_BUDGETS: Record<SizeClass, SizeBudget> = {
 };
 
 export function defaultSizeForProfile(profile: string): SizeClass {
-    return profile === "minimal" ? "xs" : "s";
+    if (profile === "minimal") return "xs";
+    if (profile === "schema-heavy" || profile === "param-matrix" || profile === "media-matrix") return "m";
+    return "s";
 }

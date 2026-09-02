@@ -43,12 +43,36 @@ function fromRef<T>(r: Ref<T>, inline: (v: T) => unknown): unknown {
     return inline(r.value);
 }
 
+function xmlToJson(xml?: { name?: string; wrapped?: boolean; attribute?: boolean }): unknown {
+    if (!xml) return undefined;
+    return omitUndef({ name: xml.name, wrapped: xml.wrapped, attribute: xml.attribute });
+}
+
+function discriminatorToJson(d?: { propertyName: string; mapping?: Record<string, string> }): unknown {
+    if (!d) return undefined;
+    return omitUndef({ propertyName: d.propertyName, mapping: d.mapping });
+}
+
 function schemaToJson(schema: SchemaIR): unknown {
     if (schema.kind === "ref") {
         const o: Record<string, unknown> = { $ref: componentRef(schema.target.table, schema.target.name) };
         if (schema.description) o.description = schema.description;
         if (schema.summary) o.summary = schema.summary;
         return o;
+    }
+    if (schema.kind === "not") {
+        return extensionsLast(omitUndef({ not: fromRef(schema.schema, schemaToJson), description: schema.description }), schema.extensions);
+    }
+    if (schema.kind === "composition") {
+        return extensionsLast(
+            omitUndef({
+                [schema.combiner]: schema.schemas.map((s) => fromRef(s, schemaToJson)),
+                discriminator: discriminatorToJson(schema.discriminator),
+                nullable: schema.nullable,
+                description: schema.description,
+            }),
+            schema.extensions,
+        );
     }
     if (schema.kind === "primitive") {
         return extensionsLast(
@@ -81,10 +105,12 @@ function schemaToJson(schema: SchemaIR): unknown {
         return extensionsLast(
             omitUndef({
                 type: "array",
+                prefixItems: schema.prefixItems?.map((s) => fromRef(s, schemaToJson)),
                 items: fromRef(schema.items, schemaToJson),
                 minItems: schema.minItems,
                 maxItems: schema.maxItems,
                 uniqueItems: schema.uniqueItems,
+                xml: xmlToJson(schema.xml),
                 nullable: schema.nullable,
                 description: schema.description,
             }),
@@ -95,6 +121,9 @@ function schemaToJson(schema: SchemaIR): unknown {
     for (const [k, v] of Object.entries(schema.properties)) {
         properties[k] = fromRef(v, schemaToJson);
     }
+    const patternProperties = schema.patternProperties
+        ? Object.fromEntries(Object.entries(schema.patternProperties).map(([k, v]) => [k, fromRef(v, schemaToJson)]))
+        : undefined;
     return extensionsLast(
         omitUndef({
             type: "object",
@@ -106,6 +135,17 @@ function schemaToJson(schema: SchemaIR): unknown {
                     : typeof schema.additionalProperties === "boolean"
                       ? schema.additionalProperties
                       : fromRef(schema.additionalProperties, schemaToJson),
+            patternProperties,
+            propertyNames: schema.propertyNames ? fromRef(schema.propertyNames, schemaToJson) : undefined,
+            dependentRequired: schema.dependentRequired,
+            discriminator: discriminatorToJson(schema.discriminator),
+            xml: xmlToJson(schema.xml),
+            readOnly: schema.readOnly,
+            writeOnly: schema.writeOnly,
+            deprecated: schema.deprecated,
+            if: schema.if ? fromRef(schema.if, schemaToJson) : undefined,
+            then: schema.then ? fromRef(schema.then, schemaToJson) : undefined,
+            else: schema.else ? fromRef(schema.else, schemaToJson) : undefined,
             nullable: schema.nullable,
             description: schema.description,
         }),
