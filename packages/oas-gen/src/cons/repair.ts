@@ -50,6 +50,41 @@ function operationsOf(item: PathItemIR): OperationIR[] {
     return out;
 }
 
+function uniquifyOp(
+    op: OperationIR,
+    opIds: Map<string, number>,
+    schemeNames: Set<string>,
+): void {
+    if (op.security && op.security.length === 0) {
+        // keep optional security
+    } else {
+        const nextOpSec = cleanReqs(op.security, schemeNames);
+        if (nextOpSec) op.security = nextOpSec;
+        else delete op.security;
+    }
+    if (op.operationId) {
+        const n = (opIds.get(op.operationId) ?? 0) + 1;
+        opIds.set(op.operationId, n);
+        if (n > 1) op.operationId = `${op.operationId}_${n}`;
+    }
+    for (const resp of Object.values(op.responses)) {
+        if (resp.kind === "inline" && !resp.value.description) {
+            resp.value.description = "Response";
+        }
+    }
+}
+
+function uniquifyPathItem(item: PathItemIR, opIds: Map<string, number>, schemeNames: Set<string>): void {
+    for (const op of operationsOf(item)) {
+        uniquifyOp(op, opIds, schemeNames);
+        if (!op.callbacks) continue;
+        for (const cb of Object.values(op.callbacks)) {
+            if (cb.kind !== "inline") continue;
+            for (const nested of Object.values(cb.value)) uniquifyPathItem(nested, opIds, schemeNames);
+        }
+    }
+}
+
 function sanitizeKey(name: string): string {
     const s = name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
     return s.length ? s : "X";
@@ -116,9 +151,13 @@ export function repair(doc: OpenAPIDocument, dialect: Dialect): OpenAPIDocument 
     doc.openapi = doc.openapi || table.defaultVersion;
 
     const schemeNames = new Set(Object.keys(doc.components?.securitySchemes ?? {}));
-    const nextSec = cleanReqs(doc.security, schemeNames);
-    if (nextSec) doc.security = nextSec;
-    else delete doc.security;
+    if (doc.security && doc.security.length === 0) {
+        // keep optional document security
+    } else {
+        const nextSec = cleanReqs(doc.security, schemeNames);
+        if (nextSec) doc.security = nextSec;
+        else delete doc.security;
+    }
 
     const opIds = new Map<string, number>();
 
@@ -177,25 +216,30 @@ export function repair(doc: OpenAPIDocument, dialect: Dialect): OpenAPIDocument 
                 }
             }
 
-            const nextOpSec = cleanReqs(op.security, schemeNames);
-            if (nextOpSec) op.security = nextOpSec;
-            else delete op.security;
-
-            if (op.operationId) {
-                const n = (opIds.get(op.operationId) ?? 0) + 1;
-                opIds.set(op.operationId, n);
-                if (n > 1) op.operationId = `${op.operationId}_${n}`;
-            }
-
-            for (const resp of Object.values(op.responses)) {
-                if (resp.kind === "inline" && !resp.value.description) {
-                    resp.value.description = "Response";
-                }
-            }
+            uniquifyOp(op, opIds, schemeNames);
 
             if (op.parameters && op.parameters.length === 0) delete op.parameters;
         }
         if (item.parameters && item.parameters.length === 0) delete item.parameters;
+    }
+
+    for (const item of Object.values(doc.webhooks ?? {})) {
+        uniquifyPathItem(item, opIds, schemeNames);
+    }
+    for (const item of Object.values(doc.components?.pathItems ?? {})) {
+        uniquifyPathItem(item, opIds, schemeNames);
+    }
+    for (const cb of Object.values(doc.components?.callbacks ?? {})) {
+        for (const nested of Object.values(cb)) uniquifyPathItem(nested, opIds, schemeNames);
+    }
+    for (const item of Object.values(doc.paths ?? {})) {
+        for (const op of operationsOf(item)) {
+            if (!op.callbacks) continue;
+            for (const cb of Object.values(op.callbacks)) {
+                if (cb.kind !== "inline") continue;
+                for (const nested of Object.values(cb.value)) uniquifyPathItem(nested, opIds, schemeNames);
+            }
+        }
     }
 
     const schemas = doc.components?.schemas;

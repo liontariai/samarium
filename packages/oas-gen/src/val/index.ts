@@ -393,7 +393,10 @@ export function semanticCheck(doc: unknown, dialect: Dialect): { ok: boolean; er
             for (const [ck, cb] of Object.entries(op.callbacks)) {
                 void ck;
                 if (!isObj(cb)) continue;
-                for (const expr of Object.keys(cb)) {
+                const resolved = typeof cb.$ref === "string" ? resolveRef(doc, cb.$ref) : cb;
+                if (!isObj(resolved)) continue;
+                for (const expr of Object.keys(resolved)) {
+                    if (expr === "$ref") continue;
                     if (expr.includes("$") && !expr.includes("$request") && !expr.includes("$response")) {
                         err("callback.expression", `${path}/callbacks`, `callback path is not a valid runtime expression: ${expr}`);
                     }

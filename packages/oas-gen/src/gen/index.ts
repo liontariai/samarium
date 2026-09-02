@@ -1,7 +1,7 @@
 import { dialectTable } from "../dialects/index.ts";
 import { SIZE_BUDGETS, defaultSizeForProfile } from "../size.ts";
 import { Rng } from "../rng.ts";
-import { PHASE2_PROFILES } from "../catalog/features.ts";
+import { PHASE3_PROFILES } from "../catalog/features.ts";
 import type { GenerateOptions, Profile } from "../types.ts";
 import type { ComponentsIR, OpenAPIDocument, PathItemIR, Ref, ResponseIR, SchemaIR } from "../ast/index.ts";
 import { chance, mark, remainingOps, remainingPaths, remainingSchemas, type GenContext } from "./context.ts";
@@ -28,8 +28,10 @@ import {
 import { leafSchema, objectSchema, genSchemaHeavy } from "./schema.ts";
 import { pathParam, queryParam, genParamMatrix } from "./parameter.ts";
 import { genMediaMatrix } from "./media.ts";
+import { genSecurityMatrix } from "./security.ts";
+import { genCallbackWebhook } from "./callback.ts";
 
-const IMPLEMENTED = new Set<string>(PHASE2_PROFILES);
+const IMPLEMENTED = new Set<string>(PHASE3_PROFILES);
 
 export function createContext(opts: GenerateOptions): GenContext {
     const rng = new Rng(opts.seed);
@@ -357,12 +359,17 @@ export function generateDocument(ctx: GenContext): OpenAPIDocument {
     else if (ctx.profile === "schema-heavy") genSchemaHeavy(ctx, doc);
     else if (ctx.profile === "param-matrix") genParamMatrix(ctx, doc);
     else if (ctx.profile === "media-matrix") genMediaMatrix(ctx, doc);
+    else if (ctx.profile === "security-matrix") genSecurityMatrix(ctx, doc);
+    else if (ctx.profile === "callback-webhook") genCallbackWebhook(ctx, doc);
     else genCoreRest(ctx, doc);
 
-    if (!doc.paths || Object.keys(doc.paths).length === 0) genMinimal(ctx, doc);
+    if ((!doc.paths || Object.keys(doc.paths).length === 0) && !doc.webhooks) genMinimal(ctx, doc);
 
-    if (doc.components && Object.keys(doc.components.schemas ?? {}).length === 0 && !doc.components.securitySchemes) {
-        delete doc.components;
+    if (doc.components) {
+        const nonempty = Object.values(doc.components).some(
+            (v) => v && typeof v === "object" && Object.keys(v as object).length > 0,
+        );
+        if (!nonempty) delete doc.components;
     }
 
     return doc;

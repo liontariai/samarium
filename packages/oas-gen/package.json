@@ -18,7 +18,8 @@
     "scripts": {
         "test": "bun test",
         "phase1-report": "bun tests/phase1-report.ts",
-        "phase2-report": "bun tests/phase2-report.ts"
+        "phase2-report": "bun tests/phase2-report.ts",
+        "phase3-report": "bun tests/phase3-report.ts"
     },
     "repository": {
         "type": "git",

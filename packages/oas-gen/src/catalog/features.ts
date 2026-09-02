@@ -91,8 +91,8 @@ export const FEATURES: FeatureDef[] = [
     f("path.single-param", both, "Paths", [], { implemented: true, phase: 1 }),
     f("path.multi-param", both, "Paths", [], { implemented: true, phase: 1 }),
     f("path.segment.dot-dash", both, "Paths", [], { implemented: true, phase: 1, weight: "uncommon" }),
-    f("path-item.ref", both, "PathItem", ["$ref"], { weight: "uncommon" }),
-    f("path-item.ref.components", ["3.1"], "PathItem", ["pathItems"], { weight: "rare" }),
+    f("path-item.ref", both, "PathItem", ["$ref"], { implemented: true, phase: 3, weight: "uncommon" }),
+    f("path-item.ref.components", ["3.1"], "PathItem", ["pathItems"], { implemented: true, phase: 3, weight: "rare" }),
     f("path-item.parameters", both, "PathItem", ["parameters"], { implemented: true, phase: 1 }),
     f("op.method.get", both, "Operation", ["get"], { implemented: true, phase: 1 }),
     f("op.method.put", both, "Operation", ["put"], { implemented: true, phase: 1 }),
@@ -122,9 +122,9 @@ export const FEATURES: FeatureDef[] = [
     f("op.responses.2xx", both, "Operation", ["200"], { implemented: true, phase: 1 }),
     f("op.responses.4xx", both, "Operation", ["400"], { implemented: true, phase: 1 }),
     f("op.responses.pattern", both, "Operation", ["2XX"], { weight: "rare" }),
-    f("op.callbacks", both, "Operation", ["callbacks"], { weight: "rare" }),
+    f("op.callbacks", both, "Operation", ["callbacks"], { implemented: true, phase: 3, weight: "rare" }),
     f("op.security.override", both, "Operation", ["security"], { implemented: true, phase: 1, weight: "uncommon" }),
-    f("op.security.optional", both, "Operation", ["security"], { weight: "uncommon" }),
+    f("op.security.optional", both, "Operation", ["security"], { implemented: true, phase: 3, weight: "uncommon" }),
     f("op.servers.override", both, "Operation", ["servers"], { weight: "uncommon" }),
 
     // Parameter
@@ -163,7 +163,7 @@ export const FEATURES: FeatureDef[] = [
 
     // Response / header
     f("response.headers", both, "Header", ["headers"], { implemented: true, phase: 2, weight: "uncommon" }),
-    f("response.links", both, "Link", ["links"], { phase: 3, weight: "rare" }),
+    f("response.links", both, "Link", ["links"], { implemented: true, phase: 3, weight: "rare" }),
     f("response.204", both, "Response", ["204"], { implemented: true, phase: 1, weight: "uncommon" }),
     f("response.description", both, "Response", ["description"], { implemented: true, phase: 1 }),
 
@@ -232,33 +232,33 @@ export const FEATURES: FeatureDef[] = [
     f("components.name.dot-dash", both, "Components", [], { implemented: false, phase: 1, weight: "uncommon" }),
 
     // Security
-    f("security.apiKey.header", both, "Security", ["apiKey"], { phase: 3 }),
-    f("security.apiKey.query", both, "Security", ["apiKey"], { phase: 3 }),
-    f("security.apiKey.cookie", both, "Security", ["apiKey"], { phase: 3, weight: "uncommon" }),
-    f("security.http.basic", both, "Security", ["http"], { phase: 3 }),
+    f("security.apiKey.header", both, "Security", ["apiKey"], { implemented: true, phase: 3 }),
+    f("security.apiKey.query", both, "Security", ["apiKey"], { implemented: true, phase: 3 }),
+    f("security.apiKey.cookie", both, "Security", ["apiKey"], { implemented: true, phase: 3, weight: "uncommon" }),
+    f("security.http.basic", both, "Security", ["http"], { implemented: true, phase: 3 }),
     f("security.http.bearer", both, "Security", ["http"], { implemented: true, phase: 1 }),
-    f("security.http.digest", both, "Security", ["http"], { phase: 3, weight: "uncommon" }),
-    f("security.oauth2.implicit", both, "Security", ["oauth2"], { phase: 3, weight: "uncommon" }),
-    f("security.oauth2.password", both, "Security", ["oauth2"], { phase: 3, weight: "uncommon" }),
-    f("security.oauth2.clientCredentials", both, "Security", ["oauth2"], { phase: 3 }),
-    f("security.oauth2.authorizationCode", both, "Security", ["oauth2"], { phase: 3 }),
-    f("security.openIdConnect", both, "Security", ["openIdConnect"], { phase: 3, weight: "uncommon" }),
-    f("security.mutualTLS", ["3.1"], "Security", ["mutualTLS"], { phase: 3, weight: "rare" }),
-    f("security.requirement.and", both, "Security", ["security"], { phase: 3, weight: "uncommon" }),
+    f("security.http.digest", both, "Security", ["http"], { implemented: true, phase: 3, weight: "uncommon" }),
+    f("security.oauth2.implicit", both, "Security", ["oauth2"], { implemented: true, phase: 3, weight: "uncommon" }),
+    f("security.oauth2.password", both, "Security", ["oauth2"], { implemented: true, phase: 3, weight: "uncommon" }),
+    f("security.oauth2.clientCredentials", both, "Security", ["oauth2"], { implemented: true, phase: 3 }),
+    f("security.oauth2.authorizationCode", both, "Security", ["oauth2"], { implemented: true, phase: 3 }),
+    f("security.openIdConnect", both, "Security", ["openIdConnect"], { implemented: true, phase: 3, weight: "uncommon" }),
+    f("security.mutualTLS", ["3.1"], "Security", ["mutualTLS"], { implemented: true, phase: 3, weight: "rare" }),
+    f("security.requirement.and", both, "Security", ["security"], { implemented: true, phase: 3, weight: "uncommon" }),
     f("security.requirement.or", both, "Security", ["security"], { implemented: true, phase: 1 }),
 
     // Links / callbacks / webhooks
-    f("link.operationId", both, "Link", ["operationId"], { phase: 3, weight: "rare" }),
-    f("link.operationRef", both, "Link", ["operationRef"], { phase: 3, weight: "rare" }),
-    f("link.runtime-expression", both, "Link", ["parameters"], { phase: 3, weight: "rare" }),
-    f("callback.expression", both, "Callback", ["callbacks"], { phase: 3, weight: "rare" }),
-    f("webhook.map", ["3.1"], "Webhook", ["webhooks"], { phase: 3 }),
+    f("link.operationId", both, "Link", ["operationId"], { implemented: true, phase: 3, weight: "rare" }),
+    f("link.operationRef", both, "Link", ["operationRef"], { implemented: true, phase: 3, weight: "rare" }),
+    f("link.runtime-expression", both, "Link", ["parameters"], { implemented: true, phase: 3, weight: "rare" }),
+    f("callback.expression", both, "Callback", ["callbacks"], { implemented: true, phase: 3, weight: "rare" }),
+    f("webhook.map", ["3.1"], "Webhook", ["webhooks"], { implemented: true, phase: 3 }),
 
     // References
     f("ref.local.components", both, "Reference", ["$ref"], { implemented: true, phase: 1 }),
     f("ref.json-pointer.escaped", both, "Reference", ["$ref"], { phase: 5, weight: "rare" }),
     f("ref.external", both, "Reference", ["$ref"], { phase: 5, weight: "uncommon" }),
-    f("ref.path-item", both, "Reference", ["$ref"], { phase: 3, weight: "uncommon" }),
+    f("ref.path-item", both, "Reference", ["$ref"], { implemented: true, phase: 3, weight: "uncommon" }),
     f("ref.cyclic-schema", both, "Reference", ["$ref"], { implemented: true, phase: 2, weight: "uncommon" }),
     f("ref.sibling.description", ["3.1"], "Reference", ["description"], { implemented: true, phase: 2, weight: "uncommon" }),
 
@@ -279,3 +279,8 @@ export function implementedFeatures(dialect?: Dialect): FeatureDef[] {
 
 export const PHASE1_PROFILES = ["minimal", "core-rest"] as const;
 export const PHASE2_PROFILES = ["minimal", "core-rest", "schema-heavy", "param-matrix", "media-matrix"] as const;
+export const PHASE3_PROFILES = [
+    ...PHASE2_PROFILES,
+    "security-matrix",
+    "callback-webhook",
+] as const;

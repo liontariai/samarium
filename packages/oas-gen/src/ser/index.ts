@@ -2,11 +2,13 @@ import { stringify as yamlStringify } from "yaml";
 import { componentRef } from "../dialects/index.ts";
 import { HTTP_METHODS } from "../ast/index.ts";
 import type {
+    CallbackIR,
     ComponentsIR,
     EncodingIR,
     ExampleIR,
     HeaderIR,
     InfoIR,
+    LinkIR,
     MediaTypeIR,
     OpenAPIDocument,
     OperationIR,
@@ -257,21 +259,7 @@ function responseToJson(r: ResponseIR): unknown {
         ? Object.fromEntries(Object.entries(r.content).map(([k, v]) => [k, mediaToJson(v)]))
         : undefined;
     const links = r.links
-        ? Object.fromEntries(
-              Object.entries(r.links).map(([k, v]) => [
-                  k,
-                  fromRef(v, (link) =>
-                      omitUndef({
-                          operationId: link.operationId,
-                          operationRef: link.operationRef,
-                          parameters: link.parameters,
-                          requestBody: link.requestBody,
-                          description: link.description,
-                          server: link.server ? serverToJson(link.server) : undefined,
-                      }),
-                  ),
-              ]),
-          )
+        ? Object.fromEntries(Object.entries(r.links).map(([k, v]) => [k, fromRef(v, linkToJson)]))
         : undefined;
     return extensionsLast(omitUndef({ description: r.description, headers, content, links }), r.extensions);
 }
@@ -295,7 +283,7 @@ function operationToJson(op: OperationIR): unknown {
             parameters: parameters?.length ? parameters : undefined,
             requestBody: op.requestBody ? fromRef(op.requestBody, requestBodyToJson) : undefined,
             responses,
-            callbacks: op.callbacks,
+            callbacks: op.callbacks ? callbacksToJson(op.callbacks) : undefined,
             deprecated: op.deprecated,
             security: op.security,
             servers: op.servers?.map(serverToJson),
@@ -305,7 +293,32 @@ function operationToJson(op: OperationIR): unknown {
     );
 }
 
+function linkToJson(link: LinkIR): unknown {
+    return extensionsLast(
+        omitUndef({
+            operationId: link.operationId,
+            operationRef: link.operationRef,
+            parameters: link.parameters,
+            requestBody: link.requestBody,
+            description: link.description,
+            server: link.server ? serverToJson(link.server) : undefined,
+        }),
+        link.extensions,
+    );
+}
+
+function callbackToJson(cb: CallbackIR): unknown {
+    return Object.fromEntries(Object.entries(cb).map(([expr, item]) => [expr, pathItemToJson(item)]));
+}
+
+function callbacksToJson(cbs: Record<string, Ref<CallbackIR>>): Record<string, unknown> {
+    return Object.fromEntries(Object.entries(cbs).map(([k, v]) => [k, fromRef(v, callbackToJson)]));
+}
+
 function pathItemToJson(item: PathItemIR): unknown {
+    if (item.pathItemRef) {
+        return { $ref: item.pathItemRef };
+    }
     if (item.$ref) {
         return { $ref: componentRef(item.$ref.table, item.$ref.name) };
     }
@@ -384,8 +397,8 @@ function componentsToJson(c: ComponentsIR): unknown {
             requestBodies: map(c.requestBodies, requestBodyToJson),
             headers: map(c.headers, headerToJson),
             securitySchemes: map(c.securitySchemes, securitySchemeToJson),
-            links: c.links,
-            callbacks: c.callbacks,
+            links: map(c.links, linkToJson),
+            callbacks: map(c.callbacks, callbackToJson),
             pathItems: map(c.pathItems, pathItemToJson),
         }),
         c.extensions,

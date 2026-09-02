@@ -69,6 +69,49 @@ describe("combinators", () => {
         expect(spec.meta.features).toContain("schema.discriminator");
         expect(spec.meta.features).toContain("schema.format.uuid");
     });
+
+    it("security-matrix covers scheme types and AND/OR/optional", () => {
+        const spec = generate({ seed: 1, dialect: "3.1", profile: "security-matrix" });
+        const json = documentToJson(spec.ir) as Record<string, unknown>;
+        const schemes = (json.components as { securitySchemes?: Record<string, Record<string, unknown>> }).securitySchemes!;
+        expect(schemes.apiKeyHeader?.in).toBe("header");
+        expect(schemes.apiKeyQuery?.in).toBe("query");
+        expect(schemes.apiKeyCookie?.in).toBe("cookie");
+        expect(schemes.basicAuth?.scheme).toBe("basic");
+        expect(schemes.digestAuth?.scheme).toBe("digest");
+        expect(schemes.digestAuth?.bearerFormat).toBeUndefined();
+        expect(isObj(schemes.oauth2?.flows) && "authorizationCode" in schemes.oauth2.flows).toBe(true);
+        expect(schemes.mtls?.type).toBe("mutualTLS");
+        const optional = (json.paths as Record<string, Record<string, Record<string, unknown>>>)["/optional"]?.get;
+        expect(optional?.security).toEqual([]);
+        const andOp = (json.paths as Record<string, Record<string, Record<string, unknown>>>)["/and"]?.get;
+        const andReq = andOp?.security as Array<Record<string, unknown>> | undefined;
+        expect(andReq?.[0] && Object.keys(andReq[0]).length).toBeGreaterThan(1);
+        expect(spec.meta.features).toContain("security.requirement.and");
+        expect(spec.meta.features).toContain("op.security.optional");
+    });
+
+    it("callback-webhook links are XOR and 3.0 has no webhooks", () => {
+        for (const dialect of ["3.0", "3.1"] as const) {
+            const spec = generate({ seed: 2, dialect, profile: "callback-webhook" });
+            const json = documentToJson(spec.ir) as Record<string, unknown>;
+            expect(json.webhooks === undefined || dialect === "3.1").toBe(true);
+            const post = (json.paths as Record<string, Record<string, Record<string, unknown>>>)["/items"]?.post;
+            expect(post?.callbacks).toBeDefined();
+            const created = (post?.responses as Record<string, Record<string, unknown>>)?.["200"];
+            const links = created?.links as Record<string, Record<string, unknown>>;
+            expect(links).toBeDefined();
+            for (const link of Object.values(links)) {
+                if (link.$ref) continue;
+                expect(!!link.operationId !== !!link.operationRef).toBe(true);
+            }
+            expect(spec.meta.features).toContain("callback.expression");
+            expect(spec.meta.features).toContain("link.runtime-expression");
+        }
+        const v31 = generate({ seed: 2, dialect: "3.1", profile: "callback-webhook" });
+        expect(v31.meta.features).toContain("webhook.map");
+        expect(v31.meta.features).toContain("path-item.ref.components");
+    });
 });
 
 function isObj(x: unknown): x is Record<string, unknown> {

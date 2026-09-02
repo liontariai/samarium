@@ -45,6 +45,16 @@ describe("gauntlet", () => {
         }
     }
 
+    for (const profile of ["security-matrix", "callback-webhook"] as const) {
+        for (const dialect of ["3.0", "3.1"] as const) {
+            it(`${profile} ${dialect} seeds 0-49 reject rate 0`, async () => {
+                const { rejected, reasons } = await runGauntlet(profile, dialect, 50);
+                if (rejected) console.error(reasons.slice(0, 8).join("\n"));
+                expect(rejected).toBe(0);
+            });
+        }
+    }
+
     it("Phase 2 catalog features are observed across profiles", () => {
         const docs = [];
         for (const profile of ["schema-heavy", "param-matrix", "media-matrix"] as const) {
@@ -60,6 +70,26 @@ describe("gauntlet", () => {
         const missing = implemented.filter((c) => c.observed === 0).map((c) => c.id);
         console.log(
             `phase2 mix: observed ${implemented.filter((c) => c.observed > 0).length}/${implemented.length}` +
+                (missing.length ? `; missing: ${missing.join(", ")}` : ""),
+        );
+        expect(missing).toEqual([]);
+    });
+
+    it("Phase 3 catalog features are observed across profiles", () => {
+        const docs = [];
+        for (const profile of ["security-matrix", "callback-webhook"] as const) {
+            for (const dialect of ["3.0", "3.1"] as const) {
+                for (let seed = 0; seed < 10; seed++) {
+                    docs.push(generate({ seed, profile, dialect }));
+                }
+            }
+        }
+        const report = coverage(docs);
+        const implementedIds = new Set(FEATURES.filter((f) => f.implemented && f.phase === 3).map((f) => f.id));
+        const implemented = report.byFeature.filter((c) => implementedIds.has(c.id));
+        const missing = implemented.filter((c) => c.observed === 0).map((c) => c.id);
+        console.log(
+            `phase3 mix: observed ${implemented.filter((c) => c.observed > 0).length}/${implemented.length}` +
                 (missing.length ? `; missing: ${missing.join(", ")}` : ""),
         );
         expect(missing).toEqual([]);

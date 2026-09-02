@@ -51,6 +51,6 @@ describe("public API stubs", () => {
     });
 
     it("unknown profiles throw", () => {
-        expect(() => generate({ seed: 1, profile: "security-matrix" })).toThrow(/not implemented/);
+        expect(() => generate({ seed: 1, profile: "ref-graph" })).toThrow(/not implemented/);
     });
 });

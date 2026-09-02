@@ -13,7 +13,7 @@ program
     .description("Generate an OpenAPI document")
     .requiredOption("--seed <n>", "PRNG seed", Number)
     .option("--dialect <d>", "3.0 or 3.1")
-    .option("--profile <p>", "minimal | core-rest | schema-heavy | param-matrix | media-matrix", "core-rest")
+    .option("--profile <p>", "minimal | core-rest | schema-heavy | param-matrix | media-matrix | security-matrix | callback-webhook", "core-rest")
     .option("--size <s>", "xs | s | m | l")
     .option("--format <f>", "json | yaml | both", "yaml")
     .option("--out <path>", "output file or directory", ".")

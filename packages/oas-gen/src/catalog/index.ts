@@ -3,6 +3,7 @@ export {
     FEATURE_BY_ID,
     PHASE1_PROFILES,
     PHASE2_PROFILES,
+    PHASE3_PROFILES,
     featuresForDialect,
     implementedFeatures,
     type FeatureDef,

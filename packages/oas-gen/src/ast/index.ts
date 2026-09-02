@@ -200,8 +200,10 @@ export type OperationIR = {
 };
 
 export type PathItemIR = {
-    /** Path Item `$ref` (including `components.pathItems` in 3.1). */
+    /** Path Item `$ref` into `components.pathItems` (OAS 3.1). */
     $ref?: ComponentPointer;
+    /** Raw Path Item `$ref` (e.g. `#/paths/~1ping`). */
+    pathItemRef?: string;
     summary?: string;
     description?: string;
     servers?: ServerIR[];

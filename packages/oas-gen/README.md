@@ -2,7 +2,7 @@
 
 Seeded generator of **OpenAPI documents** (the specs themselves, not request payloads) so Samarium’s OpenAPI compiler can be coverage-tested instead of fixture-tested.
 
-This is **Phase 2**: lexicon (diverse identifiers), schema composition/formats, parameter `in`/`style`/`explode` matrix, extra media types.
+This is **Phase 3**: security schemes (apiKey/http/oauth2/OIDC/mTLS), requirement OR/AND/optional, links, callbacks, and OAS 3.1 webhooks.
 
 ## Validity layers
 
@@ -45,8 +45,10 @@ bun packages/oas-gen/src/cli.ts coverage --seeds 100 --profile core-rest
 | `schema-heavy` | Formats, enum/const, composition, discriminator, cycles, 3.0/3.1 dialect keywords |
 | `param-matrix` | All legal `in` × `style` × `explode` cells + header/cookie + content |
 | `media-matrix` | multipart (+ encoding), urlencoded, xml, octet-stream, multi-content |
+| `security-matrix` | apiKey (header/query/cookie), HTTP basic/bearer/digest, OAuth2 (all flows), OIDC, 3.1 mTLS; OR / AND / optional |
+| `callback-webhook` | Response links (`operationId` XOR `operationRef` + runtime expressions), callbacks, 3.1 webhooks + `components.pathItems` |
 
-Identifiers (resources, properties, query/path/header names) are sampled from a seeded lexicon in `src/lexicon/`, not hardcoded `limit`/`q`. Later: `security-matrix`, `callback-webhook`, `ref-graph`, `multi-file`, `messy`, `full-random`, `invalid-*`.
+Identifiers (resources, properties, query/path/header names) are sampled from a seeded lexicon in `src/lexicon/`, not hardcoded `limit`/`q`. Later: `ref-graph`, `multi-file`, `messy`, `full-random`, `invalid-*`.
 
 `mutate()` and `shrink()` throw until Phase 4 / 6.
 
@@ -68,4 +70,5 @@ OpenAPI **compile** lives in `packages/make/src/openapi` (`OpenAPIGenerator.Gene
 cd packages/oas-gen && bun test
 bun tests/phase1-report.ts
 bun tests/phase2-report.ts
+bun tests/phase3-report.ts
 ```

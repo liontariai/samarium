@@ -12,11 +12,11 @@ describe("feature catalog", () => {
         }
     });
 
-    it("implemented ids are phase 1 or 2", () => {
+    it("implemented ids are phase 1, 2, or 3", () => {
         const implemented = FEATURES.filter((f) => f.implemented);
         expect(implemented.length).toBeGreaterThan(20);
         for (const f of implemented) {
-            expect(f.phase).toBeLessThanOrEqual(2);
+            expect(f.phase).toBeLessThanOrEqual(3);
         }
     });
 });
