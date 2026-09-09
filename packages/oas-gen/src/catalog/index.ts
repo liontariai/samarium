@@ -4,6 +4,8 @@ export {
     PHASE1_PROFILES,
     PHASE2_PROFILES,
     PHASE3_PROFILES,
+    PHASE4_PROFILES,
+    PHASE5_PROFILES,
     featuresForDialect,
     implementedFeatures,
     type FeatureDef,

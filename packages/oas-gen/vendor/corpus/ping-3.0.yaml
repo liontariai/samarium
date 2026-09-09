@@ -1,0 +1,15 @@
+openapi: 3.0.3
+info:
+  title: Ping
+  version: "1.0.0"
+paths:
+  /ping:
+    get:
+      operationId: ping
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string

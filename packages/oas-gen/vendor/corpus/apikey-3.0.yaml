@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Keyed
+  version: "1.0.0"
+security:
+  - apiKey: []
+paths:
+  /secret:
+    get:
+      operationId: getSecret
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key

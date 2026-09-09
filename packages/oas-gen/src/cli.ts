@@ -2,7 +2,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { Command } from "commander";
-import { coverage, generate, validate, type Dialect, type Profile, type SizeClass } from "./index.ts";
+import { coverage, generate, mutate, validate, type Dialect, type Profile, type SizeClass } from "./index.ts";
 import { parseDocument } from "./val/index.ts";
 
 const program = new Command();
@@ -13,9 +13,12 @@ program
     .description("Generate an OpenAPI document")
     .requiredOption("--seed <n>", "PRNG seed", Number)
     .option("--dialect <d>", "3.0 or 3.1")
-    .option("--profile <p>", "minimal | core-rest | schema-heavy | param-matrix | media-matrix | security-matrix | callback-webhook", "core-rest")
+    .option("--profile <p>", "minimal | core-rest | schema-heavy | param-matrix | media-matrix | security-matrix | callback-webhook | messy | ref-graph | multi-file", "core-rest")
     .option("--size <s>", "xs | s | m | l")
     .option("--format <f>", "json | yaml | both", "yaml")
+    .option("--multi-file", "split components into sidecar $ref files", false)
+    .option("--key-order <k>", "stable | shuffle")
+    .option("--yaml-style <s>", "block | flow")
     .option("--out <path>", "output file or directory", ".")
     .action(async (opts: {
         seed: number;
@@ -23,6 +26,9 @@ program
         profile: string;
         size?: string;
         format: "json" | "yaml" | "both";
+        multiFile?: boolean;
+        keyOrder?: "stable" | "shuffle";
+        yamlStyle?: "block" | "flow";
         out: string;
     }) => {
         const spec = generate({
@@ -31,13 +37,19 @@ program
             profile: opts.profile as Profile,
             size: opts.size as SizeClass | undefined,
             format: opts.format,
+            multiFile: !!opts.multiFile,
+            keyOrder: opts.keyOrder,
+            yamlStyle: opts.yamlStyle,
         });
         const out = resolve(opts.out);
-        const isDir = !out.endsWith(".yaml") && !out.endsWith(".yml") && !out.endsWith(".json");
+        const many = Object.keys(spec.files).length > 1;
+        const isDir = many || (!out.endsWith(".yaml") && !out.endsWith(".yml") && !out.endsWith(".json"));
         if (isDir) {
             await mkdir(out, { recursive: true });
             for (const [name, text] of Object.entries(spec.files)) {
-                await writeFile(join(out, name), text, "utf8");
+                const dest = join(out, name);
+                await mkdir(dirname(dest), { recursive: true });
+                await writeFile(dest, text, "utf8");
             }
         } else {
             await mkdir(dirname(out), { recursive: true });
@@ -58,6 +70,45 @@ program
                 2,
             ),
         );
+    });
+
+program
+    .command("mutate")
+    .description("Apply seeded mutations to a spec")
+    .requiredOption("--in <path>", "input JSON or YAML (or omit and pipe)")
+    .requiredOption("--seed <n>", "PRNG seed", Number)
+    .option("--n <count>", "number of mutations", (v) => Number(v), 3)
+    .option("--allow-invalid", "include invalid operators (skips repair)", false)
+    .option("--format <f>", "json | yaml | both", "yaml")
+    .option("--out <path>", "output file or directory", ".")
+    .action(async (opts: {
+        in: string;
+        seed: number;
+        n: number;
+        allowInvalid?: boolean;
+        format: "json" | "yaml" | "both";
+        out: string;
+    }) => {
+        const text = await readFile(resolve(opts.in), "utf8");
+        const spec = mutate(text, {
+            seed: Number(opts.seed),
+            n: Number(opts.n),
+            allowInvalid: !!opts.allowInvalid,
+            format: opts.format,
+        });
+        const out = resolve(opts.out);
+        const isDir = !out.endsWith(".yaml") && !out.endsWith(".yml") && !out.endsWith(".json");
+        if (isDir) {
+            await mkdir(out, { recursive: true });
+            for (const [name, text] of Object.entries(spec.files)) {
+                await writeFile(join(out, name), text, "utf8");
+            }
+        } else {
+            await mkdir(dirname(out), { recursive: true });
+            const body = spec.files["openapi.yaml"] ?? spec.files["openapi.json"] ?? Object.values(spec.files)[0]!;
+            await writeFile(out, body, "utf8");
+        }
+        console.log(JSON.stringify({ hash: spec.meta.hash, mutations: spec.meta.mutations, files: Object.keys(spec.files) }, null, 2));
     });
 
 program

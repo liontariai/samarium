@@ -1,4 +1,4 @@
-import { stringify as yamlStringify } from "yaml";
+import { stringifyJson, stringifyYaml } from "./stringify.ts";
 import { componentRef } from "../dialects/index.ts";
 import { HTTP_METHODS } from "../ast/index.ts";
 import type {
@@ -56,6 +56,9 @@ function discriminatorToJson(d?: { propertyName: string; mapping?: Record<string
 }
 
 function schemaToJson(schema: SchemaIR): unknown {
+    if (schema.kind === "opaque") {
+        return schema.value;
+    }
     if (schema.kind === "ref") {
         const o: Record<string, unknown> = { $ref: componentRef(schema.target.table, schema.target.name) };
         if (schema.description) o.description = schema.description;
@@ -435,14 +438,13 @@ export function documentToJson(doc: OpenAPIDocument): Record<string, unknown> {
 }
 
 export function toJsonString(doc: OpenAPIDocument): string {
-    return JSON.stringify(documentToJson(doc), null, 2) + "\n";
+    return stringifyJson(documentToJson(doc));
 }
 
-export function toYamlString(doc: OpenAPIDocument): string {
-    return yamlStringify(documentToJson(doc), {
-        indent: 2,
-        lineWidth: 120,
-        defaultStringType: "PLAIN",
-        defaultKeyType: "PLAIN",
-    });
+export function toYamlString(doc: OpenAPIDocument, flow = false): string {
+    return stringifyYaml(documentToJson(doc), flow);
 }
+
+export { stringifyJson, stringifyYaml } from "./stringify.ts";
+export { shuffleKeys } from "./chaos.ts";
+export { splitToFiles, bundleFiles } from "./multifile.ts";

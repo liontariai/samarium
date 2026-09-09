@@ -63,9 +63,12 @@ export const FEATURES: FeatureDef[] = [
     f("doc.openapi.3.0", ["3.0"], "Document", ["openapi"], { implemented: true, phase: 1 }),
     f("doc.openapi.3.1", ["3.1"], "Document", ["openapi"], { implemented: true, phase: 1 }),
     f("doc.jsonSchemaDialect", ["3.1"], "Document", ["jsonSchemaDialect"], { weight: "rare", samariumRelevance: "low" }),
-    f("doc.extension", both, "Document", ["x-*"], { weight: "uncommon", samariumRelevance: "medium" }),
+    f("doc.extension", both, "Document", ["x-*"], { implemented: true, phase: 4, weight: "uncommon", samariumRelevance: "medium" }),
     f("ser.json", both, "Serialization", [], { implemented: true, phase: 1, samariumRelevance: "medium" }),
     f("ser.yaml", both, "Serialization", [], { implemented: true, phase: 1, samariumRelevance: "medium" }),
+    f("ser.key-order.shuffle", both, "Serialization", [], { implemented: true, phase: 5, weight: "uncommon", samariumRelevance: "medium" }),
+    f("ser.yaml.flow", both, "Serialization", [], { implemented: true, phase: 5, weight: "rare", samariumRelevance: "low" }),
+    f("ser.unicode", both, "Serialization", [], { implemented: true, phase: 5, weight: "uncommon", samariumRelevance: "medium" }),
     f("doc.optional.omitted", both, "Document", [], { implemented: true, phase: 1, samariumRelevance: "medium" }),
     f("doc.optional.present-empty", both, "Document", [], { weight: "rare", samariumRelevance: "low" }),
     f("doc.optional.present-default", both, "Document", [], { weight: "rare", samariumRelevance: "low" }),
@@ -81,7 +84,7 @@ export const FEATURES: FeatureDef[] = [
 
     // Servers
     f("servers.literal", both, "Server", ["url"], { implemented: true, phase: 1 }),
-    f("servers.templated", both, "Server", ["url", "variables"], { weight: "uncommon" }),
+    f("servers.templated", both, "Server", ["url", "variables"], { implemented: true, phase: 4, weight: "uncommon" }),
     f("servers.document", both, "Server", ["servers"], { implemented: true, phase: 1 }),
     f("servers.path-item", both, "Server", ["servers"], { weight: "uncommon" }),
     f("servers.operation", both, "Server", ["servers"], { weight: "uncommon" }),
@@ -110,15 +113,15 @@ export const FEATURES: FeatureDef[] = [
     f("op.operationId.unicode", both, "Operation", ["operationId"], { weight: "rare", samariumRelevance: "medium" }),
     f("op.operationId.dotted", both, "Operation", ["operationId"], { weight: "uncommon" }),
     f("op.tags", both, "Operation", ["tags"], { implemented: true, phase: 1 }),
-    f("op.deprecated", both, "Operation", ["deprecated"], { weight: "uncommon", samariumRelevance: "medium" }),
-    f("op.externalDocs", both, "Operation", ["externalDocs"], { weight: "uncommon", samariumRelevance: "low" }),
+    f("op.deprecated", both, "Operation", ["deprecated"], { implemented: true, phase: 4, weight: "uncommon", samariumRelevance: "medium" }),
+    f("op.externalDocs", both, "Operation", ["externalDocs"], { implemented: true, phase: 4, weight: "uncommon", samariumRelevance: "low" }),
     f("op.parameters.inline", both, "Operation", ["parameters"], { implemented: true, phase: 1 }),
-    f("op.parameters.ref", both, "Operation", ["$ref"], { weight: "uncommon" }),
+    f("op.parameters.ref", both, "Operation", ["$ref"], { implemented: true, phase: 4, weight: "uncommon" }),
     f("op.parameters.inherited", both, "Operation", ["parameters"], { implemented: true, phase: 1 }),
     f("op.requestBody", both, "Operation", ["requestBody"], { implemented: true, phase: 1 }),
-    f("op.requestBody.ref", both, "Operation", ["$ref"], { weight: "uncommon" }),
+    f("op.requestBody.ref", both, "Operation", ["$ref"], { implemented: true, phase: 5, weight: "uncommon" }),
     f("op.requestBody.required", both, "Operation", ["required"], { implemented: true, phase: 1 }),
-    f("op.responses.default", both, "Operation", ["default"], { weight: "uncommon" }),
+    f("op.responses.default", both, "Operation", ["default"], { implemented: true, phase: 4, weight: "uncommon" }),
     f("op.responses.2xx", both, "Operation", ["200"], { implemented: true, phase: 1 }),
     f("op.responses.4xx", both, "Operation", ["400"], { implemented: true, phase: 1 }),
     f("op.responses.pattern", both, "Operation", ["2XX"], { weight: "rare" }),
@@ -256,15 +259,15 @@ export const FEATURES: FeatureDef[] = [
 
     // References
     f("ref.local.components", both, "Reference", ["$ref"], { implemented: true, phase: 1 }),
-    f("ref.json-pointer.escaped", both, "Reference", ["$ref"], { phase: 5, weight: "rare" }),
-    f("ref.external", both, "Reference", ["$ref"], { phase: 5, weight: "uncommon" }),
+    f("ref.json-pointer.escaped", both, "Reference", ["$ref"], { implemented: true, phase: 5, weight: "rare" }),
+    f("ref.external", both, "Reference", ["$ref"], { implemented: true, phase: 5, weight: "uncommon" }),
     f("ref.path-item", both, "Reference", ["$ref"], { implemented: true, phase: 3, weight: "uncommon" }),
     f("ref.cyclic-schema", both, "Reference", ["$ref"], { implemented: true, phase: 2, weight: "uncommon" }),
     f("ref.sibling.description", ["3.1"], "Reference", ["description"], { implemented: true, phase: 2, weight: "uncommon" }),
 
     // Multi-document
-    f("multifile.relative", both, "Reference", ["$ref"], { phase: 5, weight: "uncommon" }),
-    f("multifile.absolute", both, "Reference", ["$ref"], { phase: 5, weight: "rare", samariumRelevance: "medium" }),
+    f("multifile.relative", both, "Reference", ["$ref"], { implemented: true, phase: 5, weight: "uncommon" }),
+    f("multifile.absolute", both, "Reference", ["$ref"], { implemented: true, phase: 5, weight: "rare", samariumRelevance: "medium" }),
 ];
 
 export const FEATURE_BY_ID: Map<FeatureId, FeatureDef> = new Map(FEATURES.map((x) => [x.id, x]));
@@ -284,3 +287,5 @@ export const PHASE3_PROFILES = [
     "security-matrix",
     "callback-webhook",
 ] as const;
+export const PHASE4_PROFILES = [...PHASE3_PROFILES, "messy"] as const;
+export const PHASE5_PROFILES = [...PHASE4_PROFILES, "ref-graph", "multi-file"] as const;

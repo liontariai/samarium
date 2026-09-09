@@ -19,7 +19,9 @@
         "test": "bun test",
         "phase1-report": "bun tests/phase1-report.ts",
         "phase2-report": "bun tests/phase2-report.ts",
-        "phase3-report": "bun tests/phase3-report.ts"
+        "phase3-report": "bun tests/phase3-report.ts",
+        "phase4-report": "bun tests/phase4-report.ts",
+        "phase5-report": "bun tests/phase5-report.ts"
     },
     "repository": {
         "type": "git",

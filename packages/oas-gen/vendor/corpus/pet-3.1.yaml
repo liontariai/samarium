@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Pet
+  version: "1.0.0"
+paths:
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A pet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+components:
+  schemas:
+    Pet:
+      type: object
+      properties:
+        id:
+          type: string
+        tag:
+          type: ["string", "null"]
+      required: [id]

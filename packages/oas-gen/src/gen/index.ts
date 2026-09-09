@@ -1,7 +1,7 @@
 import { dialectTable } from "../dialects/index.ts";
 import { SIZE_BUDGETS, defaultSizeForProfile } from "../size.ts";
 import { Rng } from "../rng.ts";
-import { PHASE3_PROFILES } from "../catalog/features.ts";
+import { PHASE5_PROFILES } from "../catalog/features.ts";
 import type { GenerateOptions, Profile } from "../types.ts";
 import type { ComponentsIR, OpenAPIDocument, PathItemIR, Ref, ResponseIR, SchemaIR } from "../ast/index.ts";
 import { chance, mark, remainingOps, remainingPaths, remainingSchemas, type GenContext } from "./context.ts";
@@ -30,8 +30,9 @@ import { pathParam, queryParam, genParamMatrix } from "./parameter.ts";
 import { genMediaMatrix } from "./media.ts";
 import { genSecurityMatrix } from "./security.ts";
 import { genCallbackWebhook } from "./callback.ts";
+import { genRefGraph } from "./ref-graph.ts";
 
-const IMPLEMENTED = new Set<string>(PHASE3_PROFILES);
+const IMPLEMENTED = new Set<string>(PHASE5_PROFILES);
 
 export function createContext(opts: GenerateOptions): GenContext {
     const rng = new Rng(opts.seed);
@@ -361,6 +362,7 @@ export function generateDocument(ctx: GenContext): OpenAPIDocument {
     else if (ctx.profile === "media-matrix") genMediaMatrix(ctx, doc);
     else if (ctx.profile === "security-matrix") genSecurityMatrix(ctx, doc);
     else if (ctx.profile === "callback-webhook") genCallbackWebhook(ctx, doc);
+    else if (ctx.profile === "ref-graph" || ctx.profile === "multi-file") genRefGraph(ctx, doc);
     else genCoreRest(ctx, doc);
 
     if ((!doc.paths || Object.keys(doc.paths).length === 0) && !doc.webhooks) genMinimal(ctx, doc);

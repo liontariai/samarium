@@ -112,6 +112,38 @@ describe("combinators", () => {
         expect(v31.meta.features).toContain("webhook.map");
         expect(v31.meta.features).toContain("path-item.ref.components");
     });
+
+    it("ref-graph emits escaped path-item $ref, cycles, and unused components", () => {
+        for (const dialect of ["3.0", "3.1"] as const) {
+            const spec = generate({ seed: 3, dialect, profile: "ref-graph", keyOrder: "stable" });
+            const json = documentToJson(spec.ir) as Record<string, unknown>;
+            const paths = json.paths as Record<string, Record<string, unknown>>;
+            const alias = paths["/foo~bar-alias"];
+            expect(alias).toBeTruthy();
+            expect(String(alias!.$ref)).toContain("~0");
+            expect(String(alias!.$ref)).toContain("~1");
+            expect(spec.meta.features).toContain("ref.json-pointer.escaped");
+            expect(spec.meta.features).toContain("ref.cyclic-schema");
+            expect(spec.meta.features).toContain("components.unused");
+            expect(spec.meta.features).toContain("op.requestBody.ref");
+            expect(spec.meta.features).toContain("ser.unicode");
+            const schemas = (json.components as Record<string, Record<string, unknown>>).schemas;
+            expect(schemas["Unused.Model"]).toBeTruthy();
+            expect(isObj(schemas.CycleNode) && isObj(schemas.CycleNode.properties)).toBe(true);
+        }
+    });
+
+    it("multi-file splits components into sidecar $ref files that bundle", async () => {
+        const spec = generate({ seed: 4, dialect: "3.0", profile: "multi-file", format: "yaml", keyOrder: "stable" });
+        expect(Object.keys(spec.files).length).toBeGreaterThan(1);
+        expect(Object.keys(spec.files).some((k) => k.startsWith("schemas/"))).toBe(true);
+        expect(spec.meta.features).toContain("multifile.relative");
+        expect(spec.meta.features).toContain("multifile.absolute");
+        expect(spec.meta.features).toContain("ref.external");
+        const root = spec.files["openapi.yaml"]!;
+        expect(root).toMatch(/\$ref:\s*['"]?\.\/schemas\//);
+        expect(root).toMatch(/\$ref:\s*['"]?\/params\//);
+    });
 });
 
 function isObj(x: unknown): x is Record<string, unknown> {

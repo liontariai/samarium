@@ -26,6 +26,10 @@ export type GenerateOptions = {
     features?: FeatureId[];
     forbid?: FeatureId[];
     multiFile?: boolean;
+    /** Default `stable`. `shuffle` is also implied by `ref-graph` / `multi-file`. */
+    keyOrder?: "stable" | "shuffle";
+    /** Default `block`. `flow` is also implied by odd-seed `ref-graph`. */
+    yamlStyle?: "block" | "flow";
     /** Default true: identifiers safe for TypeScript codegen. */
     codegenSafeIds?: boolean;
 };

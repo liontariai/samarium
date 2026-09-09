@@ -2,7 +2,7 @@
 
 Seeded generator of **OpenAPI documents** (the specs themselves, not request payloads) so Samarium’s OpenAPI compiler can be coverage-tested instead of fixture-tested.
 
-This is **Phase 3**: security schemes (apiKey/http/oauth2/OIDC/mTLS), requirement OR/AND/optional, links, callbacks, and OAS 3.1 webhooks.
+This is **Phase 5**: `ref-graph` (reuse, cycles, escaped JSON Pointers) and `multi-file` (external `$ref` writer), plus key-order shuffle, YAML flow, and unicode descriptions.
 
 ## Validity layers
 
@@ -31,7 +31,9 @@ Deterministic given `{ seed, dialect, profile, size }`.
 ### CLI
 
 ```
-bun packages/oas-gen/src/cli.ts generate --seed 42 --dialect 3.1 --profile core-rest --out ./out
+bun packages/oas-gen/src/cli.ts generate --seed 42 --dialect 3.1 --profile ref-graph --out ./out
+bun packages/oas-gen/src/cli.ts generate --seed 42 --dialect 3.1 --profile multi-file --out ./out
+bun packages/oas-gen/src/cli.ts mutate --in ./out/openapi.yaml --seed 1 --n 5 --out ./mut
 bun packages/oas-gen/src/cli.ts validate --in ./out/openapi.yaml
 bun packages/oas-gen/src/cli.ts coverage --seeds 100 --profile core-rest
 ```
@@ -47,10 +49,13 @@ bun packages/oas-gen/src/cli.ts coverage --seeds 100 --profile core-rest
 | `media-matrix` | multipart (+ encoding), urlencoded, xml, octet-stream, multi-content |
 | `security-matrix` | apiKey (header/query/cookie), HTTP basic/bearer/digest, OAuth2 (all flows), OIDC, 3.1 mTLS; OR / AND / optional |
 | `callback-webhook` | Response links (`operationId` XOR `operationRef` + runtime expressions), callbacks, 3.1 webhooks + `components.pathItems` |
+| `messy` | `core-rest` plus three seeded safe mutations |
+| `ref-graph` | Reuse, cyclic schemas, unused components, path-item `$ref` with escaped JSON Pointers, unicode descriptions, shuffled keys |
+| `multi-file` | Same IR as `ref-graph`, serialized as a root document plus sidecar `./schemas/…` (relative) and `/params/…` (path-absolute) `$ref`s |
 
-Identifiers (resources, properties, query/path/header names) are sampled from a seeded lexicon in `src/lexicon/`, not hardcoded `limit`/`q`. Later: `ref-graph`, `multi-file`, `messy`, `full-random`, `invalid-*`.
+Identifiers (resources, properties, query/path/header names) are sampled from a seeded lexicon in `src/lexicon/`. Later: `full-random`, `invalid-*`.
 
-`mutate()` and `shrink()` throw until Phase 4 / 6.
+`generate({ multiFile: true })` splits any profile’s components the same way. `keyOrder: "shuffle"` and `yamlStyle: "flow"` are serialization-only (IR stays stable). `mutate(spec, { seed, n, allowInvalid? })` applies IR operators then `repair`, unless `allowInvalid` is set. `shrink()` throws until Phase 6.
 
 ## Adding a feature atom
 
@@ -71,4 +76,6 @@ cd packages/oas-gen && bun test
 bun tests/phase1-report.ts
 bun tests/phase2-report.ts
 bun tests/phase3-report.ts
+bun tests/phase4-report.ts
+bun tests/phase5-report.ts
 ```

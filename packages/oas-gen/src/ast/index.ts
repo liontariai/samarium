@@ -94,11 +94,16 @@ export type SchemaIR =
           description?: string;
           extensions?: Extensions;
       }
-    | {
+      | {
           kind: "not";
           schema: Ref<SchemaIR>;
           description?: string;
           extensions?: Extensions;
+      }
+      | {
+          /** Corpus / JSON round-trip: serialize as the raw Schema Object. */
+          kind: "opaque";
+          value: Record<string, unknown>;
       };
 
 export type DiscriminatorIR = {

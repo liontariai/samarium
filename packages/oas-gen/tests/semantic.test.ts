@@ -46,11 +46,13 @@ describe("semantic layer", () => {
 });
 
 describe("public API stubs", () => {
-    it("mutate is not implemented in Phase 1", () => {
-        expect(() => mutate("{}", { seed: 1 })).toThrow(/Phase 4/);
+    it("mutate is implemented", () => {
+        const spec = generate({ seed: 1, dialect: "3.0", profile: "minimal" });
+        const next = mutate(spec, { seed: 2, n: 1 });
+        expect(next.meta.mutations.length).toBeGreaterThan(0);
     });
 
     it("unknown profiles throw", () => {
-        expect(() => generate({ seed: 1, profile: "ref-graph" })).toThrow(/not implemented/);
+        expect(() => generate({ seed: 1, profile: "full-random" })).toThrow(/not implemented/);
     });
 });

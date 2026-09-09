@@ -19,5 +19,6 @@ export function defaultSizeForProfile(profile: string): SizeClass {
     if (profile === "minimal") return "xs";
     if (profile === "schema-heavy" || profile === "param-matrix" || profile === "media-matrix") return "m";
     if (profile === "security-matrix" || profile === "callback-webhook") return "m";
+    if (profile === "ref-graph" || profile === "multi-file") return "s";
     return "s";
 }

@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Compose
+  version: "1.1.0"
+paths:
+  /shape:
+    get:
+      operationId: getShape
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shape"
+components:
+  schemas:
+    Cat:
+      type: object
+      properties:
+        petType:
+          type: string
+    Dog:
+      type: object
+      properties:
+        petType:
+          type: string
+    Shape:
+      oneOf:
+        - $ref: "#/components/schemas/Cat"
+        - $ref: "#/components/schemas/Dog"
