@@ -1,5 +1,4 @@
-import { createHash } from "node:crypto";
-import type { GenerateOptions, GeneratedSpec } from "./types.ts";
+import type { GenerateOptions, GeneratedSpec, Profile } from "./types.ts";
 import { createContext, generateDocument } from "./gen/index.ts";
 import { repair } from "./cons/repair.ts";
 import {
@@ -13,13 +12,30 @@ import {
 import { mark } from "./gen/context.ts";
 import { applyMutations, type MutCtx } from "./mut/ops.ts";
 import { Rng } from "./rng.ts";
+import { PHASE5_PROFILES } from "./catalog/features.ts";
+import { hashText } from "./hash.ts";
 
-export function hashText(text: string): string {
-    return createHash("sha256").update(text).digest("hex").slice(0, 16);
+export { hashText } from "./hash.ts";
+
+const FULL_RANDOM_SIZES = ["xs", "s", "m"] as const;
+
+function resolveGenerateOptions(opts: GenerateOptions): { opts: GenerateOptions; requested: Profile | undefined } {
+    if (opts.profile !== "full-random") return { opts, requested: opts.profile };
+    const rng = new Rng((opts.seed >>> 0) ^ 0x61a1_d0e5);
+    return {
+        requested: "full-random",
+        opts: {
+            ...opts,
+            profile: rng.pick(PHASE5_PROFILES),
+            dialect: opts.dialect ?? (rng.bool() ? "3.1" : "3.0"),
+            size: opts.size ?? rng.pick(FULL_RANDOM_SIZES),
+        },
+    };
 }
 
 export function generate(opts: GenerateOptions): GeneratedSpec {
-    const ctx = createContext(opts);
+    const resolved = resolveGenerateOptions(opts);
+    const ctx = createContext(resolved.opts);
     let ir = generateDocument(ctx);
     const mutations: string[] = [];
     if (ctx.profile === "messy") {
@@ -83,7 +99,7 @@ export function generate(opts: GenerateOptions): GeneratedSpec {
         meta: {
             seed: opts.seed,
             dialect: ctx.dialect,
-            profile: ctx.profile,
+            profile: resolved.requested ?? ctx.profile,
             size: ctx.size,
             features,
             mutations,
@@ -110,10 +126,4 @@ export async function* stream(
 }
 
 export { mutate } from "./mut/index.ts";
-
-export async function shrink(
-    _doc: GeneratedSpec,
-    _pred: (d: GeneratedSpec) => boolean | Promise<boolean>,
-): Promise<GeneratedSpec> {
-    throw new Error("shrink() is Phase 6; not implemented yet");
-}
+export { shrink } from "./shrink/index.ts";

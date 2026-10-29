@@ -53,6 +53,12 @@ describe("public API stubs", () => {
     });
 
     it("unknown profiles throw", () => {
-        expect(() => generate({ seed: 1, profile: "full-random" })).toThrow(/not implemented/);
+        expect(() => generate({ seed: 1, profile: "not-a-profile" as "minimal" })).toThrow(/not implemented/);
+    });
+
+    it("full-random picks an implemented inner profile", () => {
+        const spec = generate({ seed: 7, profile: "full-random" });
+        expect(spec.meta.profile).toBe("full-random");
+        expect(Object.keys(spec.ir.paths ?? {}).length + Object.keys(spec.ir.webhooks ?? {}).length).toBeGreaterThan(0);
     });
 });

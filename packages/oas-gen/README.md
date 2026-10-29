@@ -2,7 +2,7 @@
 
 Seeded generator of **OpenAPI documents** (the specs themselves, not request payloads) so Samarium’s OpenAPI compiler can be coverage-tested instead of fixture-tested.
 
-This is **Phase 5**: `ref-graph` (reuse, cycles, escaped JSON Pointers) and `multi-file` (external `$ref` writer), plus key-order shuffle, YAML flow, and unicode descriptions.
+This is **Phase 6**: Samarium compile + `tsc` oracle, `shrink()`, soak CLI, and `full-random`.
 
 ## Validity layers
 
@@ -20,10 +20,11 @@ The 3.1 official `schema/` document does **not** fully validate Schema Objects. 
 ## Generate
 
 ```ts
-import { generate, validate, stream, coverage } from "@samarium.sdk/oas-gen";
+import { generate, validate, stream, coverage, oracle, shrink } from "@samarium.sdk/oas-gen";
 
 const spec = generate({ seed: 42, dialect: "3.1", profile: "core-rest", size: "s" });
 const verdict = await validate(spec.files["openapi.yaml"], "3.1");
+const compiled = await oracle(spec);
 ```
 
 Deterministic given `{ seed, dialect, profile, size }`.
@@ -36,6 +37,7 @@ bun packages/oas-gen/src/cli.ts generate --seed 42 --dialect 3.1 --profile multi
 bun packages/oas-gen/src/cli.ts mutate --in ./out/openapi.yaml --seed 1 --n 5 --out ./mut
 bun packages/oas-gen/src/cli.ts validate --in ./out/openapi.yaml
 bun packages/oas-gen/src/cli.ts coverage --seeds 100 --profile core-rest
+bun packages/oas-gen/src/cli.ts soak --minutes 5 --oracle samarium --out ./repro
 ```
 
 ### Profiles
@@ -52,10 +54,26 @@ bun packages/oas-gen/src/cli.ts coverage --seeds 100 --profile core-rest
 | `messy` | `core-rest` plus three seeded safe mutations |
 | `ref-graph` | Reuse, cyclic schemas, unused components, path-item `$ref` with escaped JSON Pointers, unicode descriptions, shuffled keys |
 | `multi-file` | Same IR as `ref-graph`, serialized as a root document plus sidecar `./schemas/…` (relative) and `/params/…` (path-absolute) `$ref`s |
+| `full-random` | Seeded pick of an implemented profile + dialect + size (`xs`/`s`/`m`) |
 
-Identifiers (resources, properties, query/path/header names) are sampled from a seeded lexicon in `src/lexicon/`. Later: `full-random`, `invalid-*`.
+Identifiers (resources, properties, query/path/header names) are sampled from a seeded lexicon in `src/lexicon/`. Later: `invalid-*`.
 
-`generate({ multiFile: true })` splits any profile’s components the same way. `keyOrder: "shuffle"` and `yamlStyle: "flow"` are serialization-only (IR stays stable). `mutate(spec, { seed, n, allowInvalid? })` applies IR operators then `repair`, unless `allowInvalid` is set. `shrink()` throws until Phase 6.
+`generate({ multiFile: true })` splits any profile’s components the same way. `keyOrder: "shuffle"` and `yamlStyle: "flow"` are serialization-only (IR stays stable). `mutate(spec, { seed, n, allowInvalid? })` applies IR operators then `repair`, unless `allowInvalid` is set. `shrink(spec, pred)` keeps reductions while `pred` stays true, then `repair`s (valid docs stay valid).
+
+## Samarium oracle
+
+`oracle(spec)` compiles with `OpenAPIGenerator.Generator` and typechecks the SDK (critical `tsc` diagnostics only). Soak writes shrunk YAML + JSON sidecars under `--out` on failure:
+
+```
+bun packages/oas-gen/src/cli.ts soak --minutes 5 --oracle samarium --profile full-random --out ./repro
+```
+
+| Oracle result | Profiles |
+|---|---|
+| Compile + typecheck | `minimal`, `core-rest`, `param-matrix`, `media-matrix`, `security-matrix`, `callback-webhook` |
+| Crash (`gatherMeta` stack overflow on cyclic `components.schemas`) | `schema-heavy`, `ref-graph`, `multi-file`; sometimes `messy` |
+
+Unexpected crash is a Samarium bug. Unsupported constructs should fail with a clean diagnostic, not a stack overflow.
 
 ## Adding a feature atom
 
@@ -67,7 +85,7 @@ Identifiers (resources, properties, query/path/header names) are sampled from a 
 
 ## Repo map (Samarium)
 
-OpenAPI **compile** lives in `packages/make/src/openapi` (`OpenAPIGenerator.Generator`, `openapi-typescript` types). CLI: `packages/new` `generate-openapi`. This package is a standalone toolkit with a thin oracle adapter still to come (Phase 6).
+OpenAPI **compile** lives in `packages/make/src/openapi` (`OpenAPIGenerator.Generator`, `openapi-typescript` types). CLI: `packages/new` `generate-openapi`. The thin oracle in `src/oracle/` calls that generator, then `tsc` (critical diagnostics only).
 
 ## Tests
 
@@ -78,4 +96,5 @@ bun tests/phase2-report.ts
 bun tests/phase3-report.ts
 bun tests/phase4-report.ts
 bun tests/phase5-report.ts
+bun tests/phase6-report.ts
 ```

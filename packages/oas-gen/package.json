@@ -21,7 +21,8 @@
         "phase2-report": "bun tests/phase2-report.ts",
         "phase3-report": "bun tests/phase3-report.ts",
         "phase4-report": "bun tests/phase4-report.ts",
-        "phase5-report": "bun tests/phase5-report.ts"
+        "phase5-report": "bun tests/phase5-report.ts",
+        "phase6-report": "bun tests/phase6-report.ts"
     },
     "repository": {
         "type": "git",

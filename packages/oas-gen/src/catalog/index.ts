@@ -6,6 +6,7 @@ export {
     PHASE3_PROFILES,
     PHASE4_PROFILES,
     PHASE5_PROFILES,
+    PHASE6_PROFILES,
     featuresForDialect,
     implementedFeatures,
     type FeatureDef,

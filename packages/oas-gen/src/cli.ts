@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { Command } from "commander";
 import { coverage, generate, mutate, validate, type Dialect, type Profile, type SizeClass } from "./index.ts";
 import { parseDocument } from "./val/index.ts";
+import { compileSpec, oracle, shrinkOracleFailure, writeRepro } from "./oracle/index.ts";
 
 const program = new Command();
 program.name("oas-gen").description("Seeded OpenAPI document generator for Samarium coverage tests").version("0.1.0");
@@ -13,7 +14,7 @@ program
     .description("Generate an OpenAPI document")
     .requiredOption("--seed <n>", "PRNG seed", Number)
     .option("--dialect <d>", "3.0 or 3.1")
-    .option("--profile <p>", "minimal | core-rest | schema-heavy | param-matrix | media-matrix | security-matrix | callback-webhook | messy | ref-graph | multi-file", "core-rest")
+    .option("--profile <p>", "minimal | core-rest | schema-heavy | param-matrix | media-matrix | security-matrix | callback-webhook | messy | ref-graph | multi-file | full-random", "core-rest")
     .option("--size <s>", "xs | s | m | l")
     .option("--format <f>", "json | yaml | both", "yaml")
     .option("--multi-file", "split components into sidecar $ref files", false)
@@ -151,6 +152,87 @@ program
         const report = coverage(docs);
         console.log(report.markdown);
         console.log(`observed ${report.observed}/${report.total} catalog ids (${report.implemented} implemented)`);
+    });
+
+program
+    .command("soak")
+    .description("Generate specs until the clock runs out and run the Samarium compile oracle")
+    .option("--minutes <n>", "how long to run", (v) => Number(v), 5)
+    .option("--oracle <name>", "samarium (only adapter in v1)", "samarium")
+    .option("--profile <p>", "profile (default full-random)", "full-random")
+    .option("--dialect <d>", "3.0 or 3.1 (omit to mix)")
+    .option("--seed <n>", "starting seed", (v) => Number(v), 0)
+    .option("--out <path>", "directory for shrunk repros", "./repro")
+    .option("--no-typecheck", "compile only; skip tsc")
+    .action(async (opts: {
+        minutes: number;
+        oracle: string;
+        profile: string;
+        dialect?: string;
+        seed: number;
+        out: string;
+        typecheck?: boolean;
+    }) => {
+        if (opts.oracle !== "samarium") {
+            console.error(`unknown oracle "${opts.oracle}"; only "samarium" is implemented`);
+            process.exit(1);
+        }
+        const deadline = Date.now() + Math.max(0.1, opts.minutes) * 60_000;
+        let seed = Number(opts.seed) || 0;
+        let ok = 0;
+        let fail = 0;
+        let crash = 0;
+        const repros: string[] = [];
+        while (Date.now() < deadline) {
+            const spec = generate({
+                seed,
+                dialect: opts.dialect as Dialect | undefined,
+                profile: opts.profile as Profile,
+            });
+            const verdict = await oracle(spec, { typecheck: opts.typecheck !== false });
+            if (verdict.ok) ok++;
+            else {
+                fail++;
+                if (verdict.compile.crashed) crash++;
+                const shrunk = await shrinkOracleFailure(spec);
+                const shrunkVerdict = await compileSpec(shrunk);
+                const written = await writeRepro(resolve(opts.out), shrunk, {
+                    ok: false,
+                    compile: shrunkVerdict,
+                    typecheck: verdict.typecheck,
+                    durationMs: verdict.durationMs,
+                });
+                repros.push(written.yaml);
+                console.error(
+                    JSON.stringify({
+                        seed,
+                        dialect: spec.meta.dialect,
+                        profile: spec.meta.profile,
+                        hash: spec.meta.hash,
+                        shrunk: shrunk.meta.hash,
+                        crashed: verdict.compile.crashed,
+                        error: verdict.compile.error?.split("\n")[0],
+                        typecheck: verdict.typecheck.errors[0],
+                        repro: written.yaml,
+                    }),
+                );
+            }
+            seed++;
+        }
+        console.log(
+            JSON.stringify(
+                {
+                    seeds: seed - (Number(opts.seed) || 0),
+                    ok,
+                    fail,
+                    crash,
+                    repros,
+                },
+                null,
+                2,
+            ),
+        );
+        process.exit(fail ? 1 : 0);
     });
 
 program.parseAsync(process.argv);

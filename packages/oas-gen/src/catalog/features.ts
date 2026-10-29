@@ -289,3 +289,4 @@ export const PHASE3_PROFILES = [
 ] as const;
 export const PHASE4_PROFILES = [...PHASE3_PROFILES, "messy"] as const;
 export const PHASE5_PROFILES = [...PHASE4_PROFILES, "ref-graph", "multi-file"] as const;
+export const PHASE6_PROFILES = [...PHASE5_PROFILES, "full-random"] as const;
