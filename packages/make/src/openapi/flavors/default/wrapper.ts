@@ -341,25 +341,23 @@ export class RootOperation {
             requirement ??
             RootOperation.defaultSecurity ??
             ({ [schemeNames[0]]: [] } as SecurityRequirement);
-        let applied: AppliedAuth = { headers: {}, query: {}, cookie: {} };
-        for (const schemeName of Object.keys(req)) {
-            const scheme = schemes[schemeName];
-            if (!scheme) continue;
-            applied = mergeAppliedAuth(applied, applySecurityCredential(scheme, value));
+        // String credentials are a single value — place on the first scheme in the
+        // requirement only. AND requirements with multiple schemes need a scheme map.
+        const firstSchemeName = Object.keys(req)[0];
+        if (!firstSchemeName) {
+            return { headers: {}, query: {}, cookie: {} };
         }
-        // If requirement referenced unknown schemes only, fall back to default header.
-        if (
-            Object.keys(applied.headers).length === 0 &&
-            Object.keys(applied.query).length === 0 &&
-            Object.keys(applied.cookie).length === 0
-        ) {
+        const scheme = schemes[firstSchemeName];
+        if (!scheme) {
+            // Unknown scheme name — fall back to default header.
             return {
                 headers: { [RootOperation.authHeaderName]: value },
                 query: {},
                 cookie: {},
             };
         }
-        return applied;
+        // May be empty for mutualTLS (no string credential placement).
+        return applySecurityCredential(scheme, value);
     };
 
     private applyAuthResult = (
@@ -413,11 +411,14 @@ export class RootOperation {
      * 1. Global `auth` resolver (with optional per-call source)
      * 2. Per-call `.auth(token|headers|fn)` when no global resolver
      * 3. Static `authToken` from init
+     *
+     * `requirement === null` means explicit optional security (`security: []`) — no placement.
      */
     private resolveAuth = async (
         authArg?: AuthSource,
-        requirement?: SecurityRequirement,
+        requirement?: SecurityRequirement | null,
     ): Promise<AppliedAuth | undefined> => {
+        if (requirement === null) return undefined;
         const authFn = RootOperation[OPTIONS]._auth_fn;
         if (authFn) {
             const result = await authFn(authArg);
@@ -511,9 +512,17 @@ export class RootOperation {
         return { finalPath, cookies };
     }
 
-    private requirementForRequest(request: OpenAPIRequest): SecurityRequirement | undefined {
+    /**
+     * Resolve the security requirement for this operation.
+     * - `undefined` security on the op → document default
+     * - `[]` → `null` (explicitly optional; no credential placement)
+     * - otherwise → first OR-branch
+     */
+    private requirementForRequest(
+        request: OpenAPIRequest,
+    ): SecurityRequirement | undefined | null {
         if (request.security !== undefined) {
-            // Explicit op security (including []): first OR-branch, or none if empty.
+            if (request.security.length === 0) return null;
             return request.security[0];
         }
         return RootOperation.defaultSecurity;
