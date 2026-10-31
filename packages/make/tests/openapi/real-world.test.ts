@@ -154,15 +154,16 @@ describe("real-world OpenAPI schemas", () => {
         it("fetches an album (catalog operation + path/query args)", async () => {
             const { calls } = installMockFetch({ id: "4aawyAB9vmqN3uQ7FjRGTy", name: "Global Warming" });
             const slw = rootSLWFactory(examplesSpotify._makeRootOperationInput, (op) => ({
-                album: op.get_an_album({ PathAlbumId: "4aawyAB9vmqN3uQ7FjRGTy", QueryMarket: "US" }),
+                album: op.get_an_album({ id: "4aawyAB9vmqN3uQ7FjRGTy", market: "US" })(({ id, name }) => ({
+                    id,
+                    name,
+                })),
             }));
 
             const result = await slw[ROOT_OP_COLLECTOR]!.ref.execute();
             expect(calls).toHaveLength(1);
-            // $ref parameters currently keep the component key (PathAlbumId) as a query
-            // arg; the `{id}` path slot is not bound, so it stringifies as "undefined".
             expect(calls[0].url).toBe(
-                "[ENDPOINT]/albums/undefined?PathAlbumId=4aawyAB9vmqN3uQ7FjRGTy&QueryMarket=US",
+                "[ENDPOINT]/albums/4aawyAB9vmqN3uQ7FjRGTy?market=US",
             );
             expect(calls[0].init?.method).toBe("get");
             expect(result.album).toEqual({ id: "4aawyAB9vmqN3uQ7FjRGTy", name: "Global Warming" });
