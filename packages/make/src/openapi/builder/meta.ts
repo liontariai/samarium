@@ -24,7 +24,7 @@ import {
     parseTypescriptTypeFromDescription,
     parseTypescriptTypeFromSchema,
     pickContentSchema,
-resolveRef,
+    resolveRef,
     type OpenAPISchemaNode,
 } from "./normalize";
 
@@ -38,7 +38,24 @@ import {
     type OperationMethod,
     type SdkRuntimeMode,
     type ExternalRuntimeConfig,
+    type OpenAPIParameterStyle,
 } from "../types/meta";
+
+const OPENAPI_PARAMETER_STYLES: ReadonlySet<string> = new Set<OpenAPIParameterStyle>([
+    "matrix",
+    "label",
+    "form",
+    "simple",
+    "spaceDelimited",
+    "pipeDelimited",
+    "deepObject",
+]);
+
+function asOpenAPIParameterStyle(style: string | undefined): OpenAPIParameterStyle | undefined {
+    if (style && OPENAPI_PARAMETER_STYLES.has(style)) return style as OpenAPIParameterStyle;
+    return undefined;
+}
+
 export {
     type FieldMeta,
     type SchemaMeta,
@@ -69,6 +86,17 @@ const camelCaps = (arr: string[], separator: string = "$") => {
  * @param options Codegen options
  * @returns
  */
+const PATH_ITEM_METHODS: OperationMethod[] = [
+    "get",
+    "post",
+    "put",
+    "delete",
+    "patch",
+    "options",
+    "head",
+    "trace",
+];
+
 /** Resolve a path item `$ref` (or return the object as-is). */
 const resolvePathItem = (schema: OpenAPI3, value: PathItemObject | ReferenceObject): PathItemObject | undefined => {
     if (!("$ref" in value)) return value;
@@ -897,14 +925,47 @@ export const gatherMetaForParameter = (
     location: "query" | "path" | "header" | "cookie" | "body",
     options: {
         isNonNull: boolean;
+        style?: OpenAPIParameterStyle;
+        explode?: boolean;
+        contentType?: string;
     },
     collector: Collector,
 ): ParameterMeta => {
+    const style =
+        options.style ??
+        ("style" in type && typeof (type as ParameterObject).style === "string"
+            ? asOpenAPIParameterStyle((type as ParameterObject).style)
+            : undefined);
+    const explode =
+        options.explode ??
+        ("explode" in type && typeof (type as ParameterObject).explode === "boolean"
+            ? (type as ParameterObject).explode
+            : undefined);
+    let contentType = options.contentType;
+    if (!contentType && "content" in type && (type as ParameterObject | RequestBodyObject).content) {
+        const content = (type as ParameterObject | RequestBodyObject).content!;
+        contentType =
+            (content["application/json"] && "application/json") ||
+            (content["application/x-www-form-urlencoded"] && "application/x-www-form-urlencoded") ||
+            (content["multipart/form-data"] && "multipart/form-data") ||
+            (content["application/octet-stream"] && "application/octet-stream") ||
+            (content["text/plain"] && "text/plain") ||
+            Object.keys(content)[0];
+    }
+    let typeMeta = gatherMetaForType(schema, name, type, typeType, options, collector);
+    // Shared component schemas are gathered once (often optional). Parameter
+    // `required` must still control the arg's `?` / non-null marker.
+    if (typeMeta.isNonNull !== options.isNonNull) {
+        typeMeta = { ...typeMeta, isNonNull: options.isNonNull };
+    }
     return {
         name,
         description: type.description,
         location,
-        type: gatherMetaForType(schema, name, type, typeType, options, collector),
+        type: typeMeta,
+        style,
+        explode,
+        contentType,
     };
 };
 
@@ -949,6 +1010,59 @@ const methodToVerbs = {
  * @param options Codegen options
  * @returns
  */
+const resolveParameterObject = (
+    schema: OpenAPI3,
+    arg: ReferenceObject | ParameterObject,
+): ParameterObject | undefined => {
+    if (!("$ref" in arg)) return arg;
+    const resolved = resolveRef(schema, arg);
+    if (!resolved || typeof resolved !== "object" || !("in" in (resolved as object))) {
+        console.warn(`Unresolved parameter $ref: ${arg.$ref}`);
+        return undefined;
+    }
+    return resolved as ParameterObject;
+};
+
+const resolveRequestBodyObject = (
+    schema: OpenAPI3,
+    body: ReferenceObject | RequestBodyObject,
+): RequestBodyObject | undefined => {
+    if (!("$ref" in body)) return body;
+    const resolved = resolveRef(schema, body);
+    if (!resolved || typeof resolved !== "object") {
+        console.warn(`Unresolved requestBody $ref: ${body.$ref}`);
+        return undefined;
+    }
+    return resolved as RequestBodyObject;
+};
+
+const resolveResponseObject = (
+    schema: OpenAPI3,
+    response: ReferenceObject | ResponseObject,
+): ResponseObject | undefined => {
+    if (!("$ref" in response)) return response;
+    const resolved = resolveRef(schema, response);
+    if (!resolved || typeof resolved !== "object") {
+        console.warn(`Unresolved response $ref: ${response.$ref}`);
+        return undefined;
+    }
+    return resolved as ResponseObject;
+};
+
+/** Prefer exact 2xx, then pattern keys like `2XX`, then `default`. */
+const pickSuccessResponse = (
+    responses: OperationObject["responses"],
+): ReferenceObject | ResponseObject | undefined => {
+    if (!responses) return undefined;
+    const exact2xx = Object.entries(responses)
+        .filter(([code]) => /^\d+$/.test(code) && code.startsWith("2"))
+        .sort(([a], [b]) => +a - +b);
+    if (exact2xx.length > 0) return exact2xx[0][1];
+    const patterned = Object.entries(responses).find(([code]) => /^2XX$/i.test(code));
+    if (patterned) return patterned[1];
+    return responses.default;
+};
+
 export const gatherMetaForPathOperation = (
     schema: OpenAPI3,
     path: string,
@@ -956,20 +1070,17 @@ export const gatherMetaForPathOperation = (
     operation: OperationObject,
     options: CodegenOptions,
     collector: Collector,
+    pathLevelParams: (ReferenceObject | ParameterObject)[] = [],
 ): OperationMeta | undefined => {
     if (!operation.responses) {
         console.warn("Operation has no responses!");
         return undefined;
     }
 
-    const okResponses = Object.entries(operation.responses)
-        .filter(([statusCode, _]) => statusCode.toString().startsWith("2"))
-        .sort(([codeA, _], [codeB, __]) => +codeA - +codeB);
-    const successResponse = okResponses.length > 0 ? okResponses[0][1] : operation.responses.default;
-
-    const errorResponses = Object.entries(operation.responses).filter(
-        ([statusCode, _]) => statusCode.toString().startsWith("4") || statusCode.toString().startsWith("5"),
-    );
+    const successResponseRaw = pickSuccessResponse(operation.responses);
+    const successResponse = successResponseRaw
+        ? resolveResponseObject(schema, successResponseRaw as ReferenceObject | ResponseObject)
+        : undefined;
 
     if (!successResponse) {
         console.warn("Operation has no success response!", operation);
@@ -978,13 +1089,11 @@ export const gatherMetaForPathOperation = (
 
     const operationName =
         operation.operationId?.replaceAll(".", "_").replaceAll("/", "_").replaceAll("-", "_") ??
-        // TODO: the following fallback is bad, needs more logic
         camelCaps(
             [
                 methodToVerbs[method],
                 ...path
                     .split("/")
-                    // remove curly braces and use the param name like 'By{Param}'
                     .flatMap((p) =>
                         [p.includes("{") ? "By" : "", p.replace(/{([^}]+)}/g, "$1")].filter((s) => s.length > 0),
                     ),
@@ -1026,63 +1135,85 @@ export const gatherMetaForPathOperation = (
         type: gatherMetaForType(
             schema,
             operationName,
-            "content" in successResponse
+            responseMedia
                 ? (responseMedia as MediaTypeObject | ReferenceObject)
-                : (successResponse as ReferenceObject),
+                : (successResponse as ResponseObject),
             "responses",
             { isNonNull: false, operationResponseType: true },
             collector,
         ),
     };
 
-    // Gather meta for each argument, first from parameters
-    for (const arg of operation.parameters ?? ([] as (ReferenceObject | ParameterObject)[])) {
-        const name = "$ref" in arg ? arg.$ref.split("/").pop() : arg.name;
-        const rawLocation =
-            "in" in arg ? arg.in : (arg.$ref.split("/").at(-2)! as "parameters" | "requestBodies" | "headers");
+    // Path-item parameters are inherited; operation parameters override by (name, in).
+    const mergedParams = [...pathLevelParams, ...(operation.parameters ?? [])];
+    const seenParamKeys = new Set<string>();
+    // Walk in reverse so operation-level wins, then reverse again for stable order.
+    const resolvedParams: ParameterObject[] = [];
+    for (const arg of [...mergedParams].reverse()) {
+        const param = resolveParameterObject(schema, arg);
+        if (!param) continue;
+        const key = `${param.in}:${param.name}`;
+        if (seenParamKeys.has(key)) continue;
+        seenParamKeys.add(key);
+        resolvedParams.push(param);
+    }
+    resolvedParams.reverse();
+
+    for (const param of resolvedParams) {
         const location = (
             {
-                parameters: "query",
-                requestBodies: "body",
-                headers: "header",
                 cookie: "cookie",
                 path: "path",
                 query: "query",
                 header: "header",
             } as const
-        )[rawLocation];
+        )[param.in];
+        const defaultStyle: OpenAPIParameterStyle | undefined =
+            param.in === "path" || param.in === "header"
+                ? "simple"
+                : param.in === "query" || param.in === "cookie"
+                  ? "form"
+                  : undefined;
+        const style = asOpenAPIParameterStyle(param.style) ?? defaultStyle;
 
         meta.args.push(
             gatherMetaForParameter(
                 schema,
-                name!,
-                arg,
+                param.name,
+                param,
                 "parameters",
                 location,
                 {
-                    isNonNull: "$ref" in arg ? false : (arg.required ?? false),
+                    isNonNull: param.required ?? param.in === "path",
+                    style,
+                    explode: param.explode ?? style === "form",
                 },
                 collector,
             ),
         );
     }
 
-    // then from requestBody
     if (operation.requestBody) {
-        const t = operation.requestBody as RequestBodyObject;
-        const body = gatherMetaForParameter(
+        const t = resolveRequestBodyObject(
             schema,
-            `${operationName}RequestBody`,
-            t,
-            "requestBodies",
-            "body",
-            {
-                isNonNull: t.required ?? false,
-            },
-            collector,
+            operation.requestBody as ReferenceObject | RequestBodyObject,
         );
-        body.name = "$";
-        meta.args.push(body);
+        if (t) {
+            const body = gatherMetaForParameter(
+                schema,
+                `${operationName}RequestBody`,
+                t,
+                "requestBodies",
+                "body",
+                {
+                    isNonNull: t.required ?? false,
+                },
+                collector,
+            );
+            body.name = "$";
+            meta.args.push(body);
+            meta.requestContentType = body.contentType ?? "application/json";
+        }
     }
 
     return meta;

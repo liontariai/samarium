@@ -257,8 +257,15 @@ ${unresolvedAliases}
         opPath?: string;
         method?: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
         isEventStream?: boolean;
+        requestContentType?: string;
         args?: Record<string, any>;
-        argsMeta?: Record<string, { type: string; location: "path" | "query" | "header" | "cookie" | "body" }>;
+        argsMeta?: Record<string, {
+            type: string;
+            location: "path" | "query" | "header" | "cookie" | "body";
+            style?: "matrix" | "label" | "form" | "simple" | "spaceDelimited" | "pipeDelimited" | "deepObject";
+            explode?: boolean;
+            contentType?: string;
+        }>;
         tnp?: string;
     } | undefined;
 
@@ -835,6 +842,7 @@ ${unresolvedAliases}
                         path: parent.opPath,
                         method: parent.method!,
                         isEventStream: parent.isEventStream,
+                        requestContentType: parent.requestContentType,
                     }
                     : undefined;
 
@@ -899,6 +907,7 @@ ${unresolvedAliases}
                         path: parent.opPath,
                         method: parent.method!,
                         isEventStream: parent.isEventStream,
+                        requestContentType: parent.requestContentType,
                     }
                     : undefined;
 
@@ -1376,6 +1385,16 @@ ${unresolvedAliases}
                 const argsTypeName = `${operation.name.slice(0, 1).toUpperCase()}${operation.name.slice(1)}Args`;
 
                 if (!collector.hasArgumentMeta(argsTypeName)) {
+                    const argMetaFields = (arg: (typeof operation.args)[number], location = arg.location) => {
+                        const style = arg.style ? `style: "${arg.style}",` : "";
+                        const explode = arg.explode !== undefined ? `explode: ${arg.explode},` : "";
+                        const contentType = arg.contentType ? `contentType: "${arg.contentType}",` : "";
+                        return `type: "${arg.type.name}",
+                                    location: "${location}",
+                                    ${style}
+                                    ${explode}
+                                    ${contentType}`;
+                    };
                     const argsMetaBody = operation.args
                         .map((arg) => {
                             if (arg.name === "$" && (hoistQueryArgs || hoistBodyArgs)) {
@@ -1384,19 +1403,18 @@ ${unresolvedAliases}
                                         (f) => `${conformToTypeKey(f.name)}: {
                                     type: "${f.type.name}",
                                     location: "${arg.location}",
+                                    ${arg.contentType ? `contentType: "${arg.contentType}",` : ""}
                                 },`,
                                     )
                                     .join("\n");
                             } else if (arg.name === "$" && !hoistQueryArgs && !hoistBodyArgs) {
                                 return `${arg.location === "query" ? "$query" : "$body"}: {
-                                    type: "${arg.type.name}",
-                                    location: "${arg.location}",
+                                    ${argMetaFields(arg)}
                                 },`;
                             }
 
                             return `${conformToTypeKey(arg.name)}: {
-                                type: "${arg.type.name}",
-                                location: "${arg.location}",
+                                ${argMetaFields(arg)}
                             },`;
                         })
                         .join(" ");
@@ -1530,6 +1548,7 @@ ${unresolvedAliases}
                         opPath: "${operation.path}",
                         method: "${operation.method}",
                         isEventStream: ${operation.isEventStream ? "true" : "false"},
+                        requestContentType: ${operation.requestContentType ? JSON.stringify(operation.requestContentType) : "undefined"},
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
                     })${operation.type.isScalar || operation.type.isEnum ? "()" : ""}`;
 

@@ -48,6 +48,24 @@ export type AuthResolver =
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 
+/** OpenAPI 3 parameter `style` values (serialization). */
+export type OpenAPIParameterStyle =
+    | "matrix"
+    | "label"
+    | "form"
+    | "simple"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject";
+
+type ParamEncodingMeta = {
+    type?: string;
+    location: "path" | "query" | "header" | "cookie" | "body";
+    style?: OpenAPIParameterStyle;
+    explode?: boolean;
+    contentType?: string;
+};
+
 type OpenAPIRequest = {
     path: string;
     method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
@@ -56,10 +74,136 @@ type OpenAPIRequest = {
         path: Record<string, any>;
         query: Record<string, any>;
     };
-    body: Record<string, any>;
+    /** Per-arg encoding hints from argsMeta (keyed by arg name). */
+    paramMeta?: Record<string, ParamEncodingMeta>;
+    body: Record<string, any> | string | FormData | URLSearchParams | undefined;
     cookie: Record<string, any>;
     isEventStream?: boolean;
+    requestContentType?: string;
 };
+
+function encodePathParam(
+    value: unknown,
+    style: OpenAPIParameterStyle = "simple",
+    explode = false,
+): string {
+    if (value === undefined || value === null) return "";
+    if (Array.isArray(value)) {
+        const joined = value.map(String).join(",");
+        if (style === "label") return `.${value.map(String).join(explode ? "." : ",")}`;
+        if (style === "matrix") return `;${explode ? value.map((v) => String(v)).join(";") : joined}`;
+        return joined;
+    }
+    if (typeof value === "object") {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (style === "matrix") {
+            return explode
+                ? entries.map(([k, v]) => `;${k}=${v}`).join("")
+                : `;${entries.map(([k, v]) => `${k},${v}`).join(",")}`;
+        }
+        if (style === "label") {
+            return explode
+                ? `.${entries.map(([k, v]) => `${k}=${v}`).join(".")}`
+                : `.${entries.map(([k, v]) => `${k},${v}`).join(",")}`;
+        }
+        return entries.map(([k, v]) => `${k},${v}`).join(",");
+    }
+    if (style === "label") return `.${String(value)}`;
+    if (style === "matrix") return `;${String(value)}`;
+    return String(value);
+}
+
+function appendQueryParam(
+    qs: URLSearchParams,
+    name: string,
+    value: unknown,
+    style: OpenAPIParameterStyle = "form",
+    explode = true,
+): void {
+    if (value === undefined || value === null) return;
+    if (Array.isArray(value)) {
+        if (style === "spaceDelimited") {
+            qs.set(name, value.map(String).join(" "));
+        } else if (style === "pipeDelimited") {
+            qs.set(name, value.map(String).join("|"));
+        } else if (explode) {
+            for (const v of value) qs.append(name, String(v));
+        } else {
+            qs.set(name, value.map(String).join(","));
+        }
+        return;
+    }
+    if (typeof value === "object") {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (style === "deepObject") {
+            for (const [k, v] of entries) qs.set(`${name}[${k}]`, String(v));
+        } else if (explode) {
+            for (const [k, v] of entries) qs.set(k, String(v));
+        } else {
+            qs.set(name, entries.map(([k, v]) => `${k},${v}`).join(","));
+        }
+        return;
+    }
+    qs.set(name, String(value));
+}
+
+/** Fetch body values we encode — portable (no DOM `BodyInit` / Bun types). */
+type RequestBodyInit = string | Blob | ArrayBuffer | Uint8Array | FormData | URLSearchParams;
+
+function encodeRequestBody(
+    body: unknown,
+    contentType: string | undefined,
+): { payload: RequestBodyInit | undefined; contentTypeHeader?: string } {
+    if (body === undefined || body === null) return { payload: undefined };
+    const ct = contentType ?? "application/json";
+    if (ct.includes("application/json") || ct.includes("+json")) {
+        return { payload: JSON.stringify(body), contentTypeHeader: "application/json" };
+    }
+    if (ct.includes("application/x-www-form-urlencoded")) {
+        const params = new URLSearchParams();
+        if (typeof body === "object" && body !== null) {
+            for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+                if (v === undefined || v === null) continue;
+                if (Array.isArray(v)) for (const item of v) params.append(k, String(item));
+                else params.set(k, String(v));
+            }
+        }
+        return { payload: params, contentTypeHeader: "application/x-www-form-urlencoded" };
+    }
+    if (ct.includes("multipart/form-data")) {
+        const form = new FormData();
+        if (typeof body === "object" && body !== null) {
+            for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+                if (v === undefined || v === null) continue;
+                if (v instanceof Blob) form.append(k, v);
+                else form.append(k, String(v));
+            }
+        }
+        // Let fetch set the multipart boundary — do not set Content-Type manually.
+        return { payload: form };
+    }
+    if (ct.includes("text/plain")) {
+        return { payload: typeof body === "string" ? body : String(body), contentTypeHeader: "text/plain" };
+    }
+    if (ct.includes("application/octet-stream")) {
+        if (body instanceof Blob || body instanceof ArrayBuffer) {
+            return { payload: body, contentTypeHeader: "application/octet-stream" };
+        }
+        if (ArrayBuffer.isView(body)) {
+            // Normalize TypedArray/DataView → Uint8Array for portable fetch body typing.
+            return {
+                payload: new Uint8Array(body.buffer, body.byteOffset, body.byteLength),
+                contentTypeHeader: "application/octet-stream",
+            };
+        }
+        throw new Error(
+            `Unsupported body value for content-type "${ct}". Pass a Blob, ArrayBuffer, or TypedArray.`,
+        );
+    }
+    throw new Error(
+        `Unsupported request content-type "${ct}". Supported: application/json, application/x-www-form-urlencoded, multipart/form-data, text/plain, application/octet-stream.`,
+    );
+}
 
 export class RootOperation {
     public static authHeaderName = "Authorization";
@@ -170,9 +314,24 @@ export class RootOperation {
         cookies: string;
     } {
         let finalPath = request.path.replace(/\{([^}]+)\}/g, (_, key) => {
-            return request.params.path[key];
+            const meta = request.paramMeta?.[key];
+            const encoded = encodePathParam(
+                request.params.path[key],
+                meta?.style ?? "simple",
+                meta?.explode ?? false,
+            );
+            // matrix/label styles already include their prefix; strip the `{param}` token.
+            if ((meta?.style === "matrix" || meta?.style === "label") && encoded.startsWith(meta.style === "matrix" ? ";" : ".")) {
+                return encoded;
+            }
+            return encodeURIComponent(encoded).replace(/%2C/g, ",");
         });
-        const finalQuery = new URLSearchParams(request.params.query).toString();
+        const qs = new URLSearchParams();
+        for (const [key, value] of Object.entries(request.params.query ?? {})) {
+            const meta = request.paramMeta?.[key];
+            appendQueryParam(qs, key, value, meta?.style ?? "form", meta?.explode ?? true);
+        }
+        const finalQuery = qs.toString();
         finalPath = `${finalPath.replace(/\{.*?\}$/, "")}${finalQuery ? `?${finalQuery}` : ""}`;
         const cookies = new URLSearchParams(request.cookie).toString();
         return { finalPath, cookies };
@@ -239,6 +398,8 @@ export class RootOperation {
                         path: rootSlw[ROOT_OP_META]!.path,
                         method: rootSlw[ROOT_OP_META]!.method,
                         isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
+                        requestContentType: rootSlw[ROOT_OP_META]!.requestContentType,
+                        paramMeta: selection.variableDefinitions as Record<string, ParamEncodingMeta>,
                         header: Object.fromEntries(
                             Object.entries(selection.variableDefinitions)
                                 .filter(([_, v]) => v.location === "header")
@@ -287,25 +448,61 @@ export class RootOperation {
 
     private async executeOperation(request: OpenAPIRequest, headers: Record<string, string> = {}) {
         const { finalPath, cookies } = this.buildRequestUrl(request);
+        const bodyContentType =
+            request.requestContentType ??
+            Object.values(request.paramMeta ?? {}).find((m) => m.location === "body")?.contentType;
+        const { payload, contentTypeHeader } = encodeRequestBody(request.body, bodyContentType);
 
         const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(`[ENDPOINT]${finalPath}`, {
             method: request.method,
             headers: {
-                ...(request.body ? { "Content-Type": "application/json" } : {}),
+                ...(contentTypeHeader ? { "Content-Type": contentTypeHeader } : {}),
                 ...(request.header ? request.header : {}),
                 ...(cookies ? { Cookie: cookies } : {}),
                 ...headers,
             },
-            body: request.body ? JSON.stringify(request.body) : undefined,
+            body: payload,
         });
 
-        if (!res.ok) {
-            throw new Error(`${res.statusText}: ${await res.text()}`);
+        if (res && typeof res === "object" && "ok" in res && res.ok === false) {
+            const errText = typeof res.text === "function" ? await res.text() : "";
+            throw new Error(`${res.statusText ?? "Request failed"}: ${errText}`);
         }
 
-        const data = (await res.json()) as any;
-
-        return data;
+        // Prefer content-type when present; fall back to `.json()` for minimal fetch mocks in tests.
+        const responseType =
+            res?.headers && typeof res.headers.get === "function"
+                ? (res.headers.get("content-type") ?? "")
+                : "";
+        if (!responseType) {
+            if (typeof res?.json === "function") return (await res.json()) as any;
+            if (typeof res?.text === "function") {
+                const text = await res.text();
+                if (!text) return undefined as any;
+                try {
+                    return JSON.parse(text) as any;
+                } catch {
+                    return text as any;
+                }
+            }
+            return res as any;
+        }
+        if (responseType.includes("application/json") || responseType.includes("+json")) {
+            const text = await res.text();
+            if (!text) return undefined as any;
+            try {
+                return JSON.parse(text) as any;
+            } catch {
+                return text as any;
+            }
+        }
+        if (responseType.includes("text/")) {
+            return (await res.text()) as any;
+        }
+        if (typeof res.arrayBuffer === "function") {
+            return (await res.arrayBuffer()) as any;
+        }
+        return (await res.json()) as any;
     }
 
     /**
@@ -464,13 +661,7 @@ export class OperationSelectionCollector {
         path: string[] = [],
         renderOnlyTheseSelections: SelectionWrapperImpl<string, string, number, any>[] = [],
     ) {
-        const varDefs: Record<
-            string,
-            {
-                type: string;
-                location: "path" | "query" | "header" | "cookie" | "body";
-            }
-        > = {};
+        const varDefs: Record<string, ParamEncodingMeta> = {};
         const variables: Record<string, any> = {};
 
         for (const [key, value] of [...this.selections.entries()].filter(
@@ -637,16 +828,11 @@ export class SelectionWrapperImpl<
         path: string;
         method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
         isEventStream?: boolean;
+        requestContentType?: string;
     };
 
     [SLW_ARGS]?: argsT;
-    [SLW_ARGS_META]?: Record<
-        string,
-        {
-            type: string;
-            location: "path" | "query" | "header" | "cookie" | "body";
-        }
-    >;
+    [SLW_ARGS_META]?: Record<string, ParamEncodingMeta>;
 
     [SLW_PARENT_SLW]?: SelectionWrapperImpl<string, string, number, any, any>;
     [SLW_LAZY_FLAG]?: boolean;
@@ -665,13 +851,7 @@ export class SelectionWrapperImpl<
         collector?: OperationSelectionCollector,
         parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
-        argsMeta?: Record<
-            string,
-            {
-                type: string;
-                location: "path" | "query" | "header" | "cookie" | "body";
-            }
-        >,
+        argsMeta?: Record<string, ParamEncodingMeta>,
         reCreateValueCallback?: () => valueT,
         isScalarOp?: boolean,
     ) {
@@ -732,29 +912,18 @@ export class SelectionWrapperImpl<
                     : args
                         ? Object.keys(args).reduce(
                             (acc, key) => {
-                                acc[key] = argsMeta?.[key];
+                                const meta = argsMeta?.[key];
+                                if (meta) acc[key] = meta;
                                 return acc;
                             },
-                            {} as Record<
-                                string,
-                                {
-                                    type: string;
-                                    location: "path" | "query" | "header" | "cookie" | "body";
-                                }
-                            >,
+                            {} as Record<string, ParamEncodingMeta>,
                         )
                         : {},
             };
         }
         return {
             variables: {},
-            variableDefinitions: {} as Record<
-                string,
-                {
-                    type: string;
-                    location: "path" | "query" | "header" | "cookie" | "body";
-                }
-            >,
+            variableDefinitions: {} as Record<string, ParamEncodingMeta>,
         };
     }
 }
@@ -773,13 +942,7 @@ export class SelectionWrapper<
         collector?: OperationSelectionCollector,
         parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
-        argsMeta?: Record<
-            string,
-            {
-                type: string;
-                location: "path" | "query" | "header" | "cookie" | "body";
-            }
-        >,
+        argsMeta?: Record<string, ParamEncodingMeta>,
         reCreateValueCallback?: () => valueT,
         isScalarOp?: boolean,
     ) {

@@ -32,13 +32,31 @@ export interface OperationMeta {
     isEventStream?: boolean;
     /** Response content-type used for the operation body/event payload type */
     responseContentType?: string;
+    /** Request body content-type chosen for encoding (json / form / multipart / …) */
+    requestContentType?: string;
 }
+
+/** OpenAPI 3 parameter `style` values (serialization). */
+export type OpenAPIParameterStyle =
+    | "matrix"
+    | "label"
+    | "form"
+    | "simple"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject";
 
 export interface ParameterMeta {
     name: string;
     description: string | undefined;
     location: "path" | "query" | "header" | "cookie" | "body" | "$";
     type: TypeMeta;
+    /** OpenAPI `style` (form, simple, deepObject, …). */
+    style?: OpenAPIParameterStyle;
+    /** OpenAPI `explode`. */
+    explode?: boolean;
+    /** Media type when the parameter/body uses `content` instead of `schema`. */
+    contentType?: string;
 }
 
 export interface TypeMeta {
