@@ -264,6 +264,9 @@ function resetSdkOptions() {
     RootOperation[OPTIONS]._auth_fn = undefined;
     RootOperation[OPTIONS]._auth_token = undefined;
     RootOperation[OPTIONS].headers = {};
+    RootOperation.securitySchemes = {};
+    RootOperation.defaultSecurity = undefined;
+    RootOperation.authHeaderOverride = undefined;
     RootOperation.authHeaderName = "Authorization";
 }
 

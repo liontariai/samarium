@@ -14,10 +14,62 @@ export interface ExternalRuntimeConfig {
     wrapperModule: string;
 }
 
+/** One OpenAPI security requirement object (AND of named schemes → scopes). */
+export type SecurityRequirementMeta = Record<string, string[]>;
+
+export type OAuthFlowMeta = {
+    authorizationUrl?: string;
+    tokenUrl?: string;
+    refreshUrl?: string;
+    scopes: Record<string, string>;
+};
+
+export type SecuritySchemeMeta =
+    | {
+          name: string;
+          type: "apiKey";
+          description?: string;
+          apiKeyName: string;
+          apiKeyIn: "header" | "query" | "cookie";
+      }
+    | {
+          name: string;
+          type: "http";
+          description?: string;
+          scheme: string;
+          bearerFormat?: string;
+      }
+    | {
+          name: string;
+          type: "oauth2";
+          description?: string;
+          flows: {
+              implicit?: OAuthFlowMeta;
+              password?: OAuthFlowMeta;
+              clientCredentials?: OAuthFlowMeta;
+              authorizationCode?: OAuthFlowMeta;
+          };
+      }
+    | {
+          name: string;
+          type: "openIdConnect";
+          description?: string;
+          openIdConnectUrl: string;
+      }
+    | {
+          name: string;
+          type: "mutualTLS";
+          description?: string;
+      };
+
 export interface SchemaMeta {
     types: TypeMeta[];
     operations: OperationMeta[];
     customScalars: TypeMeta[];
+    /** `components.securitySchemes` keyed by scheme name. */
+    securitySchemes: Record<string, SecuritySchemeMeta>;
+    /** Document-level `security` (OR of AND-requirement objects). */
+    security?: SecurityRequirementMeta[];
 }
 
 export type OperationMethod = "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "trace";
@@ -34,6 +86,11 @@ export interface OperationMeta {
     responseContentType?: string;
     /** Request body content-type chosen for encoding (json / form / multipart / …) */
     requestContentType?: string;
+    /**
+     * Operation-level `security` when present (including `[]` = optional / no auth).
+     * `undefined` means inherit document-level security.
+     */
+    security?: SecurityRequirementMeta[];
 }
 
 /** OpenAPI 3 parameter `style` values (serialization). */

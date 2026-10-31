@@ -97,6 +97,9 @@ function resetSdkOptions() {
         Time: (value: string) => new Date(value),
         JSON: (value: string) => JSON.parse(value),
     };
+    RootOperation.securitySchemes = {};
+    RootOperation.defaultSecurity = undefined;
+    RootOperation.authHeaderOverride = undefined;
     RootOperation.authHeaderName = "Authorization";
 }
 

@@ -73,6 +73,10 @@ export class Generator {
             collector,
             options,
             authConfig,
+            {
+                schemes: schemaMeta.securitySchemes,
+                security: schemaMeta.security,
+            },
         );
 
         const runtimePreamble =

@@ -66,6 +66,81 @@ type ParamEncodingMeta = {
     contentType?: string;
 };
 
+/** One OpenAPI security requirement object (AND of named schemes → scopes). */
+export type SecurityRequirement = Record<string, string[]>;
+
+/** Runtime security scheme used to place credentials on the wire. */
+export type SecuritySchemeRuntime =
+    | {
+          name: string;
+          type: "apiKey";
+          apiKeyName: string;
+          apiKeyIn: "header" | "query" | "cookie";
+      }
+    | {
+          name: string;
+          type: "http";
+          scheme: string;
+          bearerFormat?: string;
+      }
+    | {
+          name: string;
+          type: "oauth2" | "openIdConnect";
+      }
+    | {
+          name: string;
+          type: "mutualTLS";
+      };
+
+export type AppliedAuth = {
+    headers: Record<string, string>;
+    query: Record<string, string>;
+    cookie: Record<string, string>;
+};
+
+export function applySecurityCredential(
+    scheme: SecuritySchemeRuntime,
+    value: string,
+): AppliedAuth {
+    const empty: AppliedAuth = { headers: {}, query: {}, cookie: {} };
+    if (scheme.type === "apiKey") {
+        if (scheme.apiKeyIn === "header") {
+            return { ...empty, headers: { [scheme.apiKeyName]: value } };
+        }
+        if (scheme.apiKeyIn === "query") {
+            return { ...empty, query: { [scheme.apiKeyName]: value } };
+        }
+        return { ...empty, cookie: { [scheme.apiKeyName]: value } };
+    }
+    if (scheme.type === "http") {
+        const httpScheme = scheme.scheme.toLowerCase();
+        if (httpScheme === "bearer") {
+            const token = /^bearer\s+/i.test(value) ? value : `Bearer ${value}`;
+            return { ...empty, headers: { Authorization: token } };
+        }
+        if (httpScheme === "basic") {
+            const token = /^basic\s+/i.test(value) ? value : `Basic ${value}`;
+            return { ...empty, headers: { Authorization: token } };
+        }
+        // digest and other http schemes: pass through as Authorization value
+        return { ...empty, headers: { Authorization: value } };
+    }
+    if (scheme.type === "oauth2" || scheme.type === "openIdConnect") {
+        const token = /^bearer\s+/i.test(value) ? value : `Bearer ${value}`;
+        return { ...empty, headers: { Authorization: token } };
+    }
+    // mutualTLS: no string credential application
+    return empty;
+}
+
+function mergeAppliedAuth(into: AppliedAuth, from: AppliedAuth): AppliedAuth {
+    return {
+        headers: { ...into.headers, ...from.headers },
+        query: { ...into.query, ...from.query },
+        cookie: { ...into.cookie, ...from.cookie },
+    };
+}
+
 type OpenAPIRequest = {
     path: string;
     method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
@@ -80,6 +155,8 @@ type OpenAPIRequest = {
     cookie: Record<string, any>;
     isEventStream?: boolean;
     requestContentType?: string;
+    /** Operation security (OR of AND-requirements); undefined → use doc default. */
+    security?: SecurityRequirement[];
 };
 
 function encodePathParam(
@@ -206,54 +283,145 @@ function encodeRequestBody(
 }
 
 export class RootOperation {
+    /** Fallback single-header name when no security schemes are configured (or override). */
     public static authHeaderName = "Authorization";
+    /** Compiled `components.securitySchemes` (runtime placement). */
+    public static securitySchemes: Record<string, SecuritySchemeRuntime> = {};
+    /** First document-level security OR-branch (default for string credentials). */
+    public static defaultSecurity: SecurityRequirement | undefined = undefined;
+    /** When set, string credentials always go to this header (authConfig override). */
+    public static authHeaderOverride: string | undefined = undefined;
 
-    private mapAuthResultToHeaders = (result?: AuthResult) => {
-        if (result === undefined || result === null) return undefined;
-        if (typeof result === "string") {
-            return { [RootOperation.authHeaderName]: result };
+    public static configureSecurity(config: {
+        schemes?: Record<string, SecuritySchemeRuntime>;
+        defaultSecurity?: SecurityRequirement | undefined;
+        authHeaderOverride?: string | undefined;
+    }) {
+        if (config.schemes !== undefined) RootOperation.securitySchemes = config.schemes;
+        if ("defaultSecurity" in config) RootOperation.defaultSecurity = config.defaultSecurity;
+        if ("authHeaderOverride" in config) {
+            RootOperation.authHeaderOverride = config.authHeaderOverride;
+            if (config.authHeaderOverride) {
+                RootOperation.authHeaderName = config.authHeaderOverride;
+            } else {
+                RootOperation.authHeaderName = "Authorization";
+            }
         }
-        return result;
+    }
+
+    /** Clear scheme config (tests). */
+    public static resetSecurity() {
+        RootOperation.securitySchemes = {};
+        RootOperation.defaultSecurity = undefined;
+        RootOperation.authHeaderOverride = undefined;
+        RootOperation.authHeaderName = "Authorization";
+    }
+
+    private applyStringCredential = (
+        value: string,
+        requirement?: SecurityRequirement,
+    ): AppliedAuth => {
+        if (RootOperation.authHeaderOverride) {
+            return {
+                headers: { [RootOperation.authHeaderOverride]: value },
+                query: {},
+                cookie: {},
+            };
+        }
+        const schemes = RootOperation.securitySchemes;
+        const schemeNames = Object.keys(schemes);
+        if (schemeNames.length === 0) {
+            return {
+                headers: { [RootOperation.authHeaderName]: value },
+                query: {},
+                cookie: {},
+            };
+        }
+        const req =
+            requirement ??
+            RootOperation.defaultSecurity ??
+            ({ [schemeNames[0]]: [] } as SecurityRequirement);
+        let applied: AppliedAuth = { headers: {}, query: {}, cookie: {} };
+        for (const schemeName of Object.keys(req)) {
+            const scheme = schemes[schemeName];
+            if (!scheme) continue;
+            applied = mergeAppliedAuth(applied, applySecurityCredential(scheme, value));
+        }
+        // If requirement referenced unknown schemes only, fall back to default header.
+        if (
+            Object.keys(applied.headers).length === 0 &&
+            Object.keys(applied.query).length === 0 &&
+            Object.keys(applied.cookie).length === 0
+        ) {
+            return {
+                headers: { [RootOperation.authHeaderName]: value },
+                query: {},
+                cookie: {},
+            };
+        }
+        return applied;
     };
 
-    private resolveFnOrPromisOrPrimitiveHeaders = (arg?: FnOrPromisOrPrimitive) => {
-        if (!arg) return undefined;
-        let headers: Record<string, string> | undefined = undefined;
+    private applyAuthResult = (
+        result: AuthResult,
+        requirement?: SecurityRequirement,
+    ): AppliedAuth | undefined => {
+        if (result === undefined || result === null) return undefined;
+        if (typeof result === "string") {
+            return this.applyStringCredential(result, requirement);
+        }
+        // Object: scheme-name map if all keys match known schemes; else raw headers.
+        const keys = Object.keys(result);
+        const schemes = RootOperation.securitySchemes;
+        if (
+            keys.length > 0 &&
+            Object.keys(schemes).length > 0 &&
+            keys.every((k) => k in schemes)
+        ) {
+            let applied: AppliedAuth = { headers: {}, query: {}, cookie: {} };
+            for (const [schemeName, value] of Object.entries(result)) {
+                if (typeof value !== "string") continue;
+                applied = mergeAppliedAuth(
+                    applied,
+                    applySecurityCredential(schemes[schemeName], value),
+                );
+            }
+            return applied;
+        }
+        return { headers: result, query: {}, cookie: {} };
+    };
+
+    private resolveFnOrPromisOrPrimitiveAuth = (
+        arg: FnOrPromisOrPrimitive,
+        requirement?: SecurityRequirement,
+    ): AppliedAuth | Promise<AppliedAuth | undefined> | undefined => {
         if (typeof arg === "string") {
-            headers = { [RootOperation.authHeaderName]: arg };
-        } else if (typeof arg === "function") {
+            return this.applyStringCredential(arg, requirement);
+        }
+        if (typeof arg === "function") {
             const tokenOrPromise = arg();
             if (tokenOrPromise instanceof Promise) {
-                return tokenOrPromise.then((t) => {
-                    if (typeof t === "string") headers = { [RootOperation.authHeaderName]: t };
-                    else headers = t;
-                    return headers;
-                });
+                return tokenOrPromise.then((t) => this.applyAuthResult(t, requirement));
             }
-            if (typeof tokenOrPromise === "string") {
-                headers = { [RootOperation.authHeaderName]: tokenOrPromise };
-            } else {
-                headers = tokenOrPromise;
-            }
-        } else {
-            headers = arg;
+            return this.applyAuthResult(tokenOrPromise, requirement);
         }
-        return headers;
+        return this.applyAuthResult(arg, requirement);
     };
 
     /**
-     * Resolve auth headers for this request.
+     * Resolve auth placement for this request.
      * 1. Global `auth` resolver (with optional per-call source)
      * 2. Per-call `.auth(token|headers|fn)` when no global resolver
      * 3. Static `authToken` from init
      */
-    private resolveAuthHeaders = async (
+    private resolveAuth = async (
         authArg?: AuthSource,
-    ): Promise<Record<string, string> | undefined> => {
+        requirement?: SecurityRequirement,
+    ): Promise<AppliedAuth | undefined> => {
         const authFn = RootOperation[OPTIONS]._auth_fn;
         if (authFn) {
             const result = await authFn(authArg);
-            return this.mapAuthResultToHeaders(result);
+            return this.applyAuthResult(result, requirement);
         }
         if (authArg !== undefined && authArg !== null) {
             if (
@@ -261,12 +429,18 @@ export class RootOperation {
                 typeof authArg === "function" ||
                 (typeof authArg === "object" && authArg !== null && !(authArg instanceof Request))
             ) {
-                return this.resolveFnOrPromisOrPrimitiveHeaders(authArg as FnOrPromisOrPrimitive);
+                return this.resolveFnOrPromisOrPrimitiveAuth(
+                    authArg as FnOrPromisOrPrimitive,
+                    requirement,
+                );
             }
             return undefined;
         }
         if (RootOperation[OPTIONS]._auth_token !== undefined) {
-            return { [RootOperation.authHeaderName]: RootOperation[OPTIONS]._auth_token };
+            return this.applyStringCredential(
+                RootOperation[OPTIONS]._auth_token,
+                requirement,
+            );
         }
         return undefined;
     };
@@ -337,21 +511,18 @@ export class RootOperation {
         return { finalPath, cookies };
     }
 
+    private requirementForRequest(request: OpenAPIRequest): SecurityRequirement | undefined {
+        if (request.security !== undefined) {
+            // Explicit op security (including []): first OR-branch, or none if empty.
+            return request.security[0];
+        }
+        return RootOperation.defaultSecurity;
+    }
+
     public async execute(headers: Record<string, string> = {}) {
         if (!this.rootCollector) {
             throw new Error("RootOperation has no registered collector");
         }
-
-        // Auth wins over static OPTIONS.headers and execute() arg headers
-        const authHeaders = await this.resolveAuthHeaders(this.authArg);
-        const staticHeaders = {
-            ...RootOperation[OPTIONS].headers,
-            ...headers,
-        };
-        headers = {
-            ...staticHeaders,
-            ...authHeaders,
-        };
 
         type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
         const operations: {
@@ -399,6 +570,7 @@ export class RootOperation {
                         method: rootSlw[ROOT_OP_META]!.method,
                         isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
                         requestContentType: rootSlw[ROOT_OP_META]!.requestContentType,
+                        security: rootSlw[ROOT_OP_META]!.security,
                         paramMeta: selection.variableDefinitions as Record<string, ParamEncodingMeta>,
                         header: Object.fromEntries(
                             Object.entries(selection.variableDefinitions)
@@ -429,17 +601,37 @@ export class RootOperation {
             {} as Record<string, OpenAPIRequest>,
         );
 
+        const staticHeaders = {
+            ...RootOperation[OPTIONS].headers,
+            ...headers,
+        };
+
         const results = Object.fromEntries(
             await Promise.all([
-                ...Object.entries(ops).map(
-                    async ([opName, op]) =>
-                        [
-                            opName,
-                            op.isEventStream
-                                ? await this.subscribeOperation(op, headers)
-                                : await this.executeOperation(op, headers),
-                        ] as const,
-                ),
+                ...Object.entries(ops).map(async ([opName, op]) => {
+                    const applied = await this.resolveAuth(
+                        this.authArg,
+                        this.requirementForRequest(op),
+                    );
+                    const requestWithAuth: OpenAPIRequest = {
+                        ...op,
+                        params: {
+                            ...op.params,
+                            query: { ...op.params.query, ...(applied?.query ?? {}) },
+                        },
+                        cookie: { ...op.cookie, ...(applied?.cookie ?? {}) },
+                    };
+                    const requestHeaders = {
+                        ...staticHeaders,
+                        ...(applied?.headers ?? {}),
+                    };
+                    return [
+                        opName,
+                        op.isEventStream
+                            ? await this.subscribeOperation(requestWithAuth, requestHeaders)
+                            : await this.executeOperation(requestWithAuth, requestHeaders),
+                    ] as const;
+                }),
             ]),
         );
 
@@ -829,6 +1021,7 @@ export class SelectionWrapperImpl<
         method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
         isEventStream?: boolean;
         requestContentType?: string;
+        security?: SecurityRequirement[];
     };
 
     [SLW_ARGS]?: argsT;

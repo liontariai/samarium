@@ -17,7 +17,7 @@ function resetRootOptions() {
     RootOperation[OPTIONS].headers = {};
     RootOperation[OPTIONS]._auth_fn = undefined;
     RootOperation[OPTIONS]._auth_token = undefined;
-    RootOperation.authHeaderName = "Authorization";
+    RootOperation.resetSecurity();
 }
 
 describe("OpenAPI SelectionWrapper proxy + SSE", () => {

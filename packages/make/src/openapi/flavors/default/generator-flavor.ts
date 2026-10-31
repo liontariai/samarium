@@ -6,6 +6,8 @@ import {
     type FieldMeta,
     type OperationMeta,
     type ParameterMeta,
+    type SecuritySchemeMeta,
+    type SecurityRequirementMeta,
     enumValueToTsLiteral,
 } from "../../builder/meta";
 
@@ -258,6 +260,7 @@ ${unresolvedAliases}
         method?: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
         isEventStream?: boolean;
         requestContentType?: string;
+        security?: Record<string, string[]>[];
         args?: Record<string, any>;
         argsMeta?: Record<string, {
             type: string;
@@ -843,6 +846,7 @@ ${unresolvedAliases}
                         method: parent.method!,
                         isEventStream: parent.isEventStream,
                         requestContentType: parent.requestContentType,
+                        security: parent.security,
                     }
                     : undefined;
 
@@ -908,6 +912,7 @@ ${unresolvedAliases}
                         method: parent.method!,
                         isEventStream: parent.isEventStream,
                         requestContentType: parent.requestContentType,
+                        security: parent.security,
                     }
                     : undefined;
 
@@ -1542,6 +1547,10 @@ ${unresolvedAliases}
                         options,
                     ).makeSelectionFunction();
 
+            const securityLiteral =
+                operation.security !== undefined
+                    ? JSON.stringify(operation.security)
+                    : "undefined";
             const boundSelection = `${returnTypeSelectionFunctionNameOrScalarOrEnum}.bind({
                         collector: that,
                         fieldName: "${operation.name}",
@@ -1549,6 +1558,7 @@ ${unresolvedAliases}
                         method: "${operation.method}",
                         isEventStream: ${operation.isEventStream ? "true" : "false"},
                         requestContentType: ${operation.requestContentType ? JSON.stringify(operation.requestContentType) : "undefined"},
+                        security: ${securityLiteral},
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
                     })${operation.type.isScalar || operation.type.isEnum ? "()" : ""}`;
 
@@ -1619,10 +1629,79 @@ ${unresolvedAliases}
         authConfig?: {
             headerName: string;
         },
+        securityMeta?: {
+            schemes: Record<string, SecuritySchemeMeta>;
+            security?: SecurityRequirementMeta[];
+        },
     ): string {
         const { fnsWithoutScalarOps, fnsScalarOps, makeSelectionFunctionInputReturnTypeParts } =
             this.makeOperationFunctions(operations, collector, options);
+
+        const schemes = securityMeta?.schemes ?? {};
+        const schemeNames = Object.keys(schemes);
+        const hasSchemes = schemeNames.length > 0;
+        const enableAuth = hasSchemes || !!authConfig;
+
+        const defaultRequirement =
+            securityMeta?.security?.[0] ??
+            (schemeNames[0] ? ({ [schemeNames[0]]: [] } as SecurityRequirementMeta) : undefined);
+        const defaultSchemeName = defaultRequirement
+            ? Object.keys(defaultRequirement)[0]
+            : schemeNames[0];
+
+        const runtimeSchemes: Record<string, unknown> = {};
+        for (const [name, s] of Object.entries(schemes)) {
+            if (s.type === "apiKey") {
+                runtimeSchemes[name] = {
+                    name: s.name,
+                    type: "apiKey",
+                    apiKeyName: s.apiKeyName,
+                    apiKeyIn: s.apiKeyIn,
+                };
+            } else if (s.type === "http") {
+                runtimeSchemes[name] = {
+                    name: s.name,
+                    type: "http",
+                    scheme: s.scheme,
+                    bearerFormat: s.bearerFormat,
+                };
+            } else if (s.type === "oauth2" || s.type === "openIdConnect") {
+                runtimeSchemes[name] = { name: s.name, type: s.type };
+            } else {
+                runtimeSchemes[name] = { name: s.name, type: "mutualTLS" };
+            }
+        }
+
+        const securityExport = hasSchemes
+            ? `
+            export const security = {
+                default: ${defaultSchemeName ? JSON.stringify(defaultSchemeName) : "undefined"},
+                schemes: ${JSON.stringify(schemes)} as const,
+            } as const;
+            `
+            : "";
+
+        // Pre-built once at module load; applied lazily on first client() (cached).
+        const ensureSecurityConfigured = enableAuth
+            ? `
+            const __SECURITY_CONFIG = {
+                schemes: ${JSON.stringify(runtimeSchemes)} as any,
+                defaultSecurity: ${defaultRequirement ? JSON.stringify(defaultRequirement) : "undefined"},
+                authHeaderOverride: ${authConfig ? JSON.stringify(authConfig.headerName) : "undefined"},
+            };
+            let __securityConfigured = false;
+            function __ensureSecurityConfigured() {
+                if (__securityConfigured) return;
+                __securityConfigured = true;
+                RootOperation.configureSecurity(__SECURITY_CONFIG);
+            }
+            `
+            : "";
+
         const rootOperationFunction = `
+            ${securityExport}
+            ${ensureSecurityConfigured}
+
             export type ReturnTypeFromRootOperationWithoutScalarOps = {
                 ${Array.from(makeSelectionFunctionInputReturnTypeParts)
                 .map(([k, v]) => `"${k}": ${v}`)
@@ -1651,6 +1730,7 @@ ${unresolvedAliases}
                 this: any, 
                 s: (selection: F) => T
             ) {
+                ${enableAuth ? `__ensureSecurityConfigured();` : ""}
                 const rootOp = new RootOperation();
                 const root = new OperationSelectionCollector(undefined, undefined, rootOp);
                 const rootRef = { ref: root };
@@ -1706,7 +1786,7 @@ ${unresolvedAliases}
                     returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
                 }
                 
-                ${authConfig
+                ${enableAuth
                 ? `
                 Object.defineProperty(returnValue, "auth", {
                     enumerable: false,
@@ -1731,7 +1811,7 @@ ${unresolvedAliases}
             };
 
             const __init__ = (options: {
-                ${authConfig
+                ${enableAuth
                 ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
                 auth?: AuthResolver;
                 /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
@@ -1758,9 +1838,8 @@ ${unresolvedAliases}
                     ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
-                ${authConfig
+                ${enableAuth
                 ? `
-                RootOperation.authHeaderName = "${authConfig.headerName}";
                 if (options.authToken !== undefined) {
                     RootOperation[OPTIONS]._auth_token = options.authToken;
                 }

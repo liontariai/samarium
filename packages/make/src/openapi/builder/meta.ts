@@ -39,6 +39,9 @@ import {
     type SdkRuntimeMode,
     type ExternalRuntimeConfig,
     type OpenAPIParameterStyle,
+    type SecuritySchemeMeta,
+    type SecurityRequirementMeta,
+    type OAuthFlowMeta,
 } from "../types/meta";
 
 const OPENAPI_PARAMETER_STYLES: ReadonlySet<string> = new Set<OpenAPIParameterStyle>([
@@ -66,6 +69,8 @@ export {
     type OperationMethod,
     type SdkRuntimeMode,
     type ExternalRuntimeConfig,
+    type SecuritySchemeMeta,
+    type SecurityRequirementMeta,
 };
 
 const camelCaps = (arr: string[], separator: string = "$") => {
@@ -122,11 +127,131 @@ const resolveOperation = (
     return resolved as OperationObject;
 };
 
+function gatherOAuthFlow(flow: Record<string, unknown> | undefined): OAuthFlowMeta | undefined {
+    if (!flow || typeof flow !== "object") return undefined;
+    const scopesRaw = flow.scopes;
+    const scopes: Record<string, string> = {};
+    if (scopesRaw && typeof scopesRaw === "object") {
+        for (const [k, v] of Object.entries(scopesRaw as Record<string, unknown>)) {
+            scopes[k] = typeof v === "string" ? v : "";
+        }
+    }
+    return {
+        authorizationUrl: typeof flow.authorizationUrl === "string" ? flow.authorizationUrl : undefined,
+        tokenUrl: typeof flow.tokenUrl === "string" ? flow.tokenUrl : undefined,
+        refreshUrl: typeof flow.refreshUrl === "string" ? flow.refreshUrl : undefined,
+        scopes,
+    };
+}
+
+export function gatherSecurityRequirement(
+    req: unknown,
+): SecurityRequirementMeta | undefined {
+    if (!req || typeof req !== "object" || Array.isArray(req)) return undefined;
+    const out: SecurityRequirementMeta = {};
+    for (const [schemeName, scopes] of Object.entries(req as Record<string, unknown>)) {
+        out[schemeName] = Array.isArray(scopes)
+            ? scopes.filter((s): s is string => typeof s === "string")
+            : [];
+    }
+    return out;
+}
+
+export function gatherSecurityRequirements(
+    security: unknown,
+): SecurityRequirementMeta[] | undefined {
+    if (security === undefined) return undefined;
+    if (!Array.isArray(security)) return undefined;
+    return security
+        .map(gatherSecurityRequirement)
+        .filter((r): r is SecurityRequirementMeta => r !== undefined);
+}
+
+export function gatherSecuritySchemeMeta(
+    schema: OpenAPI3,
+    name: string,
+    raw: unknown,
+): SecuritySchemeMeta | undefined {
+    const value = resolveRef(schema, raw);
+    if (!value || typeof value !== "object" || "$ref" in value) return undefined;
+    const scheme = value as Record<string, unknown>;
+    const type = scheme.type;
+    const description = typeof scheme.description === "string" ? scheme.description : undefined;
+
+    if (type === "apiKey") {
+        const apiKeyIn = scheme.in;
+        if (apiKeyIn !== "header" && apiKeyIn !== "query" && apiKeyIn !== "cookie") return undefined;
+        if (typeof scheme.name !== "string") return undefined;
+        return {
+            name,
+            type: "apiKey",
+            description,
+            apiKeyName: scheme.name,
+            apiKeyIn,
+        };
+    }
+    if (type === "http") {
+        if (typeof scheme.scheme !== "string") return undefined;
+        return {
+            name,
+            type: "http",
+            description,
+            scheme: scheme.scheme,
+            bearerFormat: typeof scheme.bearerFormat === "string" ? scheme.bearerFormat : undefined,
+        };
+    }
+    if (type === "oauth2") {
+        const flowsRaw = (scheme.flows ?? {}) as Record<string, unknown>;
+        return {
+            name,
+            type: "oauth2",
+            description,
+            flows: {
+                implicit: gatherOAuthFlow(flowsRaw.implicit as Record<string, unknown> | undefined),
+                password: gatherOAuthFlow(flowsRaw.password as Record<string, unknown> | undefined),
+                clientCredentials: gatherOAuthFlow(
+                    flowsRaw.clientCredentials as Record<string, unknown> | undefined,
+                ),
+                authorizationCode: gatherOAuthFlow(
+                    flowsRaw.authorizationCode as Record<string, unknown> | undefined,
+                ),
+            },
+        };
+    }
+    if (type === "openIdConnect") {
+        if (typeof scheme.openIdConnectUrl !== "string") return undefined;
+        return {
+            name,
+            type: "openIdConnect",
+            description,
+            openIdConnectUrl: scheme.openIdConnectUrl,
+        };
+    }
+    if (type === "mutualTLS") {
+        return { name, type: "mutualTLS", description };
+    }
+    return undefined;
+}
+
+export function gatherSecuritySchemes(
+    schema: OpenAPI3,
+): Record<string, SecuritySchemeMeta> {
+    const out: Record<string, SecuritySchemeMeta> = {};
+    const raw = schema.components?.securitySchemes ?? {};
+    for (const [name, value] of Object.entries(raw)) {
+        const meta = gatherSecuritySchemeMeta(schema, name, value);
+        if (meta) out[name] = meta;
+    }
+    return out;
+}
+
 export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector: Collector): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
         operations: [],
         customScalars: [],
+        securitySchemes: gatherSecuritySchemes(schema),
+        security: gatherSecurityRequirements(schema.security),
     };
 
     for (const [key, value] of Object.entries(schema?.components?.schemas ?? {})) {
@@ -1132,6 +1257,7 @@ export const gatherMetaForPathOperation = (
         args: [],
         isEventStream,
         responseContentType,
+        security: gatherSecurityRequirements(operation.security),
         type: gatherMetaForType(
             schema,
             operationName,
