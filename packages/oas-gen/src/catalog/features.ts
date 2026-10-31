@@ -86,8 +86,8 @@ export const FEATURES: FeatureDef[] = [
     f("servers.literal", both, "Server", ["url"], { implemented: true, phase: 1 }),
     f("servers.templated", both, "Server", ["url", "variables"], { implemented: true, phase: 4, weight: "uncommon" }),
     f("servers.document", both, "Server", ["servers"], { implemented: true, phase: 1 }),
-    f("servers.path-item", both, "Server", ["servers"], { weight: "uncommon" }),
-    f("servers.operation", both, "Server", ["servers"], { weight: "uncommon" }),
+    f("servers.path-item", both, "Server", ["servers"], { implemented: true, phase: 2, weight: "uncommon" }),
+    f("servers.operation", both, "Server", ["servers"], { implemented: true, phase: 2, weight: "uncommon" }),
 
     // Paths / Path Item
     f("path.static", both, "Paths", [], { implemented: true, phase: 1 }),
@@ -101,17 +101,17 @@ export const FEATURES: FeatureDef[] = [
     f("op.method.put", both, "Operation", ["put"], { implemented: true, phase: 1 }),
     f("op.method.post", both, "Operation", ["post"], { implemented: true, phase: 1 }),
     f("op.method.delete", both, "Operation", ["delete"], { implemented: true, phase: 1 }),
-    f("op.method.options", both, "Operation", ["options"], { weight: "uncommon", samariumRelevance: "medium" }),
-    f("op.method.head", both, "Operation", ["head"], { weight: "uncommon", samariumRelevance: "medium" }),
+    f("op.method.options", both, "Operation", ["options"], { implemented: true, phase: 2, weight: "uncommon", samariumRelevance: "medium" }),
+    f("op.method.head", both, "Operation", ["head"], { implemented: true, phase: 2, weight: "uncommon", samariumRelevance: "medium" }),
     f("op.method.patch", both, "Operation", ["patch"], { implemented: true, phase: 1 }),
     f("op.method.trace", both, "Operation", ["trace"], { weight: "rare", samariumRelevance: "low" }),
     f("paths.empty-with-webhooks", ["3.1"], "Paths", ["webhooks"], { weight: "rare", samariumRelevance: "medium" }),
 
     // Operation
     f("op.operationId", both, "Operation", ["operationId"], { implemented: true, phase: 1 }),
-    f("op.operationId.absent", both, "Operation", ["operationId"], { weight: "uncommon" }),
+    f("op.operationId.absent", both, "Operation", ["operationId"], { implemented: true, phase: 2, weight: "uncommon" }),
     f("op.operationId.unicode", both, "Operation", ["operationId"], { weight: "rare", samariumRelevance: "medium" }),
-    f("op.operationId.dotted", both, "Operation", ["operationId"], { weight: "uncommon" }),
+    f("op.operationId.dotted", both, "Operation", ["operationId"], { implemented: true, phase: 2, weight: "uncommon" }),
     f("op.tags", both, "Operation", ["tags"], { implemented: true, phase: 1 }),
     f("op.deprecated", both, "Operation", ["deprecated"], { implemented: true, phase: 4, weight: "uncommon", samariumRelevance: "medium" }),
     f("op.externalDocs", both, "Operation", ["externalDocs"], { implemented: true, phase: 4, weight: "uncommon", samariumRelevance: "low" }),
@@ -124,11 +124,11 @@ export const FEATURES: FeatureDef[] = [
     f("op.responses.default", both, "Operation", ["default"], { implemented: true, phase: 4, weight: "uncommon" }),
     f("op.responses.2xx", both, "Operation", ["200"], { implemented: true, phase: 1 }),
     f("op.responses.4xx", both, "Operation", ["400"], { implemented: true, phase: 1 }),
-    f("op.responses.pattern", both, "Operation", ["2XX"], { weight: "rare" }),
+    f("op.responses.pattern", both, "Operation", ["2XX"], { implemented: true, phase: 2, weight: "rare" }),
     f("op.callbacks", both, "Operation", ["callbacks"], { implemented: true, phase: 3, weight: "rare" }),
     f("op.security.override", both, "Operation", ["security"], { implemented: true, phase: 1, weight: "uncommon" }),
     f("op.security.optional", both, "Operation", ["security"], { implemented: true, phase: 3, weight: "uncommon" }),
-    f("op.servers.override", both, "Operation", ["servers"], { weight: "uncommon" }),
+    f("op.servers.override", both, "Operation", ["servers"], { implemented: true, phase: 2, weight: "uncommon" }),
 
     // Parameter
     f("param.in.path", both, "Parameter", ["in"], { implemented: true, phase: 1 }),
@@ -137,7 +137,7 @@ export const FEATURES: FeatureDef[] = [
     f("param.in.cookie", both, "Parameter", ["in"], { implemented: true, phase: 2, weight: "uncommon" }),
     f("param.schema", both, "Parameter", ["schema"], { implemented: true, phase: 1 }),
     f("param.content", both, "Parameter", ["content"], { implemented: true, phase: 2, weight: "rare" }),
-    f("param.content.multipart", both, "Parameter", ["content"], { weight: "rare" }),
+    f("param.content.multipart", both, "Parameter", ["content"], { implemented: true, phase: 2, weight: "rare" }),
     f("param.style.matrix", both, "Parameter", ["style"], { implemented: true, phase: 2, weight: "rare" }),
     f("param.style.label", both, "Parameter", ["style"], { implemented: true, phase: 2, weight: "rare" }),
     f("param.style.form", both, "Parameter", ["style"], { implemented: true, phase: 1 }),
@@ -211,7 +211,7 @@ export const FEATURES: FeatureDef[] = [
     f("schema.object.patternProperties", ["3.1"], "Schema", ["patternProperties"], { implemented: true, phase: 2, weight: "rare" }),
     f("schema.object.propertyNames", ["3.1"], "Schema", ["propertyNames"], { implemented: true, phase: 2, weight: "rare" }),
     f("schema.dependentRequired", ["3.1"], "Schema", ["dependentRequired"], { implemented: true, phase: 2, weight: "rare", samariumRelevance: "medium" }),
-    f("schema.dependentSchemas", ["3.1"], "Schema", ["dependentSchemas"], { phase: 2, weight: "rare", samariumRelevance: "medium" }),
+    f("schema.dependentSchemas", ["3.1"], "Schema", ["dependentSchemas"], { implemented: true, phase: 2, weight: "rare", samariumRelevance: "medium" }),
     f("schema.allOf", both, "Schema", ["allOf"], { implemented: true, phase: 2 }),
     f("schema.anyOf", both, "Schema", ["anyOf"], { implemented: true, phase: 2 }),
     f("schema.oneOf", both, "Schema", ["oneOf"], { implemented: true, phase: 2 }),
@@ -232,7 +232,7 @@ export const FEATURES: FeatureDef[] = [
     // Components
     f("components.schemas", both, "Components", ["schemas"], { implemented: true, phase: 1 }),
     f("components.unused", both, "Components", [], { implemented: true, phase: 1, weight: "uncommon" }),
-    f("components.name.dot-dash", both, "Components", [], { implemented: false, phase: 1, weight: "uncommon" }),
+    f("components.name.dot-dash", both, "Components", [], { implemented: true, phase: 1, weight: "uncommon" }),
 
     // Security
     f("security.apiKey.header", both, "Security", ["apiKey"], { implemented: true, phase: 3 }),

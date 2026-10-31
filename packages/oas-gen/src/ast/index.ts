@@ -61,6 +61,7 @@ export type SchemaIR =
           patternProperties?: Record<string, Ref<SchemaIR>>;
           propertyNames?: Ref<SchemaIR>;
           dependentRequired?: Record<string, string[]>;
+          dependentSchemas?: Record<string, Ref<SchemaIR>>;
           discriminator?: DiscriminatorIR;
           xml?: XmlIR;
           readOnly?: boolean;

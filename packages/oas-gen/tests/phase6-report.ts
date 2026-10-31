@@ -7,13 +7,9 @@ import { compileSpec, oracle } from "../src/oracle/index.ts";
 import { PHASE5_PROFILES } from "../src/catalog/features.ts";
 import type { Dialect, Profile } from "../src/types.ts";
 
-const TYPECHECK_PROFILES = new Set<Profile>(["minimal", "core-rest"]);
-const CRASHY = new Set<Profile>(["schema-heavy", "ref-graph", "multi-file", "messy"]);
-
 function seedCount(profile: Profile): number {
-    if (TYPECHECK_PROFILES.has(profile)) return 50;
-    if (CRASHY.has(profile)) return 10;
-    return 50;
+    if (profile === "minimal" || profile === "core-rest") return 50;
+    return 10;
 }
 
 async function main() {
@@ -30,23 +26,14 @@ async function main() {
             const sample: string[] = [];
             for (let seed = 0; seed < n; seed++) {
                 const spec = generate({ seed, profile, dialect });
-                if (TYPECHECK_PROFILES.has(profile)) {
-                    const r = await oracle(spec);
-                    if (!r.compile.ok) compileFail++;
-                    if (r.compile.crashed) crash++;
-                    if (!r.typecheck.ok) tcFail++;
-                    if (!r.ok && sample.length < 2) {
-                        sample.push(
-                            `  seed ${seed}: crash=${r.compile.crashed} ${r.compile.error?.split("\n")[0] ?? r.typecheck.errors[0] ?? ""}`,
-                        );
-                    }
-                } else {
-                    const r = await compileSpec(spec);
-                    if (!r.ok) compileFail++;
-                    if (r.crashed) crash++;
-                    if (!r.ok && sample.length < 2) {
-                        sample.push(`  seed ${seed}: crash=${r.crashed} ${r.error?.split("\n")[0] ?? ""}`);
-                    }
+                const r = await oracle(spec);
+                if (!r.compile.ok) compileFail++;
+                if (r.compile.crashed) crash++;
+                if (!r.typecheck.ok) tcFail++;
+                if (!r.ok && sample.length < 2) {
+                    sample.push(
+                        `  seed ${seed}: crash=${r.compile.crashed} ${r.compile.error?.split("\n")[0] ?? r.typecheck.errors[0] ?? ""}`,
+                    );
                 }
             }
             console.log(`| ${profile} | ${dialect} | ${n} | ${compileFail}/${n} | ${crash}/${n} | ${tcFail}/${n} |`);

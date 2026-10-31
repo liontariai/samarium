@@ -22,7 +22,8 @@
         "phase3-report": "bun tests/phase3-report.ts",
         "phase4-report": "bun tests/phase4-report.ts",
         "phase5-report": "bun tests/phase5-report.ts",
-        "phase6-report": "bun tests/phase6-report.ts"
+        "phase6-report": "bun tests/phase6-report.ts",
+        "soak": "bun src/cli.ts soak --minutes 1 --oracle samarium --profile full-random --out ../../repro"
     },
     "repository": {
         "type": "git",

@@ -70,10 +70,9 @@ bun packages/oas-gen/src/cli.ts soak --minutes 5 --oracle samarium --profile ful
 
 | Oracle result | Profiles |
 |---|---|
-| Compile + typecheck | `minimal`, `core-rest`, `param-matrix`, `media-matrix`, `security-matrix`, `callback-webhook` |
-| Crash (`gatherMeta` stack overflow on cyclic `components.schemas`) | `schema-heavy`, `ref-graph`, `multi-file`; sometimes `messy` |
+| Compile + typecheck | all PHASE5 profiles including `schema-heavy`, `ref-graph`, `multi-file`, `messy` |
 
-Unexpected crash is a Samarium bug. Unsupported constructs should fail with a clean diagnostic, not a stack overflow.
+Unexpected crash is a Samarium bug. Unsupported constructs should fail with a clean diagnostic, not a stack overflow. Cyclic `components.schemas` are supported (shared `TypeMeta` + reserved selection types).
 
 ## Adding a feature atom
 

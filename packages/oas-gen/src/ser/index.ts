@@ -143,6 +143,11 @@ function schemaToJson(schema: SchemaIR): unknown {
             patternProperties,
             propertyNames: schema.propertyNames ? fromRef(schema.propertyNames, schemaToJson) : undefined,
             dependentRequired: schema.dependentRequired,
+            dependentSchemas: schema.dependentSchemas
+                ? Object.fromEntries(
+                      Object.entries(schema.dependentSchemas).map(([k, v]) => [k, fromRef(v, schemaToJson)]),
+                  )
+                : undefined,
             discriminator: discriminatorToJson(schema.discriminator),
             xml: xmlToJson(schema.xml),
             readOnly: schema.readOnly,

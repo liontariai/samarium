@@ -367,6 +367,8 @@ export function generateDocument(ctx: GenContext): OpenAPIDocument {
 
     if ((!doc.paths || Object.keys(doc.paths).length === 0) && !doc.webhooks) genMinimal(ctx, doc);
 
+    enrichHighRelevanceAtoms(ctx, doc);
+
     if (doc.components) {
         const nonempty = Object.values(doc.components).some(
             (v) => v && typeof v === "object" && Object.keys(v as object).length > 0,
@@ -375,4 +377,132 @@ export function generateDocument(ctx: GenContext): OpenAPIDocument {
     }
 
     return doc;
+}
+
+/** Emit catalog atoms that are high/medium relevance but not covered by profile matrices. */
+function enrichHighRelevanceAtoms(ctx: GenContext, doc: OpenAPIDocument): void {
+    const paths = doc.paths ?? {};
+    const pathEntries = Object.entries(paths);
+    const firstEntry = pathEntries[0];
+    if (!firstEntry) return;
+    const [firstPath, firstItem] = firstEntry;
+    if ("$ref" in firstItem && firstItem.$ref) return;
+
+    const methods = ["get", "post", "put", "patch", "delete", "options", "head"] as const;
+    const firstOpMethod = methods.find((m) => firstItem[m]);
+    const firstOp = firstOpMethod ? firstItem[firstOpMethod] : undefined;
+
+    if (firstOp && chance(ctx, "op.operationId.dotted", 0.2) && firstOp.operationId) {
+        const dotted = `${firstOp.operationId}.v1`;
+        if (!ctx.operationIds.has(dotted)) {
+            ctx.operationIds.delete(firstOp.operationId);
+            ctx.operationIds.add(dotted);
+            firstOp.operationId = dotted;
+            mark(ctx, "op.operationId.dotted");
+        }
+    } else if (firstOp && chance(ctx, "op.operationId.absent", 0.15) && firstOp.operationId) {
+        ctx.operationIds.delete(firstOp.operationId);
+        delete firstOp.operationId;
+        mark(ctx, "op.operationId.absent");
+    }
+
+    if (firstOp && chance(ctx, "op.responses.pattern", 0.25)) {
+        const existing2xx = Object.keys(firstOp.responses ?? {}).find((c) => c.startsWith("2"));
+        if (existing2xx && firstOp.responses?.[existing2xx]) {
+            firstOp.responses["2XX"] = firstOp.responses[existing2xx];
+            delete firstOp.responses[existing2xx];
+            mark(ctx, "op.responses.pattern");
+        }
+    }
+
+    const overrideServer = [{ url: "https://override.example.com/v1" }];
+    if (chance(ctx, "servers.path-item", 0.2)) {
+        firstItem.servers = overrideServer;
+        mark(ctx, "servers.path-item");
+    }
+    if (firstOp && chance(ctx, "servers.operation", 0.2)) {
+        firstOp.servers = [{ url: "https://op.example.com" }];
+        mark(ctx, "servers.operation");
+        mark(ctx, "op.servers.override");
+    }
+
+    // Path params often live on the primary operation (e.g. param-matrix), not the path item.
+    // Copy them onto OPTIONS/HEAD so templates stay valid.
+    const inheritedPathParams = (() => {
+        const fromItem = (firstItem.parameters ?? []).filter(
+            (p) => p.kind === "inline" && p.value.in === "path",
+        );
+        if (fromItem.length) return fromItem;
+        if (!firstOp?.parameters) return [];
+        return firstOp.parameters.filter((p) => p.kind === "inline" && p.value.in === "path");
+    })();
+
+    if (!firstItem.options && chance(ctx, "op.method.options", 0.2) && remainingOps(ctx) > 0) {
+        attachOp(
+            firstItem,
+            "options",
+            {
+                parameters: inheritedPathParams.length ? [...inheritedPathParams] : undefined,
+                responses: {
+                    "204": { kind: "inline", value: { description: "CORS preflight" } },
+                },
+            },
+            ctx,
+        );
+        mark(ctx, "op.operationId.absent");
+        mark(ctx, "response.204");
+    }
+
+    if (!firstItem.head && chance(ctx, "op.method.head", 0.2) && remainingOps(ctx) > 0) {
+        attachOp(
+            firstItem,
+            "head",
+            {
+                parameters: inheritedPathParams.length ? [...inheritedPathParams] : undefined,
+                responses: {
+                    "200": { kind: "inline", value: { description: "headers only" } },
+                },
+            },
+            ctx,
+        );
+        mark(ctx, "op.operationId.absent");
+    }
+
+    if (chance(ctx, "param.content.multipart", 0.15) && firstOp) {
+        firstOp.parameters ??= [];
+        firstOp.parameters.push({
+            kind: "inline",
+            value: {
+                name: "payload",
+                in: "query",
+                required: false,
+                content: {
+                    "multipart/form-data": {
+                        schema: {
+                            kind: "inline",
+                            value: {
+                                kind: "object",
+                                properties: {
+                                    part: { kind: "inline", value: primitiveSchema(ctx, "string") },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        mark(ctx, "param.content");
+        mark(ctx, "param.content.multipart");
+        mark(ctx, "param.in.query");
+        mark(ctx, "media.multipart/form-data");
+        mark(ctx, "op.parameters.inline");
+    }
+
+    if (chance(ctx, "components.name.dot-dash", 0.35) && doc.components) {
+        addSchema(ctx, doc.components, "Unused.Model-v2", primitiveSchema(ctx, "string"));
+        mark(ctx, "components.name.dot-dash");
+        mark(ctx, "components.unused");
+    }
+
+    void firstPath;
 }

@@ -353,6 +353,18 @@ export function fillSchemaCatalog(ctx: GenContext, components: ComponentsIR): st
                 value: { kind: "object", properties: {}, required: ["kind"] },
             },
             dependentRequired: { creditCard: ["billingAddress"] },
+            dependentSchemas: {
+                creditCard: {
+                    kind: "inline",
+                    value: {
+                        kind: "object",
+                        properties: {
+                            billingAddress: { kind: "inline", value: primitiveSchema(ctx, "string") },
+                        },
+                        required: ["billingAddress"],
+                    },
+                },
+            },
             patternProperties: {
                 "^x-": { kind: "inline", value: primitiveSchema(ctx, "string") },
             },
@@ -360,6 +372,7 @@ export function fillSchemaCatalog(ctx: GenContext, components: ComponentsIR): st
         });
         mark(ctx, "schema.if-then-else");
         mark(ctx, "schema.dependentRequired");
+        mark(ctx, "schema.dependentSchemas");
         mark(ctx, "schema.object.patternProperties");
         mark(ctx, "schema.object.propertyNames");
     }
