@@ -24,6 +24,7 @@ import {
     parseTypescriptTypeFromDescription,
     parseTypescriptTypeFromSchema,
     pickContentSchema,
+resolveRef,
     type OpenAPISchemaNode,
 } from "./normalize";
 
@@ -68,6 +69,31 @@ const camelCaps = (arr: string[], separator: string = "$") => {
  * @param options Codegen options
  * @returns
  */
+/** Resolve a path item `$ref` (or return the object as-is). */
+const resolvePathItem = (schema: OpenAPI3, value: PathItemObject | ReferenceObject): PathItemObject | undefined => {
+    if (!("$ref" in value)) return value;
+    const resolved = resolveRef(schema, value);
+    if (!resolved || typeof resolved !== "object" || "$ref" in (resolved as object)) {
+        console.warn(`Unresolved path item $ref: ${(value as ReferenceObject).$ref}`);
+        return undefined;
+    }
+    return resolved as PathItemObject;
+};
+
+/** Resolve an operation-object `$ref` if present. */
+const resolveOperation = (
+    schema: OpenAPI3,
+    methodValue: OperationObject | ReferenceObject,
+): OperationObject | undefined => {
+    if (!("$ref" in methodValue)) return methodValue;
+    const resolved = resolveRef(schema, methodValue);
+    if (!resolved || typeof resolved !== "object" || "$ref" in (resolved as object)) {
+        console.warn(`Unresolved operation $ref: ${(methodValue as ReferenceObject).$ref}`);
+        return undefined;
+    }
+    return resolved as OperationObject;
+};
+
 export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector: Collector): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
@@ -80,28 +106,36 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
     }
 
     for (const [key, value] of Object.entries(schema?.paths ?? {})) {
-        if ("$ref" in value) {
+        const pathItem = resolvePathItem(schema, value as PathItemObject | ReferenceObject);
+        if (!pathItem) {
             continue;
         }
 
-        for (const [method, methodValue] of Object.entries(value) as [
-            OperationMethod,
-            PathItemObject[OperationMethod],
-        ][]) {
+        const pathLevelParams = pathItem.parameters ?? [];
+
+        for (const method of PATH_ITEM_METHODS) {
+            const methodValue = pathItem[method];
             if (!methodValue) {
                 continue;
             }
-            if ("$ref" in methodValue) {
-                // TODO: Handle $ref in methodValue
-                console.warn(`TODO: Handle $ref in methodValue for ${key}`);
-                continue;
-            }
-
-            const operation = gatherMetaForPathOperation(schema, key, method, methodValue, options, collector);
+            const operation = resolveOperation(schema, methodValue as OperationObject | ReferenceObject);
             if (!operation) {
                 continue;
             }
-            meta.operations.push(operation);
+
+            const operationMeta = gatherMetaForPathOperation(
+                schema,
+                key,
+                method,
+                operation,
+                options,
+                collector,
+                pathLevelParams,
+            );
+            if (!operationMeta) {
+                continue;
+            }
+            meta.operations.push(operationMeta);
         }
     }
 
@@ -260,6 +294,23 @@ export const gatherMetaForType = (
         const ref = schema[components]?.[componentType]?.[refname];
 
         if (ref) {
+            // Schema components use a stable name so cyclic `$ref`s reuse the same
+            // TypeMeta instead of composing names until the stack overflows.
+            if (componentType === "schemas") {
+                const existing = collector.findCollectedSchema(refname);
+                if (existing) {
+                    return existing;
+                }
+                return gatherMetaForType(
+                    schema,
+                    refname,
+                    ref,
+                    componentType,
+                    { isNonNull: false, operationResponseType: options.operationResponseType },
+                    collector,
+                );
+            }
+
             return gatherMetaForType(
                 schema,
                 // if it is an operation response type, don't include the operationName in the name
@@ -375,7 +426,13 @@ export const gatherMetaForType = (
         return applyNullable(collector.getType(identifyingTypeName), schemaNullable);
     } else {
         meta.name = identifyingTypeName;
+        meta.ofType = meta;
         collector.addType(meta);
+        // Also index by the gather name so `$ref` → component lookups cut cycles
+        // before/while fields are walked (identifyingTypeName may add `!` / Input).
+        if (typeType === "schemas" && name) {
+            collector.beginSchema(name, meta);
+        }
     }
 
     meta.ofType = meta;
@@ -818,6 +875,9 @@ export const gatherMetaForType = (
     }
 
     collector.addType(meta);
+    if (typeType === "schemas" && name) {
+        collector.endSchema(name);
+    }
 
     return applyNullable(meta, schemaNullable);
 };

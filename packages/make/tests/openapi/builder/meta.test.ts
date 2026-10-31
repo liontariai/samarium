@@ -9,7 +9,7 @@ import thingsboardJson from "@tests/openapi/schemas/thingsboard.json";
 import { Collector } from "@/openapi/builder/collector";
 import { inspect } from "util";
 
-describe.only("gatherMetaForType", () => {
+describe("gatherMetaForType", () => {
     it("should gather meta for object types", async () => {
         const schema = thingsboardJson as unknown as OpenAPI3;
 

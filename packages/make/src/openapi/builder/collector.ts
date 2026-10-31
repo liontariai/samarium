@@ -28,6 +28,32 @@ export class Collector {
     }
 
     /**
+     * Component schema names currently being gathered. Cuts cycles when a `$ref`
+     * re-enters a schema before `addType` has run (or when looking up by stable
+     * component name rather than a composed property name).
+     */
+    private _schemaInProgress: Map<string, TypeMeta> = new Map();
+    public beginSchema(componentName: string, stub: TypeMeta): void {
+        this._schemaInProgress.set(componentName, stub);
+    }
+    public endSchema(componentName: string): void {
+        this._schemaInProgress.delete(componentName);
+    }
+    public getSchemaInProgress(componentName: string): TypeMeta | undefined {
+        return this._schemaInProgress.get(componentName);
+    }
+    public findCollectedSchema(componentName: string): TypeMeta | undefined {
+        if (this._types.has(componentName)) return this._types.get(componentName);
+        if (this._types.has(`${componentName}!`)) return this._types.get(`${componentName}!`);
+        const sanitized = componentName.replaceAll("-", "_").replaceAll(".", "_");
+        if (sanitized !== componentName) {
+            if (this._types.has(sanitized)) return this._types.get(sanitized);
+            if (this._types.has(`${sanitized}!`)) return this._types.get(`${sanitized}!`);
+        }
+        return this._schemaInProgress.get(componentName) ?? this._schemaInProgress.get(sanitized);
+    }
+
+    /**
      * The collected custom scalars.
      */
     private _customScalars: Map<string, TypeMeta> = new Map();

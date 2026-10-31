@@ -1116,6 +1116,10 @@ ${unresolvedAliases}
             return selectionTypeName;
         }
 
+        // Reserve the name before walking fields so cyclic `$ref`s (A→A, A→B→A)
+        // reuse this selection type instead of recursing forever.
+        this.collector.addSelectionType(this.typeMeta, `export type ${selectionTypeName} = any;`);
+
         let selectionType = "";
 
         if (this.typeMeta.isUnion) {
