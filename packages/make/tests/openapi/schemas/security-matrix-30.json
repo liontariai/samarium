@@ -1,0 +1,186 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "security-matrix API 60",
+        "description": "Generated 3.0 fixture (seed-driven).",
+        "version": "1.8.6"
+    },
+    "security": [
+        {
+            "bearerAuth": []
+        },
+        {
+            "apiKeyHeader": []
+        },
+        {
+            "oauth2": [
+                "read"
+            ]
+        }
+    ],
+    "paths": {
+        "/secure": {
+            "get": {
+                "operationId": "listSecure",
+                "responses": {
+                    "2XX": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "head": {
+                "responses": {
+                    "200": {
+                        "description": "headers only"
+                    }
+                }
+            }
+        },
+        "/and": {
+            "get": {
+                "operationId": "andGate",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "apiKeyHeader": [],
+                        "oauth2": [
+                            "read",
+                            "write"
+                        ]
+                    }
+                ]
+            }
+        },
+        "/optional": {
+            "get": {
+                "operationId": "optionalAuth",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": []
+            }
+        },
+        "/digest": {
+            "get": {
+                "operationId": "digestOnly",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "digestAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "apiKeyHeader": {
+                "type": "apiKey",
+                "name": "X-Api-Key",
+                "in": "header"
+            },
+            "apiKeyQuery": {
+                "type": "apiKey",
+                "name": "api_key",
+                "in": "query"
+            },
+            "apiKeyCookie": {
+                "type": "apiKey",
+                "name": "sid",
+                "in": "cookie"
+            },
+            "basicAuth": {
+                "type": "http",
+                "scheme": "basic"
+            },
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            },
+            "digestAuth": {
+                "type": "http",
+                "scheme": "digest"
+            },
+            "oauth2": {
+                "type": "oauth2",
+                "flows": {
+                    "implicit": {
+                        "authorizationUrl": "https://example.com/oauth/authorize",
+                        "refreshUrl": "https://example.com/oauth/refresh",
+                        "scopes": {
+                            "read": "Read access",
+                            "write": "Write access"
+                        }
+                    },
+                    "password": {
+                        "tokenUrl": "https://example.com/oauth/token",
+                        "refreshUrl": "https://example.com/oauth/refresh",
+                        "scopes": {
+                            "read": "Read access",
+                            "write": "Write access"
+                        }
+                    },
+                    "clientCredentials": {
+                        "tokenUrl": "https://example.com/oauth/token",
+                        "scopes": {
+                            "read": "Read access",
+                            "write": "Write access"
+                        }
+                    },
+                    "authorizationCode": {
+                        "authorizationUrl": "https://example.com/oauth/authorize",
+                        "tokenUrl": "https://example.com/oauth/token",
+                        "refreshUrl": "https://example.com/oauth/refresh",
+                        "scopes": {
+                            "read": "Read access",
+                            "write": "Write access"
+                        }
+                    }
+                }
+            },
+            "oidc": {
+                "type": "openIdConnect",
+                "openIdConnectUrl": "https://example.com/.well-known/openid-configuration"
+            }
+        }
+    }
+}

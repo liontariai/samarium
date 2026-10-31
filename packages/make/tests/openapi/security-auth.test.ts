@@ -162,6 +162,41 @@ describe("applySecurityCredential", () => {
             ).cookie.sid,
         ).toBe("c");
     });
+
+    it("places basic, digest, oauth2, oidc, and leaves mutualTLS empty", () => {
+        expect(
+            applySecurityCredential(
+                { name: "basic", type: "http", scheme: "basic" },
+                "dXNlcjpwYXNz",
+            ).headers.Authorization,
+        ).toBe("Basic dXNlcjpwYXNz");
+        expect(
+            applySecurityCredential(
+                { name: "basic", type: "http", scheme: "basic" },
+                "Basic already",
+            ).headers.Authorization,
+        ).toBe("Basic already");
+        expect(
+            applySecurityCredential(
+                { name: "digest", type: "http", scheme: "digest" },
+                "Digest raw-value",
+            ).headers.Authorization,
+        ).toBe("Digest raw-value");
+        expect(
+            applySecurityCredential({ name: "oauth2", type: "oauth2" }, "atok").headers
+                .Authorization,
+        ).toBe("Bearer atok");
+        expect(
+            applySecurityCredential(
+                { name: "oidc", type: "openIdConnect" },
+                "Bearer already",
+            ).headers.Authorization,
+        ).toBe("Bearer already");
+        const mtls = applySecurityCredential({ name: "mtls", type: "mutualTLS" }, "ignored");
+        expect(mtls.headers).toEqual({});
+        expect(mtls.query).toEqual({});
+        expect(mtls.cookie).toEqual({});
+    });
 });
 
 describe("OpenAPI schema-aware auth", () => {
