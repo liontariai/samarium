@@ -109,39 +109,38 @@ export type ServerRuntime = {
     variables?: Record<string, ServerVariableRuntime>;
 };
 
+function emptyAppliedAuth(): AppliedAuth {
+    return { headers: {}, query: {}, cookie: {} };
+}
+
+/** Place `Authorization`, optionally prefixing Bearer/Basic when missing. */
+function authorizationHeader(value: string, prefix?: "Bearer" | "Basic"): AppliedAuth {
+    const token =
+        prefix && !new RegExp(`^${prefix}\\s+`, "i").test(value) ? `${prefix} ${value}` : value;
+    return { ...emptyAppliedAuth(), headers: { Authorization: token } };
+}
+
 export function applySecurityCredential(
     scheme: SecuritySchemeRuntime,
     value: string,
 ): AppliedAuth {
-    const empty: AppliedAuth = { headers: {}, query: {}, cookie: {} };
     if (scheme.type === "apiKey") {
-        if (scheme.apiKeyIn === "header") {
-            return { ...empty, headers: { [scheme.apiKeyName]: value } };
-        }
-        if (scheme.apiKeyIn === "query") {
-            return { ...empty, query: { [scheme.apiKeyName]: value } };
-        }
-        return { ...empty, cookie: { [scheme.apiKeyName]: value } };
+        const bucket =
+            scheme.apiKeyIn === "header" ? "headers" : scheme.apiKeyIn === "query" ? "query" : "cookie";
+        return { ...emptyAppliedAuth(), [bucket]: { [scheme.apiKeyName]: value } };
     }
     if (scheme.type === "http") {
-        const httpScheme = scheme.scheme.toLowerCase();
-        if (httpScheme === "bearer") {
-            const token = /^bearer\s+/i.test(value) ? value : `Bearer ${value}`;
-            return { ...empty, headers: { Authorization: token } };
-        }
-        if (httpScheme === "basic") {
-            const token = /^basic\s+/i.test(value) ? value : `Basic ${value}`;
-            return { ...empty, headers: { Authorization: token } };
-        }
+        const s = scheme.scheme.toLowerCase();
+        if (s === "bearer") return authorizationHeader(value, "Bearer");
+        if (s === "basic") return authorizationHeader(value, "Basic");
         // digest and other http schemes: pass through as Authorization value
-        return { ...empty, headers: { Authorization: value } };
+        return authorizationHeader(value);
     }
     if (scheme.type === "oauth2" || scheme.type === "openIdConnect") {
-        const token = /^bearer\s+/i.test(value) ? value : `Bearer ${value}`;
-        return { ...empty, headers: { Authorization: token } };
+        return authorizationHeader(value, "Bearer");
     }
     // mutualTLS: no string credential application
-    return empty;
+    return emptyAppliedAuth();
 }
 
 function mergeAppliedAuth(into: AppliedAuth, from: AppliedAuth): AppliedAuth {
@@ -172,35 +171,43 @@ type OpenAPIRequest = {
     servers?: ServerRuntime[];
 };
 
+const isNil = (v: unknown) => v === undefined || v === null;
+const asEntries = (v: object) => Object.entries(v as Record<string, unknown>);
+
+/** OAS simple / form non-deepObject object + array flattening. */
+function serializeSimple(value: unknown, explode = false): string {
+    if (isNil(value)) return "";
+    if (Array.isArray(value)) return value.map(String).join(",");
+    if (typeof value === "object") {
+        const sep = explode ? "=" : ",";
+        return asEntries(value)
+            .map(([k, v]) => `${k}${sep}${v}`)
+            .join(",");
+    }
+    return String(value);
+}
+
 function encodePathParam(
     value: unknown,
     style: OpenAPIParameterStyle = "simple",
     explode = false,
 ): string {
-    if (value === undefined || value === null) return "";
-    if (Array.isArray(value)) {
-        const joined = value.map(String).join(",");
-        if (style === "label") return `.${value.map(String).join(explode ? "." : ",")}`;
-        if (style === "matrix") return `;${explode ? value.map((v) => String(v)).join(";") : joined}`;
-        return joined;
-    }
-    if (typeof value === "object") {
-        const entries = Object.entries(value as Record<string, unknown>);
-        if (style === "matrix") {
-            return explode
-                ? entries.map(([k, v]) => `;${k}=${v}`).join("")
-                : `;${entries.map(([k, v]) => `${k},${v}`).join(",")}`;
+    if (isNil(value)) return "";
+    if (style === "label" || style === "matrix") {
+        const p = style === "label" ? "." : ";";
+        if (Array.isArray(value)) {
+            return `${p}${value.map(String).join(explode ? p : ",")}`;
         }
-        if (style === "label") {
-            return explode
-                ? `.${entries.map(([k, v]) => `${k}=${v}`).join(".")}`
-                : `.${entries.map(([k, v]) => `${k},${v}`).join(",")}`;
+        if (typeof value === "object") {
+            const sep = explode ? "=" : ",";
+            return `${p}${asEntries(value)
+                .map(([k, v]) => `${k}${sep}${v}`)
+                .join(explode ? p : ",")}`;
         }
-        return entries.map(([k, v]) => `${k},${v}`).join(",");
+        return `${p}${String(value)}`;
     }
-    if (style === "label") return `.${String(value)}`;
-    if (style === "matrix") return `;${String(value)}`;
-    return String(value);
+    // Path `simple` ignores explode for arrays/objects (OAS).
+    return serializeSimple(value, false);
 }
 
 function appendQueryParam(
@@ -210,28 +217,19 @@ function appendQueryParam(
     style: OpenAPIParameterStyle = "form",
     explode = true,
 ): void {
-    if (value === undefined || value === null) return;
+    if (isNil(value)) return;
     if (Array.isArray(value)) {
-        if (style === "spaceDelimited") {
-            qs.set(name, value.map(String).join(" "));
-        } else if (style === "pipeDelimited") {
-            qs.set(name, value.map(String).join("|"));
-        } else if (explode) {
-            for (const v of value) qs.append(name, String(v));
-        } else {
-            qs.set(name, value.map(String).join(","));
-        }
+        if (style === "spaceDelimited") qs.set(name, value.map(String).join(" "));
+        else if (style === "pipeDelimited") qs.set(name, value.map(String).join("|"));
+        else if (explode) for (const v of value) qs.append(name, String(v));
+        else qs.set(name, value.map(String).join(","));
         return;
     }
     if (typeof value === "object") {
-        const entries = Object.entries(value as Record<string, unknown>);
-        if (style === "deepObject") {
-            for (const [k, v] of entries) qs.set(`${name}[${k}]`, String(v));
-        } else if (explode) {
-            for (const [k, v] of entries) qs.set(k, String(v));
-        } else {
-            qs.set(name, entries.map(([k, v]) => `${k},${v}`).join(","));
-        }
+        const entries = asEntries(value);
+        if (style === "deepObject") for (const [k, v] of entries) qs.set(`${name}[${k}]`, String(v));
+        else if (explode) for (const [k, v] of entries) qs.set(k, String(v));
+        else qs.set(name, serializeSimple(value, false));
         return;
     }
     qs.set(name, String(value));
@@ -240,21 +238,10 @@ function appendQueryParam(
 /** OAS header `style: simple` serialization → header field value. */
 export function encodeHeaderParam(
     value: unknown,
-    style: OpenAPIParameterStyle = "simple",
+    _style: OpenAPIParameterStyle = "simple",
     explode = false,
 ): string {
-    if (value === undefined || value === null) return "";
-    if (Array.isArray(value)) {
-        return value.map(String).join(",");
-    }
-    if (typeof value === "object") {
-        const entries = Object.entries(value as Record<string, unknown>);
-        if (explode) {
-            return entries.map(([k, v]) => `${k}=${v}`).join(",");
-        }
-        return entries.map(([k, v]) => `${k},${v}`).join(",");
-    }
-    return String(value);
+    return serializeSimple(value, explode);
 }
 
 /**
@@ -264,24 +251,19 @@ export function encodeHeaderParam(
 export function encodeCookieParam(
     name: string,
     value: unknown,
-    style: OpenAPIParameterStyle = "form",
+    _style: OpenAPIParameterStyle = "form",
     explode = true,
 ): string {
-    if (value === undefined || value === null) return "";
-    if (Array.isArray(value)) {
-        if (explode) {
-            return value.map((v) => `${name}=${String(v)}`).join("; ");
-        }
-        return `${name}=${value.map(String).join(",")}`;
+    if (isNil(value)) return "";
+    if (Array.isArray(value) && explode) {
+        return value.map((v) => `${name}=${String(v)}`).join("; ");
     }
-    if (typeof value === "object") {
-        const entries = Object.entries(value as Record<string, unknown>);
-        if (explode) {
-            return entries.map(([k, v]) => `${k}=${String(v)}`).join("; ");
-        }
-        return `${name}=${entries.map(([k, v]) => `${k},${v}`).join(",")}`;
+    if (typeof value === "object" && !Array.isArray(value) && explode) {
+        return asEntries(value)
+            .map(([k, v]) => `${k}=${String(v)}`)
+            .join("; ");
     }
-    return `${name}=${String(value)}`;
+    return `${name}=${serializeSimple(value, false)}`;
 }
 
 export function substituteServerUrl(
@@ -452,21 +434,17 @@ export class RootOperation {
         value: string,
         requirement?: SecurityRequirement,
     ): AppliedAuth => {
+        const headerOnly = (name: string): AppliedAuth => ({
+            ...emptyAppliedAuth(),
+            headers: { [name]: value },
+        });
         if (RootOperation.authHeaderOverride) {
-            return {
-                headers: { [RootOperation.authHeaderOverride]: value },
-                query: {},
-                cookie: {},
-            };
+            return headerOnly(RootOperation.authHeaderOverride);
         }
         const schemes = RootOperation.securitySchemes;
         const schemeNames = Object.keys(schemes);
         if (schemeNames.length === 0) {
-            return {
-                headers: { [RootOperation.authHeaderName]: value },
-                query: {},
-                cookie: {},
-            };
+            return headerOnly(RootOperation.authHeaderName);
         }
         const req =
             requirement ??
@@ -475,17 +453,11 @@ export class RootOperation {
         // String credentials are a single value — place on the first scheme in the
         // requirement only. AND requirements with multiple schemes need a scheme map.
         const firstSchemeName = Object.keys(req)[0];
-        if (!firstSchemeName) {
-            return { headers: {}, query: {}, cookie: {} };
-        }
+        if (!firstSchemeName) return emptyAppliedAuth();
         const scheme = schemes[firstSchemeName];
         if (!scheme) {
             // Unknown scheme name — fall back to default header.
-            return {
-                headers: { [RootOperation.authHeaderName]: value },
-                query: {},
-                cookie: {},
-            };
+            return headerOnly(RootOperation.authHeaderName);
         }
         // May be empty for mutualTLS (no string credential placement).
         return applySecurityCredential(scheme, value);
@@ -507,7 +479,7 @@ export class RootOperation {
             Object.keys(schemes).length > 0 &&
             keys.every((k) => k in schemes)
         ) {
-            let applied: AppliedAuth = { headers: {}, query: {}, cookie: {} };
+            let applied = emptyAppliedAuth();
             for (const [schemeName, value] of Object.entries(result)) {
                 if (typeof value !== "string") continue;
                 applied = mergeAppliedAuth(
@@ -517,7 +489,7 @@ export class RootOperation {
             }
             return applied;
         }
-        return { headers: result, query: {}, cookie: {} };
+        return { ...emptyAppliedAuth(), headers: result };
     };
 
     private resolveFnOrPromisOrPrimitiveAuth = (
@@ -617,9 +589,6 @@ export class RootOperation {
         },
     };
 
-    private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
-        path.reduce((o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}), obj);
-
     private rootCollector: OperationSelectionCollector | undefined = undefined;
     public registerRootCollector(collector: OperationSelectionCollector) {
         this.rootCollector = collector;
@@ -689,6 +658,15 @@ export class RootOperation {
         return joinOriginAndPath(origin, finalPath);
     }
 
+    /** Prefer OR-branch containing `preferred`, else undefined (caller supplies fallback). */
+    private preferRequirement(
+        list: SecurityRequirement[],
+        preferred: string | undefined,
+    ): SecurityRequirement | undefined {
+        if (!preferred) return undefined;
+        return list.find((req) => preferred in req);
+    }
+
     /**
      * Resolve the security requirement for this operation.
      * - `undefined` security on the op → document default (OR list / single)
@@ -701,15 +679,11 @@ export class RootOperation {
         const preferred = RootOperation[OPTIONS].authScheme;
         if (request.security !== undefined) {
             if (request.security.length === 0) return null;
-            if (preferred) {
-                const match = request.security.find((req) => preferred in req);
-                if (match) return match;
-            }
-            return request.security[0];
+            return this.preferRequirement(request.security, preferred) ?? request.security[0];
         }
         const docOr = RootOperation[OPTIONS].documentSecurity;
-        if (preferred && docOr && docOr.length > 0) {
-            const match = docOr.find((req) => preferred in req);
+        if (docOr?.length) {
+            const match = this.preferRequirement(docOr, preferred);
             if (match) return match;
         }
         return RootOperation.defaultSecurity;
@@ -721,6 +695,23 @@ export class RootOperation {
         }
 
         type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
+        const varsByLocation = (sel: selection, loc: string) =>
+            Object.fromEntries(
+                Object.entries(sel.variableDefinitions)
+                    .filter(([_, v]) => v.location === loc)
+                    .map(([k]) => [k, sel.variables[k]]),
+            );
+        const pickBody = (sel: selection) => {
+            const defs = sel.variableDefinitions;
+            const bodyEntries = Object.entries(defs).filter(([_, v]) => v.location === "body");
+            if (bodyEntries.length === 0) return undefined;
+            if (bodyEntries.length === 1 && Object.keys(defs).length === 1) return sel.variables;
+            if (bodyEntries.length === 1 && "$body" in defs && "$body" in sel.variables) {
+                return sel.variables["$body"];
+            }
+            return Object.fromEntries(bodyEntries.map(([k]) => [k, sel.variables[k]]));
+        };
+
         const operations: {
             [key: string]: {
                 selection: selection;
@@ -740,61 +731,25 @@ export class RootOperation {
         }
 
         const ops = Object.entries(operations).reduce(
-            (acc, [opName, { selection, rootSlw }]) => {
-                const bodyVarDefCount = Object.entries(selection.variableDefinitions).filter(
-                    ([_, v]) => v.location === "body",
-                ).length;
-                const body =
-                    bodyVarDefCount === 0
-                        ? undefined
-                        : bodyVarDefCount === 1 && Object.keys(selection.variableDefinitions).length === 1
-                            ? selection.variables
-                            : bodyVarDefCount === 1 &&
-                                "$body" in selection.variableDefinitions &&
-                                "$body" in selection.variables
-                                ? selection.variables["$body"]
-                                : Object.fromEntries(
-                                    Object.entries(selection.variableDefinitions)
-                                        .filter(([_, v]) => v.location === "body")
-                                        .map(([k, _]) => [k, selection.variables[k]]),
-                                );
-
-                return {
-                    ...acc,
-                    [opName]: {
-                        path: rootSlw[ROOT_OP_META]!.path,
-                        method: rootSlw[ROOT_OP_META]!.method,
-                        isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
-                        requestContentType: rootSlw[ROOT_OP_META]!.requestContentType,
-                        security: rootSlw[ROOT_OP_META]!.security,
-                        servers: rootSlw[ROOT_OP_META]!.servers,
-                        paramMeta: selection.variableDefinitions as Record<string, ParamEncodingMeta>,
-                        header: Object.fromEntries(
-                            Object.entries(selection.variableDefinitions)
-                                .filter(([_, v]) => v.location === "header")
-                                .map(([k, v]) => [k, selection.variables[k]]),
-                        ),
-                        params: {
-                            path: Object.fromEntries(
-                                Object.entries(selection.variableDefinitions)
-                                    .filter(([_, v]) => v.location === "path")
-                                    .map(([k, v]) => [k, selection.variables[k]]),
-                            ),
-                            query: Object.fromEntries(
-                                Object.entries(selection.variableDefinitions)
-                                    .filter(([_, v]) => v.location === "query")
-                                    .map(([k, v]) => [k, selection.variables[k]]),
-                            ),
-                        },
-                        body,
-                        cookie: Object.fromEntries(
-                            Object.entries(selection.variableDefinitions)
-                                .filter(([_, v]) => v.location === "cookie")
-                                .map(([k, v]) => [k, selection.variables[k]]),
-                        ),
+            (acc, [opName, { selection, rootSlw }]) => ({
+                ...acc,
+                [opName]: {
+                    path: rootSlw[ROOT_OP_META]!.path,
+                    method: rootSlw[ROOT_OP_META]!.method,
+                    isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
+                    requestContentType: rootSlw[ROOT_OP_META]!.requestContentType,
+                    security: rootSlw[ROOT_OP_META]!.security,
+                    servers: rootSlw[ROOT_OP_META]!.servers,
+                    paramMeta: selection.variableDefinitions as Record<string, ParamEncodingMeta>,
+                    header: varsByLocation(selection, "header"),
+                    params: {
+                        path: varsByLocation(selection, "path"),
+                        query: varsByLocation(selection, "query"),
                     },
-                };
-            },
+                    body: pickBody(selection),
+                    cookie: varsByLocation(selection, "cookie"),
+                },
+            }),
             {} as Record<string, OpenAPIRequest>,
         );
 
