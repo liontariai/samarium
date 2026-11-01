@@ -62,6 +62,18 @@ export type SecuritySchemeMeta =
           description?: string;
       };
 
+/** Server variable fields needed for URL substitution / typed init. */
+export type ServerVariableMeta = {
+    default: string;
+    enum?: string[];
+};
+
+/** Server Object fields needed for runtime URL resolution (no docs fluff). */
+export type ServerMeta = {
+    url: string;
+    variables?: Record<string, ServerVariableMeta>;
+};
+
 export interface SchemaMeta {
     types: TypeMeta[];
     operations: OperationMeta[];
@@ -70,6 +82,8 @@ export interface SchemaMeta {
     securitySchemes: Record<string, SecuritySchemeMeta>;
     /** Document-level `security` (OR of AND-requirement objects). */
     security?: SecurityRequirementMeta[];
+    /** Document-level `servers`. */
+    servers?: ServerMeta[];
 }
 
 export type OperationMethod = "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "trace";
@@ -91,6 +105,12 @@ export interface OperationMeta {
      * `undefined` means inherit document-level security.
      */
     security?: SecurityRequirementMeta[];
+    /**
+     * Effective servers for this operation: operation `servers`, else path-item
+     * `servers`. Document servers live on `SchemaMeta.servers` and are used when
+     * this is undefined.
+     */
+    servers?: ServerMeta[];
 }
 
 /** OpenAPI 3 parameter `style` values (serialization). */

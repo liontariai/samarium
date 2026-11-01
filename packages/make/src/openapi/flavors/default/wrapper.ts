@@ -98,6 +98,17 @@ export type AppliedAuth = {
     cookie: Record<string, string>;
 };
 
+/** Runtime server object — only fields needed for URL resolution. */
+export type ServerVariableRuntime = {
+    default: string;
+    enum?: string[];
+};
+
+export type ServerRuntime = {
+    url: string;
+    variables?: Record<string, ServerVariableRuntime>;
+};
+
 export function applySecurityCredential(
     scheme: SecuritySchemeRuntime,
     value: string,
@@ -157,6 +168,8 @@ type OpenAPIRequest = {
     requestContentType?: string;
     /** Operation security (OR of AND-requirements); undefined → use doc default. */
     security?: SecurityRequirement[];
+    /** Effective servers for this op (op/path override or document). */
+    servers?: ServerRuntime[];
 };
 
 function encodePathParam(
@@ -222,6 +235,92 @@ function appendQueryParam(
         return;
     }
     qs.set(name, String(value));
+}
+
+/** OAS header `style: simple` serialization → header field value. */
+export function encodeHeaderParam(
+    value: unknown,
+    style: OpenAPIParameterStyle = "simple",
+    explode = false,
+): string {
+    if (value === undefined || value === null) return "";
+    if (Array.isArray(value)) {
+        return value.map(String).join(",");
+    }
+    if (typeof value === "object") {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (explode) {
+            return entries.map(([k, v]) => `${k}=${v}`).join(",");
+        }
+        return entries.map(([k, v]) => `${k},${v}`).join(",");
+    }
+    return String(value);
+}
+
+/**
+ * OAS cookie `style: form` serialization → one or more `name=value` segments
+ * joined with `; ` for the Cookie header.
+ */
+export function encodeCookieParam(
+    name: string,
+    value: unknown,
+    style: OpenAPIParameterStyle = "form",
+    explode = true,
+): string {
+    if (value === undefined || value === null) return "";
+    if (Array.isArray(value)) {
+        if (explode) {
+            return value.map((v) => `${name}=${String(v)}`).join("; ");
+        }
+        return `${name}=${value.map(String).join(",")}`;
+    }
+    if (typeof value === "object") {
+        const entries = Object.entries(value as Record<string, unknown>);
+        if (explode) {
+            return entries.map(([k, v]) => `${k}=${String(v)}`).join("; ");
+        }
+        return `${name}=${entries.map(([k, v]) => `${k},${v}`).join(",")}`;
+    }
+    return `${name}=${String(value)}`;
+}
+
+export function substituteServerUrl(
+    url: string,
+    overrides: Record<string, string> | undefined,
+    variables?: Record<string, ServerVariableRuntime>,
+): string {
+    return url.replace(/\{([^}]+)\}/g, (_, name: string) => {
+        if (overrides?.[name] !== undefined) return overrides[name];
+        const def = variables?.[name]?.default;
+        if (def !== undefined) return def;
+        return `{${name}}`;
+    });
+}
+
+export function joinOriginAndPath(origin: string, path: string): string {
+    if (origin === "[ENDPOINT]") {
+        return path.startsWith("/") ? `[ENDPOINT]${path}` : `[ENDPOINT]/${path}`;
+    }
+    const base = origin.replace(/\/$/, "");
+    const p = path.startsWith("/") ? path : `/${path}`;
+    return `${base}${p}`;
+}
+
+export function resolveRequestOrigin(
+    opServers: ServerRuntime[] | undefined,
+    options: {
+        baseUrl?: string;
+        serverVariables?: Record<string, string>;
+        documentServers?: ServerRuntime[];
+    },
+): string {
+    if (options.baseUrl) return options.baseUrl.replace(/\/$/, "");
+    const server = opServers?.[0] ?? options.documentServers?.[0];
+    if (!server) return "[ENDPOINT]";
+    return substituteServerUrl(server.url, options.serverVariables, server.variables).replace(
+        /\/$/,
+        "",
+    );
 }
 
 /** Fetch body values we encode — portable (no DOM `BodyInit` / Bun types). */
@@ -291,6 +390,8 @@ export class RootOperation {
     public static defaultSecurity: SecurityRequirement | undefined = undefined;
     /** When set, string credentials always go to this header (authConfig override). */
     public static authHeaderOverride: string | undefined = undefined;
+    /** Document-level OpenAPI `servers` (used when op has no override). */
+    public static documentServers: ServerRuntime[] = [];
 
     public static configureSecurity(config: {
         schemes?: Record<string, SecuritySchemeRuntime>;
@@ -309,12 +410,23 @@ export class RootOperation {
         }
     }
 
+    public static configureServers(config: { servers?: ServerRuntime[] }) {
+        if (config.servers !== undefined) RootOperation.documentServers = config.servers;
+    }
+
     /** Clear scheme config (tests). */
     public static resetSecurity() {
         RootOperation.securitySchemes = {};
         RootOperation.defaultSecurity = undefined;
         RootOperation.authHeaderOverride = undefined;
         RootOperation.authHeaderName = "Authorization";
+    }
+
+    /** Clear servers + baseUrl (tests). */
+    public static resetServers() {
+        RootOperation.documentServers = [];
+        RootOperation[OPTIONS].baseUrl = undefined;
+        RootOperation[OPTIONS].serverVariables = undefined;
     }
 
     private applyStringCredential = (
@@ -458,6 +570,10 @@ export class RootOperation {
         _auth_fn: undefined as AuthResolver | undefined,
         /** Static token for CLI/scripts — never set this per SSR request. */
         _auth_token: undefined as string | undefined,
+        /** Absolute origin override; when set, ignores OpenAPI servers. */
+        baseUrl: undefined as string | undefined,
+        /** Overrides for `{var}` placeholders in the selected server URL. */
+        serverVariables: undefined as Record<string, string> | undefined,
         fetcher: undefined as unknown as (
             input: string | URL | globalThis.Request,
             init?: RequestInit,
@@ -487,6 +603,7 @@ export class RootOperation {
     private buildRequestUrl(request: OpenAPIRequest): {
         finalPath: string;
         cookies: string;
+        encodedHeaders: Record<string, string>;
     } {
         let finalPath = request.path.replace(/\{([^}]+)\}/g, (_, key) => {
             const meta = request.paramMeta?.[key];
@@ -508,8 +625,42 @@ export class RootOperation {
         }
         const finalQuery = qs.toString();
         finalPath = `${finalPath.replace(/\{.*?\}$/, "")}${finalQuery ? `?${finalQuery}` : ""}`;
-        const cookies = new URLSearchParams(request.cookie).toString();
-        return { finalPath, cookies };
+
+        const cookieParts: string[] = [];
+        for (const [key, value] of Object.entries(request.cookie ?? {})) {
+            if (value === undefined || value === null) continue;
+            const meta = request.paramMeta?.[key];
+            // Auth-applied cookies are plain strings; encodeCookieParam handles those as name=value.
+            const encoded = encodeCookieParam(
+                key,
+                value,
+                meta?.style ?? "form",
+                meta?.explode ?? true,
+            );
+            if (encoded) cookieParts.push(encoded);
+        }
+
+        const encodedHeaders: Record<string, string> = {};
+        for (const [key, value] of Object.entries(request.header ?? {})) {
+            if (value === undefined || value === null) continue;
+            const meta = request.paramMeta?.[key];
+            encodedHeaders[key] = encodeHeaderParam(
+                value,
+                meta?.style ?? "simple",
+                meta?.explode ?? false,
+            );
+        }
+
+        return { finalPath, cookies: cookieParts.join("; "), encodedHeaders };
+    }
+
+    private resolveFullUrl(request: OpenAPIRequest, finalPath: string): string {
+        const origin = resolveRequestOrigin(request.servers, {
+            baseUrl: RootOperation[OPTIONS].baseUrl,
+            serverVariables: RootOperation[OPTIONS].serverVariables,
+            documentServers: RootOperation.documentServers,
+        });
+        return joinOriginAndPath(origin, finalPath);
     }
 
     /**
@@ -580,6 +731,7 @@ export class RootOperation {
                         isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
                         requestContentType: rootSlw[ROOT_OP_META]!.requestContentType,
                         security: rootSlw[ROOT_OP_META]!.security,
+                        servers: rootSlw[ROOT_OP_META]!.servers,
                         paramMeta: selection.variableDefinitions as Record<string, ParamEncodingMeta>,
                         header: Object.fromEntries(
                             Object.entries(selection.variableDefinitions)
@@ -648,17 +800,18 @@ export class RootOperation {
     }
 
     private async executeOperation(request: OpenAPIRequest, headers: Record<string, string> = {}) {
-        const { finalPath, cookies } = this.buildRequestUrl(request);
+        const { finalPath, cookies, encodedHeaders } = this.buildRequestUrl(request);
         const bodyContentType =
             request.requestContentType ??
             Object.values(request.paramMeta ?? {}).find((m) => m.location === "body")?.contentType;
         const { payload, contentTypeHeader } = encodeRequestBody(request.body, bodyContentType);
+        const url = this.resolveFullUrl(request, finalPath);
 
-        const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(`[ENDPOINT]${finalPath}`, {
+        const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
             method: request.method,
             headers: {
                 ...(contentTypeHeader ? { "Content-Type": contentTypeHeader } : {}),
-                ...(request.header ? request.header : {}),
+                ...encodedHeaders,
                 ...(cookies ? { Cookie: cookies } : {}),
                 ...headers,
             },
@@ -719,7 +872,8 @@ export class RootOperation {
         [SLW_IS_ASYNC_ITERABLE]: true;
     }> {
         const abortState = { controller: undefined as AbortController | undefined };
-        const { finalPath, cookies } = this.buildRequestUrl(request);
+        const { finalPath, cookies, encodedHeaders } = this.buildRequestUrl(request);
+        const resolvedUrl = this.resolveFullUrl(request, finalPath);
 
         const generator = (async function* () {
             let reader: import("stream/web").ReadableStreamDefaultReader<any> | undefined = undefined;
@@ -727,12 +881,12 @@ export class RootOperation {
             try {
                 abortState.controller = new AbortController();
 
-                const defaultUrl = `[ENDPOINT]${finalPath}`;
+                const defaultUrl = resolvedUrl;
                 const defaultInit: RequestInit = {
                     method: request.method,
                     headers: {
                         ...(request.body ? { "Content-Type": "application/json" } : {}),
-                        ...(request.header ? request.header : {}),
+                        ...encodedHeaders,
                         ...(cookies ? { Cookie: cookies } : {}),
                         ...headers,
                         Accept: "text/event-stream",
@@ -1031,6 +1185,7 @@ export class SelectionWrapperImpl<
         isEventStream?: boolean;
         requestContentType?: string;
         security?: SecurityRequirement[];
+        servers?: ServerRuntime[];
     };
 
     [SLW_ARGS]?: argsT;

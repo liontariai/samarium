@@ -8,6 +8,7 @@ import {
     type ParameterMeta,
     type SecuritySchemeMeta,
     type SecurityRequirementMeta,
+    type ServerMeta,
     enumValueToTsLiteral,
 } from "../../builder/meta";
 
@@ -261,6 +262,10 @@ ${unresolvedAliases}
         isEventStream?: boolean;
         requestContentType?: string;
         security?: Record<string, string[]>[];
+        servers?: {
+            url: string;
+            variables?: Record<string, { default: string; enum?: string[] }>;
+        }[];
         args?: Record<string, any>;
         argsMeta?: Record<string, {
             type: string;
@@ -847,6 +852,7 @@ ${unresolvedAliases}
                         isEventStream: parent.isEventStream,
                         requestContentType: parent.requestContentType,
                         security: parent.security,
+                        servers: parent.servers,
                     }
                     : undefined;
 
@@ -913,6 +919,7 @@ ${unresolvedAliases}
                         isEventStream: parent.isEventStream,
                         requestContentType: parent.requestContentType,
                         security: parent.security,
+                        servers: parent.servers,
                     }
                     : undefined;
 
@@ -1347,7 +1354,12 @@ ${unresolvedAliases}
         return selectionFunctionName;
     }
 
-    public static makeOperationFunctions(operations: OperationMeta[], collector: Collector, options: CodegenOptions) {
+    public static makeOperationFunctions(
+        operations: OperationMeta[],
+        collector: Collector,
+        options: CodegenOptions,
+        documentServers?: ServerMeta[],
+    ) {
         const makeSelectionFunctionInputReturnTypeParts = new Map<string, string>();
         const fnsWithoutScalarOps: string[] = [];
         const fnsScalarOps: string[] = [];
@@ -1551,6 +1563,11 @@ ${unresolvedAliases}
                 operation.security !== undefined
                     ? JSON.stringify(operation.security)
                     : "undefined";
+            const effectiveServers = operation.servers ?? documentServers;
+            const serversLiteral =
+                effectiveServers !== undefined
+                    ? JSON.stringify(effectiveServers)
+                    : "undefined";
             const boundSelection = `${returnTypeSelectionFunctionNameOrScalarOrEnum}.bind({
                         collector: that,
                         fieldName: "${operation.name}",
@@ -1559,6 +1576,7 @@ ${unresolvedAliases}
                         isEventStream: ${operation.isEventStream ? "true" : "false"},
                         requestContentType: ${operation.requestContentType ? JSON.stringify(operation.requestContentType) : "undefined"},
                         security: ${securityLiteral},
+                        servers: ${serversLiteral},
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
                     })${operation.type.isScalar || operation.type.isEnum ? "()" : ""}`;
 
@@ -1622,6 +1640,100 @@ ${unresolvedAliases}
         };
     }
 
+    private static emitServerVariablesType(
+        documentServers: ServerMeta[] | undefined,
+        operations: OperationMeta[],
+    ): string {
+        // enums: closed string-literal union when every declaration has enum.
+        // defaults: collected when open (no enum) so we can emit `"v1" | (string & {})`
+        // for IDE autocomplete of the default while still accepting any string.
+        type VarAcc = { enums: Set<string> | null; defaults: Set<string> };
+        const vars = new Map<string, VarAcc>();
+
+        const absorb = (servers: ServerMeta[] | undefined) => {
+            if (!servers) return;
+            for (const server of servers) {
+                for (const [name, variable] of Object.entries(server.variables ?? {})) {
+                    const existing = vars.get(name);
+                    if (!existing) {
+                        vars.set(name, {
+                            enums: variable.enum ? new Set(variable.enum) : null,
+                            defaults: new Set([variable.default]),
+                        });
+                        continue;
+                    }
+                    existing.defaults.add(variable.default);
+                    if (existing.enums === null) continue;
+                    if (!variable.enum) {
+                        existing.enums = null;
+                    } else {
+                        for (const v of variable.enum) existing.enums.add(v);
+                    }
+                }
+            }
+        };
+
+        absorb(documentServers);
+        for (const op of operations) absorb(op.servers);
+
+        if (vars.size === 0) {
+            return `export type ServerVariables = Record<string, never>;`;
+        }
+
+        const props = [...vars.entries()]
+            .map(([name, acc]) => {
+                let valueType: string;
+                if (acc.enums && acc.enums.size > 0) {
+                    valueType = [...acc.enums].map((v) => JSON.stringify(v)).join(" | ");
+                } else if (acc.defaults.size > 0) {
+                    // Prefer defaults in autocomplete; `(string & {})` keeps the type assignable
+                    // from any string without collapsing the literal union in the IDE.
+                    const literals = [...acc.defaults].map((v) => JSON.stringify(v)).join(" | ");
+                    valueType = `${literals} | (string & {})`;
+                } else {
+                    valueType = "string";
+                }
+                return `    ${JSON.stringify(name)}?: ${valueType};`;
+            })
+            .join("\n");
+
+        return `export type ServerVariables = {\n${props}\n};`;
+    }
+
+    /**
+     * Autocomplete-friendly base URL type: known server URLs (as declared, plus
+     * default-substituted forms for templates) and an open string escape hatch.
+     */
+    private static emitBaseUrlType(
+        documentServers: ServerMeta[] | undefined,
+        operations: OperationMeta[],
+    ): string {
+        const urls = new Set<string>();
+
+        const absorb = (servers: ServerMeta[] | undefined) => {
+            if (!servers) return;
+            for (const server of servers) {
+                urls.add(server.url);
+                if (server.variables && /\{[^}]+\}/.test(server.url)) {
+                    const resolved = server.url.replace(/\{([^}]+)\}/g, (_, name: string) => {
+                        return server.variables?.[name]?.default ?? `{${name}}`;
+                    });
+                    urls.add(resolved);
+                }
+            }
+        };
+
+        absorb(documentServers);
+        for (const op of operations) absorb(op.servers);
+
+        if (urls.size === 0) {
+            return `export type BaseUrl = string;`;
+        }
+
+        const literals = [...urls].map((u) => JSON.stringify(u)).join(" | ");
+        return `export type BaseUrl = ${literals} | (string & {});`;
+    }
+
     public static makeRootOperationFunction(
         operations: OperationMeta[],
         collector: Collector,
@@ -1633,14 +1745,16 @@ ${unresolvedAliases}
             schemes: Record<string, SecuritySchemeMeta>;
             security?: SecurityRequirementMeta[];
         },
+        documentServers?: ServerMeta[],
     ): string {
         const { fnsWithoutScalarOps, fnsScalarOps, makeSelectionFunctionInputReturnTypeParts } =
-            this.makeOperationFunctions(operations, collector, options);
+            this.makeOperationFunctions(operations, collector, options, documentServers);
 
         const schemes = securityMeta?.schemes ?? {};
         const schemeNames = Object.keys(schemes);
         const hasSchemes = schemeNames.length > 0;
         const enableAuth = hasSchemes || !!authConfig;
+        const hasServers = (documentServers?.length ?? 0) > 0;
 
         const defaultRequirement =
             securityMeta?.security?.[0] ??
@@ -1681,6 +1795,17 @@ ${unresolvedAliases}
             `
             : "";
 
+        const serversExport = hasServers
+            ? `
+            export const servers = ${JSON.stringify(documentServers)} as const;
+            `
+            : `
+            export const servers = [] as const;
+            `;
+
+        const serverVariablesType = this.emitServerVariablesType(documentServers, operations);
+        const baseUrlType = this.emitBaseUrlType(documentServers, operations);
+
         // Pre-built once at module load; applied lazily on first client() (cached).
         const ensureSecurityConfigured = enableAuth
             ? `
@@ -1698,9 +1823,24 @@ ${unresolvedAliases}
             `
             : "";
 
+        const ensureServersConfigured = hasServers
+            ? `
+            let __serversConfigured = false;
+            function __ensureServersConfigured() {
+                if (__serversConfigured) return;
+                __serversConfigured = true;
+                RootOperation.configureServers({ servers: servers as any });
+            }
+            `
+            : "";
+
         const rootOperationFunction = `
             ${securityExport}
+            ${serversExport}
+            ${serverVariablesType}
+            ${baseUrlType}
             ${ensureSecurityConfigured}
+            ${ensureServersConfigured}
 
             export type ReturnTypeFromRootOperationWithoutScalarOps = {
                 ${Array.from(makeSelectionFunctionInputReturnTypeParts)
@@ -1731,6 +1871,7 @@ ${unresolvedAliases}
                 s: (selection: F) => T
             ) {
                 ${enableAuth ? `__ensureSecurityConfigured();` : ""}
+                ${hasServers ? `__ensureServersConfigured();` : ""}
                 const rootOp = new RootOperation();
                 const root = new OperationSelectionCollector(undefined, undefined, rootOp);
                 const rootRef = { ref: root };
@@ -1818,6 +1959,10 @@ ${unresolvedAliases}
                 authToken?: string;`
                 : ""
             }
+                /** Absolute origin override; when set, ignores OpenAPI servers. */
+                baseUrl?: BaseUrl;
+                /** Overrides for \`{var}\` placeholders in the selected server URL. */
+                serverVariables?: ServerVariables;
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1854,6 +1999,13 @@ ${unresolvedAliases}
                 `
                 : ""
             }
+                ${hasServers ? `__ensureServersConfigured();` : ""}
+                if (options.baseUrl !== undefined) {
+                    RootOperation[OPTIONS].baseUrl = options.baseUrl;
+                }
+                if (options.serverVariables !== undefined) {
+                    RootOperation[OPTIONS].serverVariables = options.serverVariables as Record<string, string>;
+                }
 
                 if (options.headers) {
                     RootOperation[OPTIONS].headers = {

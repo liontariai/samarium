@@ -42,6 +42,8 @@ import {
     type SecuritySchemeMeta,
     type SecurityRequirementMeta,
     type OAuthFlowMeta,
+    type ServerMeta,
+    type ServerVariableMeta,
 } from "../types/meta";
 
 const OPENAPI_PARAMETER_STYLES: ReadonlySet<string> = new Set<OpenAPIParameterStyle>([
@@ -71,6 +73,8 @@ export {
     type ExternalRuntimeConfig,
     type SecuritySchemeMeta,
     type SecurityRequirementMeta,
+    type ServerMeta,
+    type ServerVariableMeta,
 };
 
 const camelCaps = (arr: string[], separator: string = "$") => {
@@ -245,6 +249,42 @@ export function gatherSecuritySchemes(
     return out;
 }
 
+export function gatherServerVariableMeta(raw: unknown): ServerVariableMeta | undefined {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.default !== "string") return undefined;
+    const meta: ServerVariableMeta = { default: obj.default };
+    if (Array.isArray(obj.enum)) {
+        const values = obj.enum.filter((v): v is string => typeof v === "string");
+        if (values.length > 0) meta.enum = values;
+    }
+    return meta;
+}
+
+export function gatherServerMeta(raw: unknown): ServerMeta | undefined {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.url !== "string") return undefined;
+    const meta: ServerMeta = { url: obj.url };
+    if (obj.variables && typeof obj.variables === "object" && !Array.isArray(obj.variables)) {
+        const variables: Record<string, ServerVariableMeta> = {};
+        for (const [name, value] of Object.entries(obj.variables as Record<string, unknown>)) {
+            const variable = gatherServerVariableMeta(value);
+            if (variable) variables[name] = variable;
+        }
+        if (Object.keys(variables).length > 0) meta.variables = variables;
+    }
+    return meta;
+}
+
+export function gatherServers(raw: unknown): ServerMeta[] | undefined {
+    if (!Array.isArray(raw)) return undefined;
+    const servers = raw
+        .map(gatherServerMeta)
+        .filter((s): s is ServerMeta => s !== undefined);
+    return servers.length > 0 ? servers : undefined;
+}
+
 export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector: Collector): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
@@ -252,6 +292,7 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
         customScalars: [],
         securitySchemes: gatherSecuritySchemes(schema),
         security: gatherSecurityRequirements(schema.security),
+        servers: gatherServers(schema.servers),
     };
 
     for (const [key, value] of Object.entries(schema?.components?.schemas ?? {})) {
@@ -265,6 +306,7 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
         }
 
         const pathLevelParams = pathItem.parameters ?? [];
+        const pathServers = gatherServers(pathItem.servers);
 
         for (const method of PATH_ITEM_METHODS) {
             const methodValue = pathItem[method];
@@ -284,6 +326,7 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
                 options,
                 collector,
                 pathLevelParams,
+                pathServers,
             );
             if (!operationMeta) {
                 continue;
@@ -1196,6 +1239,7 @@ export const gatherMetaForPathOperation = (
     options: CodegenOptions,
     collector: Collector,
     pathLevelParams: (ReferenceObject | ParameterObject)[] = [],
+    pathServers?: ServerMeta[],
 ): OperationMeta | undefined => {
     if (!operation.responses) {
         console.warn("Operation has no responses!");
@@ -1249,6 +1293,8 @@ export const gatherMetaForPathOperation = (
         }
     }
 
+    const operationServers = gatherServers(operation.servers) ?? pathServers;
+
     const meta: OperationMeta = {
         name: operationName,
         description: operation.description,
@@ -1258,6 +1304,7 @@ export const gatherMetaForPathOperation = (
         isEventStream,
         responseContentType,
         security: gatherSecurityRequirements(operation.security),
+        servers: operationServers,
         type: gatherMetaForType(
             schema,
             operationName,

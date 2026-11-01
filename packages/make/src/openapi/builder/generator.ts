@@ -77,6 +77,7 @@ export class Generator {
                 schemes: schemaMeta.securitySchemes,
                 security: schemaMeta.security,
             },
+            schemaMeta.servers,
         );
 
         const runtimePreamble =
