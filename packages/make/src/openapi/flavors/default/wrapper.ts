@@ -312,9 +312,18 @@ export function resolveRequestOrigin(
         baseUrl?: string;
         serverVariables?: Record<string, string>;
         documentServers?: ServerRuntime[];
+        /** When true (init baseUrl path), do not fill missing vars from OAS defaults. */
+        explicitVariablesOnly?: boolean;
     },
 ): string {
-    if (options.baseUrl) return options.baseUrl.replace(/\/$/, "");
+    if (options.baseUrl) {
+        // Init-provided origin: substitute with provided variables only (no OAS defaults).
+        const substituted =
+            options.serverVariables || options.explicitVariablesOnly
+                ? substituteServerUrl(options.baseUrl, options.serverVariables, undefined)
+                : options.baseUrl;
+        return substituted.replace(/\/$/, "");
+    }
     const server = opServers?.[0] ?? options.documentServers?.[0];
     if (!server) return "[ENDPOINT]";
     return substituteServerUrl(server.url, options.serverVariables, server.variables).replace(
@@ -396,10 +405,17 @@ export class RootOperation {
     public static configureSecurity(config: {
         schemes?: Record<string, SecuritySchemeRuntime>;
         defaultSecurity?: SecurityRequirement | undefined;
+        /** Full document-level security OR list (for authScheme matching). */
+        documentSecurity?: SecurityRequirement[] | undefined;
         authHeaderOverride?: string | undefined;
+        authScheme?: string | undefined;
     }) {
         if (config.schemes !== undefined) RootOperation.securitySchemes = config.schemes;
         if ("defaultSecurity" in config) RootOperation.defaultSecurity = config.defaultSecurity;
+        if ("documentSecurity" in config) {
+            RootOperation[OPTIONS].documentSecurity = config.documentSecurity;
+        }
+        if ("authScheme" in config) RootOperation[OPTIONS].authScheme = config.authScheme;
         if ("authHeaderOverride" in config) {
             RootOperation.authHeaderOverride = config.authHeaderOverride;
             if (config.authHeaderOverride) {
@@ -420,6 +436,8 @@ export class RootOperation {
         RootOperation.defaultSecurity = undefined;
         RootOperation.authHeaderOverride = undefined;
         RootOperation.authHeaderName = "Authorization";
+        RootOperation[OPTIONS].authScheme = undefined;
+        RootOperation[OPTIONS].documentSecurity = undefined;
     }
 
     /** Clear servers + baseUrl (tests). */
@@ -427,6 +445,7 @@ export class RootOperation {
         RootOperation.documentServers = [];
         RootOperation[OPTIONS].baseUrl = undefined;
         RootOperation[OPTIONS].serverVariables = undefined;
+        RootOperation[OPTIONS].baseUrlExplicitVariables = false;
     }
 
     private applyStringCredential = (
@@ -572,8 +591,14 @@ export class RootOperation {
         _auth_token: undefined as string | undefined,
         /** Absolute origin override; when set, ignores OpenAPI servers. */
         baseUrl: undefined as string | undefined,
-        /** Overrides for `{var}` placeholders in the selected server URL. */
+        /** Overrides for `{var}` placeholders in the selected / init base URL. */
         serverVariables: undefined as Record<string, string> | undefined,
+        /** True when baseUrl came from init object form — do not apply OAS variable defaults. */
+        baseUrlExplicitVariables: false as boolean,
+        /** Preferred security scheme name for OR-branch selection. */
+        authScheme: undefined as string | undefined,
+        /** Document-level security OR list (when configured). */
+        documentSecurity: undefined as SecurityRequirement[] | undefined,
         fetcher: undefined as unknown as (
             input: string | URL | globalThis.Request,
             init?: RequestInit,
@@ -659,22 +684,33 @@ export class RootOperation {
             baseUrl: RootOperation[OPTIONS].baseUrl,
             serverVariables: RootOperation[OPTIONS].serverVariables,
             documentServers: RootOperation.documentServers,
+            explicitVariablesOnly: RootOperation[OPTIONS].baseUrlExplicitVariables,
         });
         return joinOriginAndPath(origin, finalPath);
     }
 
     /**
      * Resolve the security requirement for this operation.
-     * - `undefined` security on the op → document default
+     * - `undefined` security on the op → document default (OR list / single)
      * - `[]` → `null` (explicitly optional; no credential placement)
-     * - otherwise → first OR-branch
+     * - otherwise → OR-branch matching `OPTIONS.authScheme`, else first branch
      */
     private requirementForRequest(
         request: OpenAPIRequest,
     ): SecurityRequirement | undefined | null {
+        const preferred = RootOperation[OPTIONS].authScheme;
         if (request.security !== undefined) {
             if (request.security.length === 0) return null;
+            if (preferred) {
+                const match = request.security.find((req) => preferred in req);
+                if (match) return match;
+            }
             return request.security[0];
+        }
+        const docOr = RootOperation[OPTIONS].documentSecurity;
+        if (preferred && docOr && docOr.length > 0) {
+            const match = docOr.find((req) => preferred in req);
+            if (match) return match;
         }
         return RootOperation.defaultSecurity;
     }

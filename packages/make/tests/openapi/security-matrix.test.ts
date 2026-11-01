@@ -75,12 +75,18 @@ function toRuntimeSchemes(
 }
 
 function configureFromSecurityExport(mod: {
-    security: { default?: string; schemes: Record<string, SecuritySchemeMeta> };
+    security: {
+        default?: string;
+        options?: Record<string, string[]>[];
+        schemes: Record<string, SecuritySchemeMeta>;
+    };
 }) {
     const defaultName = mod.security.default;
+    const options = mod.security.options;
     RootOperation.configureSecurity({
         schemes: toRuntimeSchemes(mod.security.schemes),
         defaultSecurity: defaultName ? { [defaultName]: [] } : undefined,
+        documentSecurity: Array.isArray(options) ? options : undefined,
     });
 }
 
@@ -144,6 +150,10 @@ describe("oas-gen security-matrix fixtures", () => {
         it("emits basic, digest, oauth2 flows, and oidc schemes", () => {
             expect(source30).toContain("export const security");
             expect(source30).toContain("__ensureSecurityConfigured");
+            expect(source30).toContain("export type AuthScheme");
+            expect(source30).toContain("authScheme?: AuthScheme");
+            expect(source30).toMatch(/export type AuthScheme = /);
+            expect(source30).not.toMatch(/export type AuthScheme = .+\(string & \{\}\)/);
             expect(mod30.security.default).toBe("bearerAuth");
             expect(mod30.security.schemes.basicAuth.type).toBe("http");
             if (mod30.security.schemes.basicAuth.type === "http") {
@@ -170,6 +180,29 @@ describe("oas-gen security-matrix fixtures", () => {
             expect((calls[0].init?.headers as Record<string, string>).Authorization).toBe(
                 "Bearer tok",
             );
+        });
+
+        it("selects apiKeyHeader OR branch via init authScheme", async () => {
+            RootOperation[OPTIONS].authScheme = "apiKeyHeader";
+            RootOperation[OPTIONS]._auth_token = "k";
+            const calls = await executeOp(makeRoot30, (op) => ({ me: op.listSecure }));
+            const headers = calls[0].init?.headers as Record<string, string>;
+            expect(headers["X-Api-Key"]).toBe("k");
+            expect(headers.Authorization).toBeUndefined();
+        });
+
+        it("selects authScheme via client init", async () => {
+            resetSdkOptions();
+            const { calls } = installMockFetch();
+            mod30.default.init({
+                fetcher: RootOperation[OPTIONS].fetcher as any,
+                authScheme: "apiKeyHeader",
+                authToken: "from-init",
+            });
+            await mod30.default((op) => ({ me: op.listSecure }));
+            const headers = calls[0].init?.headers as Record<string, string>;
+            expect(headers["X-Api-Key"]).toBe("from-init");
+            expect(headers.Authorization).toBeUndefined();
         });
 
         it("applies named apiKeyHeader from scheme map on listSecure", async () => {
@@ -239,11 +272,15 @@ describe("oas-gen security-matrix fixtures", () => {
         });
 
         it("configures schemes via client() __ensureSecurityConfigured without manual map", async () => {
+            // Fresh module so __securityConfigured starts false (module-level latch).
+            const fresh = (await import(
+                `./examples/security-matrix-30.generated.ts?ensure=${Date.now()}`
+            )) as Matrix30Module;
             resetSdkOptions();
             const { calls } = installMockFetch();
-            mod30.default.init({ fetcher: RootOperation[OPTIONS].fetcher as any });
+            fresh.default.init({ fetcher: RootOperation[OPTIONS].fetcher as any });
 
-            const result = await mod30.default((op) => ({ me: op.listSecure })).auth("from-client");
+            const result = await fresh.default((op) => ({ me: op.listSecure })).auth("from-client");
             await result;
 
             expect(calls).toHaveLength(1);

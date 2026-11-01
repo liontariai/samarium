@@ -273,20 +273,22 @@ describe("OpenAPI servers + header/cookie styles", () => {
         resetSdkOptions();
     });
 
-    it("emits servers const and typed ServerVariables / BaseUrl", () => {
+    it("emits servers const and discriminated BaseUrlInit", () => {
         expect(generatedSource).toContain("export const servers");
         expect(generatedSource).toContain("export type ServerVariables");
-        expect(generatedSource).toContain('"prod" | "staging"');
-        // default-only vars: literal for autocomplete + open string escape hatch
-        expect(generatedSource).toContain('"v1" | (string & {})');
-        expect(generatedSource).toContain("serverVariables?: ServerVariables");
-        expect(generatedSource).toContain("export type BaseUrl");
-        expect(generatedSource).toContain("baseUrl?: BaseUrl");
-        expect(generatedSource).toContain("https://{env}.api.example.com/{version}");
-        expect(generatedSource).toContain("https://prod.api.example.com/v1");
-        expect(generatedSource).toContain("https://admin.example.com");
-        expect(generatedSource).toContain("https://admin-eu.example.com");
-        expect(generatedSource).toMatch(/export type BaseUrl = .+ \| \(string & \{\}\);/);
+        expect(generatedSource).toContain("export type BaseUrlInit");
+        expect(generatedSource).toContain("baseUrl?: BaseUrlInit");
+        expect(generatedSource).not.toContain("serverVariables?: ServerVariables");
+        expect(generatedSource).not.toContain("baseUrl?: BaseUrl;");
+        // concrete servers as string literals
+        expect(generatedSource).toContain('"https://admin.example.com"');
+        expect(generatedSource).toContain('"https://admin-eu.example.com"');
+        // templated arm with required variables (not optional ?)
+        expect(generatedSource).toContain('"https://{env}.api.example.com/{version}"');
+        expect(generatedSource).toContain('"env": "prod" | "staging"');
+        expect(generatedSource).toContain('"version": "v1" | (string & {})');
+        // do not expose default-substituted template as a bare string member
+        expect(generatedSource).not.toContain('"https://prod.api.example.com/v1"');
         expect(mod.servers[0].url).toContain("{env}");
     });
 
@@ -329,17 +331,20 @@ describe("OpenAPI servers + header/cookie styles", () => {
             expect(calls[0].url).toBe("https://prod.api.example.com/v1/ping");
         });
 
-        it("applies typed serverVariables via init", async () => {
+        it("applies templated baseUrl object with explicit variables via init", async () => {
             const { calls } = installMockFetch();
             mod.default.init({
                 fetcher: RootOperation[OPTIONS].fetcher as any,
-                serverVariables: { env: "staging" },
+                baseUrl: {
+                    url: "https://{env}.api.example.com/{version}",
+                    variables: { env: "staging", version: "v1" },
+                },
             });
             await mod.default((op) => ({ me: op.ping }));
             expect(calls[0].url).toBe("https://staging.api.example.com/v1/ping");
         });
 
-        it("lets init baseUrl override servers", async () => {
+        it("lets init baseUrl string override servers", async () => {
             const { calls } = installMockFetch();
             mod.default.init({
                 fetcher: RootOperation[OPTIONS].fetcher as any,
@@ -347,6 +352,16 @@ describe("OpenAPI servers + header/cookie styles", () => {
             });
             await mod.default((op) => ({ me: op.ping }));
             expect(calls[0].url).toBe("https://override.example.com/ping");
+        });
+
+        it("lets concrete server url string select admin host", async () => {
+            const { calls } = installMockFetch();
+            mod.default.init({
+                fetcher: RootOperation[OPTIONS].fetcher as any,
+                baseUrl: "https://admin.example.com",
+            });
+            await mod.default((op) => ({ me: op.adminGet }));
+            expect(calls[0].url).toBe("https://admin.example.com/admin");
         });
 
         it("uses path-item servers override", async () => {

@@ -1700,38 +1700,71 @@ ${unresolvedAliases}
         return `export type ServerVariables = {\n${props}\n};`;
     }
 
+    private static emitAuthSchemeType(schemeNames: string[]): string {
+        if (schemeNames.length === 0) {
+            return `export type AuthScheme = never;`;
+        }
+        const literals = schemeNames.map((n) => JSON.stringify(n)).join(" | ");
+        return `export type AuthScheme = ${literals};`;
+    }
+
+    private static variableValueType(variable: {
+        default: string;
+        enum?: string[];
+    }): string {
+        if (variable.enum && variable.enum.length > 0) {
+            return variable.enum.map((v) => JSON.stringify(v)).join(" | ");
+        }
+        return `${JSON.stringify(variable.default)} | (string & {})`;
+    }
+
     /**
-     * Autocomplete-friendly base URL type: known server URLs (as declared, plus
-     * default-substituted forms for templates) and an open string escape hatch.
+     * Discriminated baseUrl init type:
+     * - concrete (no `{…}`) server URLs as string literals
+     * - each templated server as `{ url, variables }` with required vars for that template
+     * - `| (string & {})` for custom concrete origins when any servers exist
      */
-    private static emitBaseUrlType(
+    private static emitBaseUrlInitType(
         documentServers: ServerMeta[] | undefined,
         operations: OperationMeta[],
     ): string {
-        const urls = new Set<string>();
+        const byUrl = new Map<string, ServerMeta>();
 
         const absorb = (servers: ServerMeta[] | undefined) => {
             if (!servers) return;
             for (const server of servers) {
-                urls.add(server.url);
-                if (server.variables && /\{[^}]+\}/.test(server.url)) {
-                    const resolved = server.url.replace(/\{([^}]+)\}/g, (_, name: string) => {
-                        return server.variables?.[name]?.default ?? `{${name}}`;
-                    });
-                    urls.add(resolved);
-                }
+                if (!byUrl.has(server.url)) byUrl.set(server.url, server);
             }
         };
 
         absorb(documentServers);
         for (const op of operations) absorb(op.servers);
 
-        if (urls.size === 0) {
-            return `export type BaseUrl = string;`;
+        if (byUrl.size === 0) {
+            return `export type BaseUrlInit = string;`;
         }
 
-        const literals = [...urls].map((u) => JSON.stringify(u)).join(" | ");
-        return `export type BaseUrl = ${literals} | (string & {});`;
+        const arms: string[] = [];
+        for (const server of byUrl.values()) {
+            const templated = /\{[^}]+\}/.test(server.url);
+            if (!templated) {
+                arms.push(JSON.stringify(server.url));
+                continue;
+            }
+            const vars = server.variables ?? {};
+            const varProps = Object.entries(vars)
+                .map(
+                    ([name, variable]) =>
+                        `        ${JSON.stringify(name)}: ${this.variableValueType(variable)};`,
+                )
+                .join("\n");
+            arms.push(
+                `{\n    url: ${JSON.stringify(server.url)};\n    variables: {\n${varProps}\n    };\n}`,
+            );
+        }
+
+        arms.push("(string & {})");
+        return `export type BaseUrlInit = ${arms.join(" | ")};`;
     }
 
     public static makeRootOperationFunction(
@@ -1790,6 +1823,7 @@ ${unresolvedAliases}
             ? `
             export const security = {
                 default: ${defaultSchemeName ? JSON.stringify(defaultSchemeName) : "undefined"},
+                options: ${securityMeta?.security ? JSON.stringify(securityMeta.security) : "undefined"} as const,
                 schemes: ${JSON.stringify(schemes)} as const,
             } as const;
             `
@@ -1804,7 +1838,12 @@ ${unresolvedAliases}
             `;
 
         const serverVariablesType = this.emitServerVariablesType(documentServers, operations);
-        const baseUrlType = this.emitBaseUrlType(documentServers, operations);
+        const baseUrlInitType = this.emitBaseUrlInitType(documentServers, operations);
+        const authSchemeType = enableAuth ? this.emitAuthSchemeType(schemeNames) : "";
+
+        const documentSecurityLiteral = securityMeta?.security
+            ? JSON.stringify(securityMeta.security)
+            : "undefined";
 
         // Pre-built once at module load; applied lazily on first client() (cached).
         const ensureSecurityConfigured = enableAuth
@@ -1812,6 +1851,7 @@ ${unresolvedAliases}
             const __SECURITY_CONFIG = {
                 schemes: ${JSON.stringify(runtimeSchemes)} as any,
                 defaultSecurity: ${defaultRequirement ? JSON.stringify(defaultRequirement) : "undefined"},
+                documentSecurity: ${documentSecurityLiteral} as any,
                 authHeaderOverride: ${authConfig ? JSON.stringify(authConfig.headerName) : "undefined"},
             };
             let __securityConfigured = false;
@@ -1838,7 +1878,8 @@ ${unresolvedAliases}
             ${securityExport}
             ${serversExport}
             ${serverVariablesType}
-            ${baseUrlType}
+            ${baseUrlInitType}
+            ${authSchemeType}
             ${ensureSecurityConfigured}
             ${ensureServersConfigured}
 
@@ -1956,13 +1997,16 @@ ${unresolvedAliases}
                 ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
                 auth?: AuthResolver;
                 /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
-                authToken?: string;`
+                authToken?: string;
+                /** Preferred security scheme for OR-requirement selection. */
+                authScheme?: AuthScheme;`
                 : ""
             }
-                /** Absolute origin override; when set, ignores OpenAPI servers. */
-                baseUrl?: BaseUrl;
-                /** Overrides for \`{var}\` placeholders in the selected server URL. */
-                serverVariables?: ServerVariables;
+                /**
+                 * Origin override. Concrete server URLs (no placeholders) may be passed as a string.
+                 * Templated servers must use \`{ url, variables }\` with every variable set explicitly.
+                 */
+                baseUrl?: BaseUrlInit;
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1996,15 +2040,21 @@ ${unresolvedAliases}
                     );
                     RootOperation[OPTIONS]._auth_token = options.auth as unknown as string;
                 }
+                if (options.authScheme !== undefined) {
+                    RootOperation[OPTIONS].authScheme = options.authScheme;
+                }
                 `
                 : ""
             }
                 ${hasServers ? `__ensureServersConfigured();` : ""}
-                if (options.baseUrl !== undefined) {
+                if (typeof options.baseUrl === "string") {
                     RootOperation[OPTIONS].baseUrl = options.baseUrl;
-                }
-                if (options.serverVariables !== undefined) {
-                    RootOperation[OPTIONS].serverVariables = options.serverVariables as Record<string, string>;
+                    RootOperation[OPTIONS].serverVariables = undefined;
+                    RootOperation[OPTIONS].baseUrlExplicitVariables = false;
+                } else if (options.baseUrl && typeof options.baseUrl === "object") {
+                    RootOperation[OPTIONS].baseUrl = options.baseUrl.url;
+                    RootOperation[OPTIONS].serverVariables = options.baseUrl.variables as Record<string, string>;
+                    RootOperation[OPTIONS].baseUrlExplicitVariables = true;
                 }
 
                 if (options.headers) {
