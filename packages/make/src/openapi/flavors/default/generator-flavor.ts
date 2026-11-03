@@ -1837,11 +1837,14 @@ ${unresolvedAliases}
             }
         }
 
+        const securityOptionsLiteral = securityMeta?.security
+            ? `${JSON.stringify(securityMeta.security)} as const`
+            : "undefined";
         const securityExport = hasSchemes
             ? `
             export const security = {
                 default: ${defaultSchemeName ? JSON.stringify(defaultSchemeName) : "undefined"},
-                options: ${securityMeta?.security ? JSON.stringify(securityMeta.security) : "undefined"} as const,
+                options: ${securityOptionsLiteral},
                 schemes: ${JSON.stringify(schemes)} as const,
             } as const;
             `
