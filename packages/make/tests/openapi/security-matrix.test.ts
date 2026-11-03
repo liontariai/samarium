@@ -77,7 +77,7 @@ function toRuntimeSchemes(
 function configureFromSecurityExport(mod: {
     security: {
         default?: string;
-        options?: Record<string, string[]>[];
+        options?: ReadonlyArray<Readonly<Record<string, readonly string[]>>>;
         schemes: Record<string, SecuritySchemeMeta>;
     };
 }) {
@@ -86,7 +86,13 @@ function configureFromSecurityExport(mod: {
     RootOperation.configureSecurity({
         schemes: toRuntimeSchemes(mod.security.schemes),
         defaultSecurity: defaultName ? { [defaultName]: [] } : undefined,
-        documentSecurity: Array.isArray(options) ? options : undefined,
+        documentSecurity: Array.isArray(options)
+            ? options.map((opt) =>
+                  Object.fromEntries(
+                      Object.entries(opt).map(([k, v]) => [k, [...(v as readonly string[])]]),
+                  ),
+              )
+            : undefined,
     });
 }
 
