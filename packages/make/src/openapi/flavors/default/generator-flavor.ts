@@ -39,6 +39,10 @@ const TS_TYPE_INTRINSICS = new Set([
     "Omit",
 ]);
 
+function normalizeTypeIdent(name: string): string {
+    return name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "");
+}
+
 /**
  * Named types referenced by a custom-scalar TS type that are not themselves
  * generated (e.g. Reelgood `JToken`). Do **not** put `JToken: any` on
@@ -46,10 +50,14 @@ const TS_TYPE_INTRINSICS = new Set([
  * (`any & AnotherType` is `any`). Emit a type alias that is `any` only when
  * the user has not augmented the interface.
  */
-function unresolvedTypeNamesInCustomScalars(customScalars: TypeMeta[]): string[] {
-    const declared = new Set(
-        customScalars.map((cs) => cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")),
-    );
+function unresolvedTypeNamesInCustomScalars(
+    customScalars: TypeMeta[],
+    knownTypeNames: Iterable<string> = [],
+): string[] {
+    const declared = new Set(customScalars.map((cs) => normalizeTypeIdent(cs.name)));
+    for (const name of knownTypeNames) {
+        declared.add(normalizeTypeIdent(name));
+    }
     const unresolved = new Set<string>();
     const ident = /\b([A-Za-z_$][\w$]*)\b/g;
     for (const cs of customScalars) {
@@ -233,8 +241,8 @@ import {
         };`;
     };
 
-    public static readonly HelperTypes = (customScalars: TypeMeta[]) => {
-        const unresolved = unresolvedTypeNamesInCustomScalars(customScalars);
+    public static readonly HelperTypes = (customScalars: TypeMeta[], knownTypeNames: Iterable<string> = []) => {
+        const unresolved = unresolvedTypeNamesInCustomScalars(customScalars, knownTypeNames);
         const interfaceBody = customScalars.map((cs) => `"${cs.name}": ${cs.scalarTSType};`).join("\n");
         // User `declare module` entries on ScalarTypeMapWithCustom win over the any default.
         const unresolvedAliases = unresolved.length
