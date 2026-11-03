@@ -1861,7 +1861,7 @@ ${unresolvedAliases}
                         };
 
                     // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
-                    if (fieldFn.name.startsWith("bound ")) {
+                    if ((fieldFn as Function & { name?: string }).name?.startsWith("bound ")) {
                         return makeSubSelectionFn();
                     }
                     return (opFnArgs: Exclude<Parameters<Extract<typeof fieldFn, (args: any) => any>>[0], (args: any) => any>) => {
