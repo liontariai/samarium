@@ -1923,7 +1923,7 @@ ${unresolvedAliases}
                 return Object.defineProperties(
                     { ...withoutScalarOps },
                     Object.getOwnPropertyDescriptors(withScalarOps),
-                ) as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
+                ) as unknown as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
             };
 
             function __client__ <
