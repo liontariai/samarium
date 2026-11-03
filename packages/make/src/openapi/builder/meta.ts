@@ -571,7 +571,7 @@ export const gatherMetaForType = (
             gatherMetaForType(
                 schema,
                 name,
-                normalized,
+                normalized as ReferenceObject,
                 typeType,
                 {
                     isNonNull: options.isNonNull,
@@ -641,7 +641,7 @@ export const gatherMetaForType = (
             meta.enumValues.push({
                 name: String(enumValue as any),
                 description: type.description,
-                type: gatherMetaForType(schema, name, type, typeType, { isNonNull: options.isNonNull }, collector),
+                type: gatherMetaForType(schema, name, type as SchemaObject, typeType, { isNonNull: options.isNonNull }, collector),
                 value: enumValue as string | number | boolean | null,
             });
         }

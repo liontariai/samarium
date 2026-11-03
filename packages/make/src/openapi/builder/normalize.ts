@@ -6,13 +6,35 @@
  */
 import type { OpenAPI3, ReferenceObject, SchemaObject } from "openapi-typescript";
 
-export type OpenAPISchemaNode = SchemaObject & {
-    prefixItems?: (SchemaObject | ReferenceObject)[];
+/**
+ * Mutable bag-of-keys shape used while normalizing schema nodes.
+ * openapi-typescript's SchemaObject is a discriminated union that rejects
+ * deleting `type` and reading `properties` across all members.
+ */
+export type OpenAPISchemaNode = {
+    type?: unknown;
+    enum?: unknown[];
     const?: unknown;
     nullable?: boolean;
+    description?: string;
+    title?: string;
+    format?: string;
+    example?: unknown;
+    examples?: unknown;
+    default?: unknown;
+    properties?: Record<string, SchemaObject | ReferenceObject>;
+    additionalProperties?: boolean | SchemaObject | ReferenceObject | Record<string, never>;
+    required?: string[];
+    allOf?: (SchemaObject | ReferenceObject)[];
+    anyOf?: (SchemaObject | ReferenceObject)[];
+    oneOf?: (SchemaObject | ReferenceObject)[];
+    prefixItems?: (SchemaObject | ReferenceObject)[];
+    items?: SchemaObject | ReferenceObject;
     content?: Record<string, { schema?: SchemaObject | ReferenceObject }>;
     "x-typescript-type"?: string;
     "x-ts-type"?: string;
+    [key: `x-${string}`]: unknown;
+    [key: string]: unknown;
 };
 
 export type NormalizedOpenAPISchema = {
@@ -106,17 +128,8 @@ export function isTupleSchema(schema: OpenAPISchemaNode | undefined): boolean {
     return !!schema && Array.isArray(schema.prefixItems);
 }
 
-function shallowClone<T extends object>(node: T): T {
-    const copy = { ...node } as T & {
-        type?: unknown;
-        enum?: unknown[];
-        allOf?: unknown[];
-        anyOf?: unknown[];
-        oneOf?: unknown[];
-        required?: string[];
-        properties?: Record<string, unknown>;
-        prefixItems?: unknown[];
-    };
+function shallowClone(node: object): OpenAPISchemaNode {
+    const copy = { ...node } as OpenAPISchemaNode;
     if (Array.isArray(copy.type)) copy.type = [...copy.type];
     if (Array.isArray(copy.enum)) copy.enum = [...copy.enum];
     if (Array.isArray(copy.allOf)) copy.allOf = [...copy.allOf];
@@ -125,7 +138,7 @@ function shallowClone<T extends object>(node: T): T {
     if (Array.isArray(copy.required)) copy.required = [...copy.required];
     if (copy.properties) copy.properties = { ...copy.properties };
     if (Array.isArray(copy.prefixItems)) copy.prefixItems = [...copy.prefixItems];
-    return copy as T;
+    return copy;
 }
 
 export function resolveRef(doc: OpenAPI3, node: unknown, seen: Set<string> = new Set()): unknown {
@@ -182,7 +195,7 @@ export function normalizeOpenAPISchema(
         return { schema: raw, isNullable: false };
     }
 
-    let schema = shallowClone(raw as OpenAPISchemaNode);
+    let schema = shallowClone(raw as object);
     let isNullable = false;
 
     if (schema.nullable === true) {
@@ -196,8 +209,8 @@ export function normalizeOpenAPISchema(
     }
 
     if (Array.isArray(schema.type)) {
-        const hadNull = schema.type.includes("null");
-        const types = schema.type.filter((t) => t !== "null");
+        const hadNull = (schema.type as unknown[]).includes("null");
+        const types = (schema.type as unknown[]).filter((t) => t !== "null");
         if (hadNull) isNullable = true;
         if (types.length === 0) {
             schema.type = "null";
@@ -205,7 +218,7 @@ export function normalizeOpenAPISchema(
             schema.type = types[0];
         } else {
             delete schema.type;
-            schema.anyOf = types.map((t) => ({ type: t }));
+            schema.anyOf = types.map((t) => ({ type: t }) as SchemaObject);
         }
     }
 
@@ -223,7 +236,7 @@ export function normalizeOpenAPISchema(
             }
             const merged = isBareRef(arm)
                 ? arm
-                : ({ ...schema, ...shallowClone(arm as OpenAPISchemaNode) } as OpenAPISchemaNode);
+                : ({ ...schema, ...shallowClone(arm as object) } as OpenAPISchemaNode);
             if (schema.description && !isBareRef(merged) && !merged.description) {
                 merged.description = schema.description;
             }
@@ -326,6 +339,6 @@ function mergeObjectBits(target: OpenAPISchemaNode, source: OpenAPISchemaNode | 
         target.type = source.type;
     }
     if (source.enum && !target.enum) {
-        target.enum = source.enum;
+        target.enum = source.enum as unknown[];
     }
 }
