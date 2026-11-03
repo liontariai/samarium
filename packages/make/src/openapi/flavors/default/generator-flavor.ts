@@ -1740,7 +1740,7 @@ ${unresolvedAliases}
     private static emitBaseUrlInitType(
         documentServers: ServerMeta[] | undefined,
         operations: OperationMeta[],
-    ): string {
+    ): { typeDecl: string; hasObjectForm: boolean } {
         const byUrl = new Map<string, ServerMeta>();
 
         const absorb = (servers: ServerMeta[] | undefined) => {
@@ -1754,16 +1754,18 @@ ${unresolvedAliases}
         for (const op of operations) absorb(op.servers);
 
         if (byUrl.size === 0) {
-            return `export type BaseUrlInit = string;`;
+            return { typeDecl: `export type BaseUrlInit = string;`, hasObjectForm: false };
         }
 
         const arms: string[] = [];
+        let hasObjectForm = false;
         for (const server of byUrl.values()) {
             const templated = /\{[^}]+\}/.test(server.url);
             if (!templated) {
                 arms.push(JSON.stringify(server.url));
                 continue;
             }
+            hasObjectForm = true;
             const vars = server.variables ?? {};
             const varProps = Object.entries(vars)
                 .map(
@@ -1777,7 +1779,10 @@ ${unresolvedAliases}
         }
 
         arms.push("(string & {})");
-        return `export type BaseUrlInit = ${arms.join(" | ")};`;
+        return {
+            typeDecl: `export type BaseUrlInit = ${arms.join(" | ")};`,
+            hasObjectForm,
+        };
     }
 
     public static makeRootOperationFunction(
@@ -1851,7 +1856,10 @@ ${unresolvedAliases}
             `;
 
         const serverVariablesType = this.emitServerVariablesType(documentServers, operations);
-        const baseUrlInitType = this.emitBaseUrlInitType(documentServers, operations);
+        const { typeDecl: baseUrlInitType, hasObjectForm: baseUrlHasObjectForm } = this.emitBaseUrlInitType(
+            documentServers,
+            operations,
+        );
         const authSchemeType = enableAuth ? this.emitAuthSchemeType(schemeNames) : "";
 
         const documentSecurityLiteral = securityMeta?.security
@@ -2064,10 +2072,14 @@ ${unresolvedAliases}
                     RootOperation[OPTIONS].baseUrl = options.baseUrl;
                     RootOperation[OPTIONS].serverVariables = undefined;
                     RootOperation[OPTIONS].baseUrlExplicitVariables = false;
-                } else if (options.baseUrl && typeof options.baseUrl === "object") {
+                }${
+                    baseUrlHasObjectForm
+                        ? ` else if (options.baseUrl && typeof options.baseUrl === "object") {
                     RootOperation[OPTIONS].baseUrl = options.baseUrl.url;
                     RootOperation[OPTIONS].serverVariables = options.baseUrl.variables as Record<string, string>;
                     RootOperation[OPTIONS].baseUrlExplicitVariables = true;
+                }`
+                        : ""
                 }
 
                 if (options.headers) {
