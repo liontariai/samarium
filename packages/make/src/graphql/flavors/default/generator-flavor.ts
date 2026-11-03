@@ -17,6 +17,8 @@ const TS_TYPE_INTRINSICS = new Set([
     "object",
     "undefined",
     "null",
+    "symbol",
+    "bigint",
     "Record",
     "Array",
     "Date",
@@ -30,6 +32,10 @@ const TS_TYPE_INTRINSICS = new Set([
     "Omit",
 ]);
 
+function normalizeTypeIdent(name: string): string {
+    return name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "");
+}
+
 /**
  * Named types referenced by a custom-scalar TS type that are not themselves
  * generated (e.g. `@typedef {JToken}`). Do **not** put `JToken: any` on
@@ -37,10 +43,14 @@ const TS_TYPE_INTRINSICS = new Set([
  * (`any & AnotherType` is `any`). Emit a type alias that is `any` only when
  * the user has not augmented the interface.
  */
-function unresolvedTypeNamesInCustomScalars(customScalars: TypeMeta[]): string[] {
-    const declared = new Set(
-        customScalars.map((cs) => cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")),
-    );
+function unresolvedTypeNamesInCustomScalars(
+    customScalars: TypeMeta[],
+    knownTypeNames: Iterable<string> = [],
+): string[] {
+    const declared = new Set(customScalars.map((cs) => normalizeTypeIdent(cs.name)));
+    for (const name of knownTypeNames) {
+        declared.add(normalizeTypeIdent(name));
+    }
     const unresolved = new Set<string>();
     const ident = /\b([A-Za-z_$][\w$]*)\b/g;
     for (const cs of customScalars) {
@@ -217,17 +227,17 @@ import {
         };`;
     };
 
-    public static readonly HelperTypes = (customScalars: TypeMeta[]) => {
+    public static readonly HelperTypes = (customScalars: TypeMeta[], knownTypeNames: Iterable<string> = []) => {
         const stripped = customScalars.map((cs) => ({
             ...cs,
-            name: cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", ""),
+            name: normalizeTypeIdent(cs.name),
             scalarTSType: cs.scalarTSType?.replaceAll("!", ""),
         }));
         const interfaceBody = stripped
             .map((cs) => `"${cs.name}": ${cs.scalarTSType};`)
             .filter((cs, i, arr) => arr.findIndex((c) => c === cs) === i)
             .join("\n");
-        const unresolved = unresolvedTypeNamesInCustomScalars(stripped);
+        const unresolved = unresolvedTypeNamesInCustomScalars(stripped, knownTypeNames);
         const unresolvedAliases = unresolved.length
             ? `    type CustomScalarOrAny<K extends string> = K extends keyof ScalarTypeMapWithCustom
         ? ScalarTypeMapWithCustom[K]
@@ -1851,7 +1861,7 @@ ${unresolvedAliases}
                         };
 
                     // if the fieldFn is the SLFN subselection function without an (args) => .. wrapper
-                    if (fieldFn.name.startsWith("bound ")) {
+                    if ((fieldFn as Function & { name?: string }).name?.startsWith("bound ")) {
                         return makeSubSelectionFn();
                     }
                     return (opFnArgs: Exclude<Parameters<Extract<typeof fieldFn, (args: any) => any>>[0], (args: any) => any>) => {

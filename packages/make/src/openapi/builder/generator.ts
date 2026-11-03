@@ -73,6 +73,11 @@ export class Generator {
             collector,
             options,
             authConfig,
+            {
+                schemes: schemaMeta.securitySchemes,
+                security: schemaMeta.security,
+            },
+            schemaMeta.servers,
         );
 
         const runtimePreamble =
@@ -82,7 +87,12 @@ export class Generator {
 
         const code = [
             runtimePreamble,
-            this.Codegen.HelperTypes(Array.from(collector.customScalars.values())),
+            this.Codegen.HelperTypes(
+                Array.from(collector.customScalars.values()),
+                Array.from(collector.types.values())
+                    .filter((t) => !t.isScalar && !t.isEnum)
+                    .map((t) => t.name),
+            ),
             this.Codegen.HelperFunctions,
             ...[...collector.enumsTypes.entries()]
                 .map(([_, code]) => code)

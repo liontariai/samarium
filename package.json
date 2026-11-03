@@ -1,6 +1,6 @@
 {
     "name": "@liontari.ai/samarium",
-    "version": "0.15.0",
+    "version": "0.16.0",
     "main": "bin/samarium",
     "type": "module",
     "repository": {
@@ -27,7 +27,13 @@
     },
     "scripts": {
         "bundle:all": "cd packages/make && bun bundle.ts && cd ../new && bun bundle.ts && cd ../..",
-        "publish:all": "cd packages/make && bun publish && cd ../new && bun publish && cd ../.."
+        "publish:all": "cd packages/make && bun publish && cd ../new && bun publish && cd ../..",
+        "bump": "bun run scripts/bump.ts"
+    },
+    "devDependencies": {
+        "@types/semver": "^7.8.0",
+        "commander": "^12.1.0",
+        "inquirer": "^14.2.5"
     },
     "publishConfig": {
         "access": "public"

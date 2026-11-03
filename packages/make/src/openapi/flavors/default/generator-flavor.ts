@@ -6,6 +6,10 @@ import {
     type FieldMeta,
     type OperationMeta,
     type ParameterMeta,
+    type SecuritySchemeMeta,
+    type SecurityRequirementMeta,
+    type ServerMeta,
+    enumValueToTsLiteral,
 } from "../../builder/meta";
 
 // @ts-ignore
@@ -22,6 +26,8 @@ const TS_TYPE_INTRINSICS = new Set([
     "object",
     "undefined",
     "null",
+    "symbol",
+    "bigint",
     "Record",
     "Array",
     "Date",
@@ -35,6 +41,10 @@ const TS_TYPE_INTRINSICS = new Set([
     "Omit",
 ]);
 
+function normalizeTypeIdent(name: string): string {
+    return name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "");
+}
+
 /**
  * Named types referenced by a custom-scalar TS type that are not themselves
  * generated (e.g. Reelgood `JToken`). Do **not** put `JToken: any` on
@@ -42,14 +52,20 @@ const TS_TYPE_INTRINSICS = new Set([
  * (`any & AnotherType` is `any`). Emit a type alias that is `any` only when
  * the user has not augmented the interface.
  */
-function unresolvedTypeNamesInCustomScalars(customScalars: TypeMeta[]): string[] {
-    const declared = new Set(
-        customScalars.map((cs) => cs.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")),
-    );
+function unresolvedTypeNamesInCustomScalars(
+    customScalars: TypeMeta[],
+    knownTypeNames: Iterable<string> = [],
+): string[] {
+    const declared = new Set(customScalars.map((cs) => normalizeTypeIdent(cs.name)));
+    for (const name of knownTypeNames) {
+        declared.add(normalizeTypeIdent(name));
+    }
     const unresolved = new Set<string>();
     const ident = /\b([A-Za-z_$][\w$]*)\b/g;
     for (const cs of customScalars) {
-        const tsType = cs.scalarTSType ?? "";
+        // Drop labeled-tuple labels (`[name: string]`) and object keys so they
+        // are not treated as unresolved type names.
+        const tsType = (cs.scalarTSType ?? "").replace(/\b[A-Za-z_$][\w$]*\s*:/g, "");
         for (const match of tsType.matchAll(ident)) {
             const name = match[1];
             if (TS_TYPE_INTRINSICS.has(name) || declared.has(name)) continue;
@@ -227,8 +243,8 @@ import {
         };`;
     };
 
-    public static readonly HelperTypes = (customScalars: TypeMeta[]) => {
-        const unresolved = unresolvedTypeNamesInCustomScalars(customScalars);
+    public static readonly HelperTypes = (customScalars: TypeMeta[], knownTypeNames: Iterable<string> = []) => {
+        const unresolved = unresolvedTypeNamesInCustomScalars(customScalars, knownTypeNames);
         const interfaceBody = customScalars.map((cs) => `"${cs.name}": ${cs.scalarTSType};`).join("\n");
         // User `declare module` entries on ScalarTypeMapWithCustom win over the any default.
         const unresolvedAliases = unresolved.length
@@ -254,8 +270,20 @@ ${unresolvedAliases}
         opPath?: string;
         method?: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
         isEventStream?: boolean;
+        requestContentType?: string;
+        security?: Record<string, string[]>[];
+        servers?: {
+            url: string;
+            variables?: Record<string, { default: string; enum?: string[] }>;
+        }[];
         args?: Record<string, any>;
-        argsMeta?: Record<string, { type: string; location: "path" | "query" | "header" | "cookie" | "body" }>;
+        argsMeta?: Record<string, {
+            type: string;
+            location: "path" | "query" | "header" | "cookie" | "body";
+            style?: "matrix" | "label" | "form" | "simple" | "spaceDelimited" | "pipeDelimited" | "deepObject";
+            explode?: boolean;
+            contentType?: string;
+        }>;
         tnp?: string;
     } | undefined;
 
@@ -832,6 +860,9 @@ ${unresolvedAliases}
                         path: parent.opPath,
                         method: parent.method!,
                         isEventStream: parent.isEventStream,
+                        requestContentType: parent.requestContentType,
+                        security: parent.security,
+                        servers: parent.servers,
                     }
                     : undefined;
 
@@ -896,6 +927,9 @@ ${unresolvedAliases}
                         path: parent.opPath,
                         method: parent.method!,
                         isEventStream: parent.isEventStream,
+                        requestContentType: parent.requestContentType,
+                        security: parent.security,
+                        servers: parent.servers,
                     }
                     : undefined;
 
@@ -962,15 +996,18 @@ ${unresolvedAliases}
             return str.replace(/[^a-zA-Z0-9_]/g, "_").replace(/^[0-9]/, "_$&");
         };
 
+        const enumLiteral = (e: (typeof this.typeMeta.enumValues)[number]) =>
+            enumValueToTsLiteral(e.value !== undefined ? e.value : e.name);
+
         const enumTypeBody =
             this.typeMeta.enumValues.length === 0
                 ? "undefined" // handle empty enums (even though they shouldn't exist, they sometimes do)
-                : this.typeMeta.enumValues.map((e) => `"${e.name}"`).join(" | ");
+                : this.typeMeta.enumValues.map(enumLiteral).join(" | ");
         const enumEnumBody = this.typeMeta.enumValues
             .map(
                 (e) =>
                     `${e.description ? `/** ${e.description.replaceAll("*/", "\\*\\/")} */\n` : ""
-                    }${conformEnumName(e.name)} = "${e.name}",`,
+                    }${conformEnumName(e.name)} = ${enumLiteral(e)},`,
             )
             .join("\n");
 
@@ -1051,7 +1088,9 @@ ${unresolvedAliases}
 
             this.collector.addSelectionType(field.type, selectionType);
 
-            return `${description}${field.name}${field.type.isNonNull ? "" : "?"}: ${selectionType};`;
+            return `${description}${field.name}${field.type.isNonNull ? "" : "?"}: ${selectionType}${
+                field.type.isNonNull && field.type.isNullable ? " | null" : ""
+            };`;
 
             //
         } else if (field.type.isUnion && field.type.possibleTypes.every((pt) => pt.isScalar || pt.isEnum)) {
@@ -1066,7 +1105,7 @@ ${unresolvedAliases}
                     length: field.type.isList,
                 })
                     .map((_) => ">")
-                    .join("")};`;
+                    .join("")}${field.type.isNonNull && field.type.isNullable ? " | null" : ""};`;
 
             //
         } else if (field.type.ofType) {
@@ -1080,7 +1119,7 @@ ${unresolvedAliases}
                 }: ${this.originalTypeNameToTypescriptTypeName(
                     field.type.ofType.name,
                     !field.type.isInput && field.type.isList ? "Array" : "",
-                ).replaceAll("!", "")}`;
+                ).replaceAll("!", "")}${field.type.isNonNull && field.type.isNullable ? " | null" : ""}`;
 
             // return `${description}${field.name}${
             //     field.type.isNonNull ? "" : "?"
@@ -1107,6 +1146,10 @@ ${unresolvedAliases}
         if (this.collector.hasSelectionType(this.typeMeta)) {
             return selectionTypeName;
         }
+
+        // Reserve the name before walking fields so cyclic `$ref`s (A→A, A→B→A)
+        // reuse this selection type instead of recursing forever.
+        this.collector.addSelectionType(this.typeMeta, `export type ${selectionTypeName} = any;`);
 
         let selectionType = "";
 
@@ -1203,19 +1246,22 @@ ${unresolvedAliases}
 
         let helperFunctions = "";
         if (this.typeMeta.isUnion && this.typeMeta.possibleTypes.filter((t) => !t.isScalar && !t.isEnum).length) {
-            helperFunctions = `
-            $on: {
-                ${this.typeMeta.possibleTypes
-                    .filter((t) => !t.isScalar && !t.isEnum)
-                    .map(
-                        (
-                            t,
-                        ) => `"${t.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}": ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
+            const seenOnTypes = new Set<string>();
+            const onEntries = this.typeMeta.possibleTypes
+                .filter((t) => !t.isScalar && !t.isEnum)
+                .map((t) => {
+                    const key = t.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "");
+                    if (seenOnTypes.has(key)) return null;
+                    seenOnTypes.add(key);
+                    return `"${key}": ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
                         collector: this,
                         fieldName: "",
-                    }),`,
-                    )
-                    .join("\n")}
+                    }),`;
+                })
+                .filter((entry): entry is string => entry !== null);
+            helperFunctions = `
+            $on: {
+                ${onEntries.join("\n")}
                 }
             `;
         } else {
@@ -1321,7 +1367,12 @@ ${unresolvedAliases}
         return selectionFunctionName;
     }
 
-    public static makeOperationFunctions(operations: OperationMeta[], collector: Collector, options: CodegenOptions) {
+    public static makeOperationFunctions(
+        operations: OperationMeta[],
+        collector: Collector,
+        options: CodegenOptions,
+        documentServers?: ServerMeta[],
+    ) {
         const makeSelectionFunctionInputReturnTypeParts = new Map<string, string>();
         const fnsWithoutScalarOps: string[] = [];
         const fnsScalarOps: string[] = [];
@@ -1364,6 +1415,16 @@ ${unresolvedAliases}
                 const argsTypeName = `${operation.name.slice(0, 1).toUpperCase()}${operation.name.slice(1)}Args`;
 
                 if (!collector.hasArgumentMeta(argsTypeName)) {
+                    const argMetaFields = (arg: (typeof operation.args)[number], location = arg.location) => {
+                        const style = arg.style ? `style: "${arg.style}",` : "";
+                        const explode = arg.explode !== undefined ? `explode: ${arg.explode},` : "";
+                        const contentType = arg.contentType ? `contentType: "${arg.contentType}",` : "";
+                        return `type: "${arg.type.name}",
+                                    location: "${location}",
+                                    ${style}
+                                    ${explode}
+                                    ${contentType}`;
+                    };
                     const argsMetaBody = operation.args
                         .map((arg) => {
                             if (arg.name === "$" && (hoistQueryArgs || hoistBodyArgs)) {
@@ -1372,19 +1433,18 @@ ${unresolvedAliases}
                                         (f) => `${conformToTypeKey(f.name)}: {
                                     type: "${f.type.name}",
                                     location: "${arg.location}",
+                                    ${arg.contentType ? `contentType: "${arg.contentType}",` : ""}
                                 },`,
                                     )
                                     .join("\n");
                             } else if (arg.name === "$" && !hoistQueryArgs && !hoistBodyArgs) {
                                 return `${arg.location === "query" ? "$query" : "$body"}: {
-                                    type: "${arg.type.name}",
-                                    location: "${arg.location}",
+                                    ${argMetaFields(arg)}
                                 },`;
                             }
 
                             return `${conformToTypeKey(arg.name)}: {
-                                type: "${arg.type.name}",
-                                location: "${arg.location}",
+                                ${argMetaFields(arg)}
                             },`;
                         })
                         .join(" ");
@@ -1403,12 +1463,22 @@ ${unresolvedAliases}
                     const isEnum = arg.type.isEnum;
                     const isInput = arg.type.isInput;
                     const argKey = `${conformToTypeKey(arg.name)}${arg.type.isNonNull ? "" : "?"}`;
+                    const pureName = arg.type.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "");
 
                     let argType = "any";
                     if (isScalar) {
-                        argType = this.ScalarTypeMap.get(arg.type.name.replaceAll("!", "")) ?? "any";
-                    } else if (isInput || isEnum) {
+                        argType = arg.type.scalarTSType
+                            ? `ScalarTypeMapWithCustom["${pureName}"]`
+                            : (GeneratorSelectionTypeFlavorDefault.ScalarTypeMap.get(pureName) ?? "any");
+                        if (arg.type.isList) {
+                            argType = `${"Array<".repeat(arg.type.isList)}${argType}${">".repeat(arg.type.isList)}`;
+                        }
+                    } else if (isInput || isEnum || arg.type.isObject || arg.type.isUnion) {
                         argType = `${this.originalTypeNameToTypescriptTypeName(arg.type.name)}`;
+                    }
+
+                    if (arg.type.isNonNull && arg.type.isNullable) {
+                        argType = `${argType} | null`;
                     }
 
                     return {
@@ -1502,12 +1572,24 @@ ${unresolvedAliases}
                         options,
                     ).makeSelectionFunction();
 
+            const securityLiteral =
+                operation.security !== undefined
+                    ? JSON.stringify(operation.security)
+                    : "undefined";
+            const effectiveServers = operation.servers ?? documentServers;
+            const serversLiteral =
+                effectiveServers !== undefined
+                    ? JSON.stringify(effectiveServers)
+                    : "undefined";
             const boundSelection = `${returnTypeSelectionFunctionNameOrScalarOrEnum}.bind({
                         collector: that,
                         fieldName: "${operation.name}",
                         opPath: "${operation.path}",
                         method: "${operation.method}",
                         isEventStream: ${operation.isEventStream ? "true" : "false"},
+                        requestContentType: ${operation.requestContentType ? JSON.stringify(operation.requestContentType) : "undefined"},
+                        security: ${securityLiteral},
+                        servers: ${serversLiteral},
                         ${argMeta ? `args, argsMeta: ${argMeta.argsTypeName}Meta` : ""}
                     })${operation.type.isScalar || operation.type.isEnum ? "()" : ""}`;
 
@@ -1571,6 +1653,138 @@ ${unresolvedAliases}
         };
     }
 
+    private static emitServerVariablesType(
+        documentServers: ServerMeta[] | undefined,
+        operations: OperationMeta[],
+    ): string {
+        // enums: closed string-literal union when every declaration has enum.
+        // defaults: collected when open (no enum) so we can emit `"v1" | (string & {})`
+        // for IDE autocomplete of the default while still accepting any string.
+        type VarAcc = { enums: Set<string> | null; defaults: Set<string> };
+        const vars = new Map<string, VarAcc>();
+
+        const absorb = (servers: ServerMeta[] | undefined) => {
+            if (!servers) return;
+            for (const server of servers) {
+                for (const [name, variable] of Object.entries(server.variables ?? {})) {
+                    const existing = vars.get(name);
+                    if (!existing) {
+                        vars.set(name, {
+                            enums: variable.enum ? new Set(variable.enum) : null,
+                            defaults: new Set([variable.default]),
+                        });
+                        continue;
+                    }
+                    existing.defaults.add(variable.default);
+                    if (existing.enums === null) continue;
+                    if (!variable.enum) {
+                        existing.enums = null;
+                    } else {
+                        for (const v of variable.enum) existing.enums.add(v);
+                    }
+                }
+            }
+        };
+
+        absorb(documentServers);
+        for (const op of operations) absorb(op.servers);
+
+        if (vars.size === 0) {
+            return `export type ServerVariables = Record<string, never>;`;
+        }
+
+        const props = [...vars.entries()]
+            .map(([name, acc]) => {
+                let valueType: string;
+                if (acc.enums && acc.enums.size > 0) {
+                    valueType = [...acc.enums].map((v) => JSON.stringify(v)).join(" | ");
+                } else if (acc.defaults.size > 0) {
+                    // Prefer defaults in autocomplete; `(string & {})` keeps the type assignable
+                    // from any string without collapsing the literal union in the IDE.
+                    const literals = [...acc.defaults].map((v) => JSON.stringify(v)).join(" | ");
+                    valueType = `${literals} | (string & {})`;
+                } else {
+                    valueType = "string";
+                }
+                return `    ${JSON.stringify(name)}?: ${valueType};`;
+            })
+            .join("\n");
+
+        return `export type ServerVariables = {\n${props}\n};`;
+    }
+
+    private static emitAuthSchemeType(schemeNames: string[]): string {
+        if (schemeNames.length === 0) {
+            return `export type AuthScheme = never;`;
+        }
+        const literals = schemeNames.map((n) => JSON.stringify(n)).join(" | ");
+        return `export type AuthScheme = ${literals};`;
+    }
+
+    private static variableValueType(variable: {
+        default: string;
+        enum?: string[];
+    }): string {
+        if (variable.enum && variable.enum.length > 0) {
+            return variable.enum.map((v) => JSON.stringify(v)).join(" | ");
+        }
+        return `${JSON.stringify(variable.default)} | (string & {})`;
+    }
+
+    /**
+     * Discriminated baseUrl init type:
+     * - concrete (no `{…}`) server URLs as string literals
+     * - each templated server as `{ url, variables }` with required vars for that template
+     * - `| (string & {})` for custom concrete origins when any servers exist
+     */
+    private static emitBaseUrlInitType(
+        documentServers: ServerMeta[] | undefined,
+        operations: OperationMeta[],
+    ): { typeDecl: string; hasObjectForm: boolean } {
+        const byUrl = new Map<string, ServerMeta>();
+
+        const absorb = (servers: ServerMeta[] | undefined) => {
+            if (!servers) return;
+            for (const server of servers) {
+                if (!byUrl.has(server.url)) byUrl.set(server.url, server);
+            }
+        };
+
+        absorb(documentServers);
+        for (const op of operations) absorb(op.servers);
+
+        if (byUrl.size === 0) {
+            return { typeDecl: `export type BaseUrlInit = string;`, hasObjectForm: false };
+        }
+
+        const arms: string[] = [];
+        let hasObjectForm = false;
+        for (const server of byUrl.values()) {
+            const templated = /\{[^}]+\}/.test(server.url);
+            if (!templated) {
+                arms.push(JSON.stringify(server.url));
+                continue;
+            }
+            hasObjectForm = true;
+            const vars = server.variables ?? {};
+            const varProps = Object.entries(vars)
+                .map(
+                    ([name, variable]) =>
+                        `        ${JSON.stringify(name)}: ${this.variableValueType(variable)};`,
+                )
+                .join("\n");
+            arms.push(
+                `{\n    url: ${JSON.stringify(server.url)};\n    variables: {\n${varProps}\n    };\n}`,
+            );
+        }
+
+        arms.push("(string & {})");
+        return {
+            typeDecl: `export type BaseUrlInit = ${arms.join(" | ")};`,
+            hasObjectForm,
+        };
+    }
+
     public static makeRootOperationFunction(
         operations: OperationMeta[],
         collector: Collector,
@@ -1578,10 +1792,121 @@ ${unresolvedAliases}
         authConfig?: {
             headerName: string;
         },
+        securityMeta?: {
+            schemes: Record<string, SecuritySchemeMeta>;
+            security?: SecurityRequirementMeta[];
+        },
+        documentServers?: ServerMeta[],
     ): string {
         const { fnsWithoutScalarOps, fnsScalarOps, makeSelectionFunctionInputReturnTypeParts } =
-            this.makeOperationFunctions(operations, collector, options);
+            this.makeOperationFunctions(operations, collector, options, documentServers);
+
+        const schemes = securityMeta?.schemes ?? {};
+        const schemeNames = Object.keys(schemes);
+        const hasSchemes = schemeNames.length > 0;
+        const enableAuth = hasSchemes || !!authConfig;
+        const hasServers = (documentServers?.length ?? 0) > 0;
+
+        const defaultRequirement =
+            securityMeta?.security?.[0] ??
+            (schemeNames[0] ? ({ [schemeNames[0]]: [] } as SecurityRequirementMeta) : undefined);
+        const defaultSchemeName = defaultRequirement
+            ? Object.keys(defaultRequirement)[0]
+            : schemeNames[0];
+
+        const runtimeSchemes: Record<string, unknown> = {};
+        for (const [name, s] of Object.entries(schemes)) {
+            if (s.type === "apiKey") {
+                runtimeSchemes[name] = {
+                    name: s.name,
+                    type: "apiKey",
+                    apiKeyName: s.apiKeyName,
+                    apiKeyIn: s.apiKeyIn,
+                };
+            } else if (s.type === "http") {
+                runtimeSchemes[name] = {
+                    name: s.name,
+                    type: "http",
+                    scheme: s.scheme,
+                    bearerFormat: s.bearerFormat,
+                };
+            } else if (s.type === "oauth2" || s.type === "openIdConnect") {
+                runtimeSchemes[name] = { name: s.name, type: s.type };
+            } else {
+                runtimeSchemes[name] = { name: s.name, type: "mutualTLS" };
+            }
+        }
+
+        const securityOptionsLiteral = securityMeta?.security
+            ? `${JSON.stringify(securityMeta.security)} as const`
+            : "undefined";
+        const securityExport = hasSchemes
+            ? `
+            export const security = {
+                default: ${defaultSchemeName ? JSON.stringify(defaultSchemeName) : "undefined"},
+                options: ${securityOptionsLiteral},
+                schemes: ${JSON.stringify(schemes)} as const,
+            } as const;
+            `
+            : "";
+
+        const serversExport = hasServers
+            ? `
+            export const servers = ${JSON.stringify(documentServers)} as const;
+            `
+            : `
+            export const servers = [] as const;
+            `;
+
+        const serverVariablesType = this.emitServerVariablesType(documentServers, operations);
+        const { typeDecl: baseUrlInitType, hasObjectForm: baseUrlHasObjectForm } = this.emitBaseUrlInitType(
+            documentServers,
+            operations,
+        );
+        const authSchemeType = enableAuth ? this.emitAuthSchemeType(schemeNames) : "";
+
+        const documentSecurityLiteral = securityMeta?.security
+            ? JSON.stringify(securityMeta.security)
+            : "undefined";
+
+        // Pre-built once at module load; applied lazily on first client() (cached).
+        const ensureSecurityConfigured = enableAuth
+            ? `
+            const __SECURITY_CONFIG = {
+                schemes: ${JSON.stringify(runtimeSchemes)} as any,
+                defaultSecurity: ${defaultRequirement ? JSON.stringify(defaultRequirement) : "undefined"},
+                documentSecurity: ${documentSecurityLiteral} as any,
+                authHeaderOverride: ${authConfig ? JSON.stringify(authConfig.headerName) : "undefined"},
+            };
+            let __securityConfigured = false;
+            function __ensureSecurityConfigured() {
+                if (__securityConfigured) return;
+                __securityConfigured = true;
+                RootOperation.configureSecurity(__SECURITY_CONFIG);
+            }
+            `
+            : "";
+
+        const ensureServersConfigured = hasServers
+            ? `
+            let __serversConfigured = false;
+            function __ensureServersConfigured() {
+                if (__serversConfigured) return;
+                __serversConfigured = true;
+                RootOperation.configureServers({ servers: servers as any });
+            }
+            `
+            : "";
+
         const rootOperationFunction = `
+            ${securityExport}
+            ${serversExport}
+            ${serverVariablesType}
+            ${baseUrlInitType}
+            ${authSchemeType}
+            ${ensureSecurityConfigured}
+            ${ensureServersConfigured}
+
             export type ReturnTypeFromRootOperationWithoutScalarOps = {
                 ${Array.from(makeSelectionFunctionInputReturnTypeParts)
                 .map(([k, v]) => `"${k}": ${v}`)
@@ -1601,7 +1926,7 @@ ${unresolvedAliases}
                 return Object.defineProperties(
                     { ...withoutScalarOps },
                     Object.getOwnPropertyDescriptors(withScalarOps),
-                ) as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
+                ) as unknown as ReturnTypeFromRootOperationWithoutScalarOps & typeof withScalarOps;
             };
 
             function __client__ <
@@ -1610,6 +1935,8 @@ ${unresolvedAliases}
                 this: any, 
                 s: (selection: F) => T
             ) {
+                ${enableAuth ? `__ensureSecurityConfigured();` : ""}
+                ${hasServers ? `__ensureServersConfigured();` : ""}
                 const rootOp = new RootOperation();
                 const root = new OperationSelectionCollector(undefined, undefined, rootOp);
                 const rootRef = { ref: root };
@@ -1665,7 +1992,7 @@ ${unresolvedAliases}
                     returnValue = result as finalReturnTypeBasedOnIfHasLazyPromises;
                 }
                 
-                ${authConfig
+                ${enableAuth
                 ? `
                 Object.defineProperty(returnValue, "auth", {
                     enumerable: false,
@@ -1690,13 +2017,20 @@ ${unresolvedAliases}
             };
 
             const __init__ = (options: {
-                ${authConfig
+                ${enableAuth
                 ? `/** Per-call auth resolver. Receives the argument passed to \`.auth(source)\` (or \`undefined\` when omitted). */
                 auth?: AuthResolver;
                 /** Static token for CLI/scripts/tests. Do not re-set this per SSR request. */
-                authToken?: string;`
+                authToken?: string;
+                /** Preferred security scheme for OR-requirement selection. */
+                authScheme?: AuthScheme;`
                 : ""
             }
+                /**
+                 * Origin override. Concrete server URLs (no placeholders) may be passed as a string.
+                 * Templated servers must use \`{ url, variables }\` with every variable set explicitly.
+                 */
+                baseUrl?: BaseUrlInit;
                 headers?: { [key: string]: string };
                 fetcher?: (
                     input: string | URL | globalThis.Request,
@@ -1717,9 +2051,8 @@ ${unresolvedAliases}
                     ) => ScalarTypeMapWithCustom[key];
                 };
             }) => {
-                ${authConfig
+                ${enableAuth
                 ? `
-                RootOperation.authHeaderName = "${authConfig.headerName}";
                 if (options.authToken !== undefined) {
                     RootOperation[OPTIONS]._auth_token = options.authToken;
                 }
@@ -1731,9 +2064,26 @@ ${unresolvedAliases}
                     );
                     RootOperation[OPTIONS]._auth_token = options.auth as unknown as string;
                 }
+                if (options.authScheme !== undefined) {
+                    RootOperation[OPTIONS].authScheme = options.authScheme;
+                }
                 `
                 : ""
             }
+                ${hasServers ? `__ensureServersConfigured();` : ""}
+                if (typeof options.baseUrl === "string") {
+                    RootOperation[OPTIONS].baseUrl = options.baseUrl;
+                    RootOperation[OPTIONS].serverVariables = undefined;
+                    RootOperation[OPTIONS].baseUrlExplicitVariables = false;
+                }${
+                    baseUrlHasObjectForm
+                        ? ` else if (options.baseUrl && typeof options.baseUrl === "object") {
+                    RootOperation[OPTIONS].baseUrl = options.baseUrl.url;
+                    RootOperation[OPTIONS].serverVariables = options.baseUrl.variables as Record<string, string>;
+                    RootOperation[OPTIONS].baseUrlExplicitVariables = true;
+                }`
+                        : ""
+                }
 
                 if (options.headers) {
                     RootOperation[OPTIONS].headers = {

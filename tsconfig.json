@@ -25,5 +25,5 @@
         },
         "verbatimModuleSyntax": true
     },
-    "include": ["examples/**/*", "dev-examples/**/*"]
+    "include": ["examples/**/*", "dev-examples/**/*", "scripts/*.ts"]
 }

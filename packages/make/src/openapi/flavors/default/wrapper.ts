@@ -48,6 +48,109 @@ export type AuthResolver =
 export const _ = Symbol("_") as any;
 export const OPTIONS = Symbol("OPTIONS");
 
+/** OpenAPI 3 parameter `style` values (serialization). */
+export type OpenAPIParameterStyle =
+    | "matrix"
+    | "label"
+    | "form"
+    | "simple"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject";
+
+type ParamEncodingMeta = {
+    type?: string;
+    location: "path" | "query" | "header" | "cookie" | "body";
+    style?: OpenAPIParameterStyle;
+    explode?: boolean;
+    contentType?: string;
+};
+
+/** One OpenAPI security requirement object (AND of named schemes → scopes). */
+export type SecurityRequirement = Record<string, string[]>;
+
+/** Runtime security scheme used to place credentials on the wire. */
+export type SecuritySchemeRuntime =
+    | {
+          name: string;
+          type: "apiKey";
+          apiKeyName: string;
+          apiKeyIn: "header" | "query" | "cookie";
+      }
+    | {
+          name: string;
+          type: "http";
+          scheme: string;
+          bearerFormat?: string;
+      }
+    | {
+          name: string;
+          type: "oauth2" | "openIdConnect";
+      }
+    | {
+          name: string;
+          type: "mutualTLS";
+      };
+
+export type AppliedAuth = {
+    headers: Record<string, string>;
+    query: Record<string, string>;
+    cookie: Record<string, string>;
+};
+
+/** Runtime server object — only fields needed for URL resolution. */
+export type ServerVariableRuntime = {
+    default: string;
+    enum?: string[];
+};
+
+export type ServerRuntime = {
+    url: string;
+    variables?: Record<string, ServerVariableRuntime>;
+};
+
+function emptyAppliedAuth(): AppliedAuth {
+    return { headers: {}, query: {}, cookie: {} };
+}
+
+/** Place `Authorization`, optionally prefixing Bearer/Basic when missing. */
+function authorizationHeader(value: string, prefix?: "Bearer" | "Basic"): AppliedAuth {
+    const token =
+        prefix && !new RegExp(`^${prefix}\\s+`, "i").test(value) ? `${prefix} ${value}` : value;
+    return { ...emptyAppliedAuth(), headers: { Authorization: token } };
+}
+
+export function applySecurityCredential(
+    scheme: SecuritySchemeRuntime,
+    value: string,
+): AppliedAuth {
+    if (scheme.type === "apiKey") {
+        const bucket =
+            scheme.apiKeyIn === "header" ? "headers" : scheme.apiKeyIn === "query" ? "query" : "cookie";
+        return { ...emptyAppliedAuth(), [bucket]: { [scheme.apiKeyName]: value } };
+    }
+    if (scheme.type === "http") {
+        const s = scheme.scheme.toLowerCase();
+        if (s === "bearer") return authorizationHeader(value, "Bearer");
+        if (s === "basic") return authorizationHeader(value, "Basic");
+        // digest and other http schemes: pass through as Authorization value
+        return authorizationHeader(value);
+    }
+    if (scheme.type === "oauth2" || scheme.type === "openIdConnect") {
+        return authorizationHeader(value, "Bearer");
+    }
+    // mutualTLS: no string credential application
+    return emptyAppliedAuth();
+}
+
+function mergeAppliedAuth(into: AppliedAuth, from: AppliedAuth): AppliedAuth {
+    return {
+        headers: { ...into.headers, ...from.headers },
+        query: { ...into.query, ...from.query },
+        cookie: { ...into.cookie, ...from.cookie },
+    };
+}
+
 type OpenAPIRequest = {
     path: string;
     method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
@@ -56,60 +159,373 @@ type OpenAPIRequest = {
         path: Record<string, any>;
         query: Record<string, any>;
     };
-    body: Record<string, any>;
+    /** Per-arg encoding hints from argsMeta (keyed by arg name). */
+    paramMeta?: Record<string, ParamEncodingMeta>;
+    body: Record<string, any> | string | FormData | URLSearchParams | undefined;
     cookie: Record<string, any>;
     isEventStream?: boolean;
+    requestContentType?: string;
+    /** Operation security (OR of AND-requirements); undefined → use doc default. */
+    security?: SecurityRequirement[];
+    /** Effective servers for this op (op/path override or document). */
+    servers?: ServerRuntime[];
 };
 
-export class RootOperation {
-    public static authHeaderName = "Authorization";
+const isNil = (v: unknown) => v === undefined || v === null;
+const asEntries = (v: object) => Object.entries(v as Record<string, unknown>);
 
-    private mapAuthResultToHeaders = (result?: AuthResult) => {
-        if (result === undefined || result === null) return undefined;
-        if (typeof result === "string") {
-            return { [RootOperation.authHeaderName]: result };
+/** OAS simple / form non-deepObject object + array flattening. */
+function serializeSimple(value: unknown, explode = false): string {
+    if (isNil(value)) return "";
+    if (Array.isArray(value)) return value.map(String).join(",");
+    if (typeof value === "object") {
+        const sep = explode ? "=" : ",";
+        return asEntries(value)
+            .map(([k, v]) => `${k}${sep}${v}`)
+            .join(",");
+    }
+    return String(value);
+}
+
+function encodePathParam(
+    value: unknown,
+    style: OpenAPIParameterStyle = "simple",
+    explode = false,
+): string {
+    if (isNil(value)) return "";
+    if (style === "label" || style === "matrix") {
+        const p = style === "label" ? "." : ";";
+        if (Array.isArray(value)) {
+            return `${p}${value.map(String).join(explode ? p : ",")}`;
         }
-        return result;
+        if (typeof value === "object") {
+            const sep = explode ? "=" : ",";
+            return `${p}${asEntries(value)
+                .map(([k, v]) => `${k}${sep}${v}`)
+                .join(explode ? p : ",")}`;
+        }
+        return `${p}${String(value)}`;
+    }
+    // Path `simple` ignores explode for arrays/objects (OAS).
+    return serializeSimple(value, false);
+}
+
+function appendQueryParam(
+    qs: URLSearchParams,
+    name: string,
+    value: unknown,
+    style: OpenAPIParameterStyle = "form",
+    explode = true,
+): void {
+    if (isNil(value)) return;
+    if (Array.isArray(value)) {
+        if (style === "spaceDelimited") qs.set(name, value.map(String).join(" "));
+        else if (style === "pipeDelimited") qs.set(name, value.map(String).join("|"));
+        else if (explode) for (const v of value) qs.append(name, String(v));
+        else qs.set(name, value.map(String).join(","));
+        return;
+    }
+    if (typeof value === "object") {
+        const entries = asEntries(value);
+        if (style === "deepObject") for (const [k, v] of entries) qs.set(`${name}[${k}]`, String(v));
+        else if (explode) for (const [k, v] of entries) qs.set(k, String(v));
+        else qs.set(name, serializeSimple(value, false));
+        return;
+    }
+    qs.set(name, String(value));
+}
+
+/** OAS header `style: simple` serialization → header field value. */
+export function encodeHeaderParam(
+    value: unknown,
+    _style: OpenAPIParameterStyle = "simple",
+    explode = false,
+): string {
+    return serializeSimple(value, explode);
+}
+
+/**
+ * OAS cookie `style: form` serialization → one or more `name=value` segments
+ * joined with `; ` for the Cookie header.
+ */
+export function encodeCookieParam(
+    name: string,
+    value: unknown,
+    _style: OpenAPIParameterStyle = "form",
+    explode = true,
+): string {
+    if (isNil(value)) return "";
+    if (Array.isArray(value) && explode) {
+        return value.map((v) => `${name}=${String(v)}`).join("; ");
+    }
+    if (typeof value === "object" && !Array.isArray(value) && explode) {
+        return asEntries(value)
+            .map(([k, v]) => `${k}=${String(v)}`)
+            .join("; ");
+    }
+    return `${name}=${serializeSimple(value, false)}`;
+}
+
+export function substituteServerUrl(
+    url: string,
+    overrides: Record<string, string> | undefined,
+    variables?: Record<string, ServerVariableRuntime>,
+): string {
+    return url.replace(/\{([^}]+)\}/g, (_, name: string) => {
+        if (overrides?.[name] !== undefined) return overrides[name];
+        const def = variables?.[name]?.default;
+        if (def !== undefined) return def;
+        return `{${name}}`;
+    });
+}
+
+export function joinOriginAndPath(origin: string, path: string): string {
+    if (origin === "[ENDPOINT]") {
+        return path.startsWith("/") ? `[ENDPOINT]${path}` : `[ENDPOINT]/${path}`;
+    }
+    const base = origin.replace(/\/$/, "");
+    const p = path.startsWith("/") ? path : `/${path}`;
+    return `${base}${p}`;
+}
+
+export function resolveRequestOrigin(
+    opServers: ServerRuntime[] | undefined,
+    options: {
+        baseUrl?: string;
+        serverVariables?: Record<string, string>;
+        documentServers?: ServerRuntime[];
+        /** When true (init baseUrl path), do not fill missing vars from OAS defaults. */
+        explicitVariablesOnly?: boolean;
+    },
+): string {
+    if (options.baseUrl) {
+        // Init-provided origin: substitute with provided variables only (no OAS defaults).
+        const substituted =
+            options.serverVariables || options.explicitVariablesOnly
+                ? substituteServerUrl(options.baseUrl, options.serverVariables, undefined)
+                : options.baseUrl;
+        return substituted.replace(/\/$/, "");
+    }
+    const server = opServers?.[0] ?? options.documentServers?.[0];
+    if (!server) return "[ENDPOINT]";
+    return substituteServerUrl(server.url, options.serverVariables, server.variables).replace(
+        /\/$/,
+        "",
+    );
+}
+
+/** Fetch body values we encode — portable (no DOM `BodyInit` / Bun types). */
+type RequestBodyInit = string | Blob | ArrayBuffer | Uint8Array | FormData | URLSearchParams;
+
+function encodeRequestBody(
+    body: unknown,
+    contentType: string | undefined,
+): { payload: RequestBodyInit | undefined; contentTypeHeader?: string } {
+    if (body === undefined || body === null) return { payload: undefined };
+    const ct = contentType ?? "application/json";
+    if (ct.includes("application/json") || ct.includes("+json")) {
+        return { payload: JSON.stringify(body), contentTypeHeader: "application/json" };
+    }
+    if (ct.includes("application/x-www-form-urlencoded")) {
+        const params = new URLSearchParams();
+        if (typeof body === "object" && body !== null) {
+            for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+                if (v === undefined || v === null) continue;
+                if (Array.isArray(v)) for (const item of v) params.append(k, String(item));
+                else params.set(k, String(v));
+            }
+        }
+        return { payload: params, contentTypeHeader: "application/x-www-form-urlencoded" };
+    }
+    if (ct.includes("multipart/form-data")) {
+        const form = new FormData();
+        if (typeof body === "object" && body !== null) {
+            for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+                if (v === undefined || v === null) continue;
+                if (v instanceof Blob) form.append(k, v);
+                else form.append(k, String(v));
+            }
+        }
+        // Let fetch set the multipart boundary — do not set Content-Type manually.
+        return { payload: form };
+    }
+    if (ct.includes("text/plain")) {
+        return { payload: typeof body === "string" ? body : String(body), contentTypeHeader: "text/plain" };
+    }
+    if (ct.includes("application/octet-stream")) {
+        if (body instanceof Blob || body instanceof ArrayBuffer) {
+            return { payload: body, contentTypeHeader: "application/octet-stream" };
+        }
+        if (ArrayBuffer.isView(body)) {
+            // Normalize TypedArray/DataView → Uint8Array for portable fetch body typing.
+            return {
+                payload: new Uint8Array(body.buffer, body.byteOffset, body.byteLength),
+                contentTypeHeader: "application/octet-stream",
+            };
+        }
+        throw new Error(
+            `Unsupported body value for content-type "${ct}". Pass a Blob, ArrayBuffer, or TypedArray.`,
+        );
+    }
+    throw new Error(
+        `Unsupported request content-type "${ct}". Supported: application/json, application/x-www-form-urlencoded, multipart/form-data, text/plain, application/octet-stream.`,
+    );
+}
+
+export class RootOperation {
+    /** Fallback single-header name when no security schemes are configured (or override). */
+    public static authHeaderName = "Authorization";
+    /** Compiled `components.securitySchemes` (runtime placement). */
+    public static securitySchemes: Record<string, SecuritySchemeRuntime> = {};
+    /** First document-level security OR-branch (default for string credentials). */
+    public static defaultSecurity: SecurityRequirement | undefined = undefined;
+    /** When set, string credentials always go to this header (authConfig override). */
+    public static authHeaderOverride: string | undefined = undefined;
+    /** Document-level OpenAPI `servers` (used when op has no override). */
+    public static documentServers: ServerRuntime[] = [];
+
+    public static configureSecurity(config: {
+        schemes?: Record<string, SecuritySchemeRuntime>;
+        defaultSecurity?: SecurityRequirement | undefined;
+        /** Full document-level security OR list (for authScheme matching). */
+        documentSecurity?: SecurityRequirement[] | undefined;
+        authHeaderOverride?: string | undefined;
+        authScheme?: string | undefined;
+    }) {
+        if (config.schemes !== undefined) RootOperation.securitySchemes = config.schemes;
+        if ("defaultSecurity" in config) RootOperation.defaultSecurity = config.defaultSecurity;
+        if ("documentSecurity" in config) {
+            RootOperation[OPTIONS].documentSecurity = config.documentSecurity;
+        }
+        if ("authScheme" in config) RootOperation[OPTIONS].authScheme = config.authScheme;
+        if ("authHeaderOverride" in config) {
+            RootOperation.authHeaderOverride = config.authHeaderOverride;
+            if (config.authHeaderOverride) {
+                RootOperation.authHeaderName = config.authHeaderOverride;
+            } else {
+                RootOperation.authHeaderName = "Authorization";
+            }
+        }
+    }
+
+    public static configureServers(config: { servers?: ServerRuntime[] }) {
+        if (config.servers !== undefined) RootOperation.documentServers = config.servers;
+    }
+
+    /** Clear scheme config (tests). */
+    public static resetSecurity() {
+        RootOperation.securitySchemes = {};
+        RootOperation.defaultSecurity = undefined;
+        RootOperation.authHeaderOverride = undefined;
+        RootOperation.authHeaderName = "Authorization";
+        RootOperation[OPTIONS].authScheme = undefined;
+        RootOperation[OPTIONS].documentSecurity = undefined;
+    }
+
+    /** Clear servers + baseUrl (tests). */
+    public static resetServers() {
+        RootOperation.documentServers = [];
+        RootOperation[OPTIONS].baseUrl = undefined;
+        RootOperation[OPTIONS].serverVariables = undefined;
+        RootOperation[OPTIONS].baseUrlExplicitVariables = false;
+    }
+
+    private applyStringCredential = (
+        value: string,
+        requirement?: SecurityRequirement,
+    ): AppliedAuth => {
+        const headerOnly = (name: string): AppliedAuth => ({
+            ...emptyAppliedAuth(),
+            headers: { [name]: value },
+        });
+        if (RootOperation.authHeaderOverride) {
+            return headerOnly(RootOperation.authHeaderOverride);
+        }
+        const schemes = RootOperation.securitySchemes;
+        const schemeNames = Object.keys(schemes);
+        if (schemeNames.length === 0) {
+            return headerOnly(RootOperation.authHeaderName);
+        }
+        const req =
+            requirement ??
+            RootOperation.defaultSecurity ??
+            ({ [schemeNames[0]]: [] } as SecurityRequirement);
+        // String credentials are a single value — place on the first scheme in the
+        // requirement only. AND requirements with multiple schemes need a scheme map.
+        const firstSchemeName = Object.keys(req)[0];
+        if (!firstSchemeName) return emptyAppliedAuth();
+        const scheme = schemes[firstSchemeName];
+        if (!scheme) {
+            // Unknown scheme name — fall back to default header.
+            return headerOnly(RootOperation.authHeaderName);
+        }
+        // May be empty for mutualTLS (no string credential placement).
+        return applySecurityCredential(scheme, value);
     };
 
-    private resolveFnOrPromisOrPrimitiveHeaders = (arg?: FnOrPromisOrPrimitive) => {
-        if (!arg) return undefined;
-        let headers: Record<string, string> | undefined = undefined;
+    private applyAuthResult = (
+        result: AuthResult,
+        requirement?: SecurityRequirement,
+    ): AppliedAuth | undefined => {
+        if (result === undefined || result === null) return undefined;
+        if (typeof result === "string") {
+            return this.applyStringCredential(result, requirement);
+        }
+        // Object: scheme-name map if all keys match known schemes; else raw headers.
+        const keys = Object.keys(result);
+        const schemes = RootOperation.securitySchemes;
+        if (
+            keys.length > 0 &&
+            Object.keys(schemes).length > 0 &&
+            keys.every((k) => k in schemes)
+        ) {
+            let applied = emptyAppliedAuth();
+            for (const [schemeName, value] of Object.entries(result)) {
+                if (typeof value !== "string") continue;
+                applied = mergeAppliedAuth(
+                    applied,
+                    applySecurityCredential(schemes[schemeName], value),
+                );
+            }
+            return applied;
+        }
+        return { ...emptyAppliedAuth(), headers: result };
+    };
+
+    private resolveFnOrPromisOrPrimitiveAuth = (
+        arg: FnOrPromisOrPrimitive,
+        requirement?: SecurityRequirement,
+    ): AppliedAuth | Promise<AppliedAuth | undefined> | undefined => {
         if (typeof arg === "string") {
-            headers = { [RootOperation.authHeaderName]: arg };
-        } else if (typeof arg === "function") {
+            return this.applyStringCredential(arg, requirement);
+        }
+        if (typeof arg === "function") {
             const tokenOrPromise = arg();
             if (tokenOrPromise instanceof Promise) {
-                return tokenOrPromise.then((t) => {
-                    if (typeof t === "string") headers = { [RootOperation.authHeaderName]: t };
-                    else headers = t;
-                    return headers;
-                });
+                return tokenOrPromise.then((t) => this.applyAuthResult(t, requirement));
             }
-            if (typeof tokenOrPromise === "string") {
-                headers = { [RootOperation.authHeaderName]: tokenOrPromise };
-            } else {
-                headers = tokenOrPromise;
-            }
-        } else {
-            headers = arg;
+            return this.applyAuthResult(tokenOrPromise, requirement);
         }
-        return headers;
+        return this.applyAuthResult(arg, requirement);
     };
 
     /**
-     * Resolve auth headers for this request.
+     * Resolve auth placement for this request.
      * 1. Global `auth` resolver (with optional per-call source)
      * 2. Per-call `.auth(token|headers|fn)` when no global resolver
      * 3. Static `authToken` from init
+     *
+     * `requirement === null` means explicit optional security (`security: []`) — no placement.
      */
-    private resolveAuthHeaders = async (
+    private resolveAuth = async (
         authArg?: AuthSource,
-    ): Promise<Record<string, string> | undefined> => {
+        requirement?: SecurityRequirement | null,
+    ): Promise<AppliedAuth | undefined> => {
+        if (requirement === null) return undefined;
         const authFn = RootOperation[OPTIONS]._auth_fn;
         if (authFn) {
             const result = await authFn(authArg);
-            return this.mapAuthResultToHeaders(result);
+            return this.applyAuthResult(result, requirement);
         }
         if (authArg !== undefined && authArg !== null) {
             if (
@@ -117,12 +533,18 @@ export class RootOperation {
                 typeof authArg === "function" ||
                 (typeof authArg === "object" && authArg !== null && !(authArg instanceof Request))
             ) {
-                return this.resolveFnOrPromisOrPrimitiveHeaders(authArg as FnOrPromisOrPrimitive);
+                return this.resolveFnOrPromisOrPrimitiveAuth(
+                    authArg as FnOrPromisOrPrimitive,
+                    requirement,
+                );
             }
             return undefined;
         }
         if (RootOperation[OPTIONS]._auth_token !== undefined) {
-            return { [RootOperation.authHeaderName]: RootOperation[OPTIONS]._auth_token };
+            return this.applyStringCredential(
+                RootOperation[OPTIONS]._auth_token,
+                requirement,
+            );
         }
         return undefined;
     };
@@ -139,6 +561,16 @@ export class RootOperation {
         _auth_fn: undefined as AuthResolver | undefined,
         /** Static token for CLI/scripts — never set this per SSR request. */
         _auth_token: undefined as string | undefined,
+        /** Absolute origin override; when set, ignores OpenAPI servers. */
+        baseUrl: undefined as string | undefined,
+        /** Overrides for `{var}` placeholders in the selected / init base URL. */
+        serverVariables: undefined as Record<string, string> | undefined,
+        /** True when baseUrl came from init object form — do not apply OAS variable defaults. */
+        baseUrlExplicitVariables: false as boolean,
+        /** Preferred security scheme name for OR-branch selection. */
+        authScheme: undefined as string | undefined,
+        /** Document-level security OR list (when configured). */
+        documentSecurity: undefined as SecurityRequirement[] | undefined,
         fetcher: undefined as unknown as (
             input: string | URL | globalThis.Request,
             init?: RequestInit,
@@ -157,9 +589,6 @@ export class RootOperation {
         },
     };
 
-    private utilSet = (obj: Record<string, any>, path: string[], value: any) =>
-        path.reduce((o, p, i, a) => (o[p] = a.length - 1 === i ? value : o[p] || {}), obj);
-
     private rootCollector: OperationSelectionCollector | undefined = undefined;
     public registerRootCollector(collector: OperationSelectionCollector) {
         this.rootCollector = collector;
@@ -168,14 +597,96 @@ export class RootOperation {
     private buildRequestUrl(request: OpenAPIRequest): {
         finalPath: string;
         cookies: string;
+        encodedHeaders: Record<string, string>;
     } {
         let finalPath = request.path.replace(/\{([^}]+)\}/g, (_, key) => {
-            return request.params.path[key];
+            const meta = request.paramMeta?.[key];
+            const encoded = encodePathParam(
+                request.params.path[key],
+                meta?.style ?? "simple",
+                meta?.explode ?? false,
+            );
+            // matrix/label styles already include their prefix; strip the `{param}` token.
+            if ((meta?.style === "matrix" || meta?.style === "label") && encoded.startsWith(meta.style === "matrix" ? ";" : ".")) {
+                return encoded;
+            }
+            return encodeURIComponent(encoded).replace(/%2C/g, ",");
         });
-        const finalQuery = new URLSearchParams(request.params.query).toString();
+        const qs = new URLSearchParams();
+        for (const [key, value] of Object.entries(request.params.query ?? {})) {
+            const meta = request.paramMeta?.[key];
+            appendQueryParam(qs, key, value, meta?.style ?? "form", meta?.explode ?? true);
+        }
+        const finalQuery = qs.toString();
         finalPath = `${finalPath.replace(/\{.*?\}$/, "")}${finalQuery ? `?${finalQuery}` : ""}`;
-        const cookies = new URLSearchParams(request.cookie).toString();
-        return { finalPath, cookies };
+
+        const cookieParts: string[] = [];
+        for (const [key, value] of Object.entries(request.cookie ?? {})) {
+            if (value === undefined || value === null) continue;
+            const meta = request.paramMeta?.[key];
+            // Auth-applied cookies are plain strings; encodeCookieParam handles those as name=value.
+            const encoded = encodeCookieParam(
+                key,
+                value,
+                meta?.style ?? "form",
+                meta?.explode ?? true,
+            );
+            if (encoded) cookieParts.push(encoded);
+        }
+
+        const encodedHeaders: Record<string, string> = {};
+        for (const [key, value] of Object.entries(request.header ?? {})) {
+            if (value === undefined || value === null) continue;
+            const meta = request.paramMeta?.[key];
+            encodedHeaders[key] = encodeHeaderParam(
+                value,
+                meta?.style ?? "simple",
+                meta?.explode ?? false,
+            );
+        }
+
+        return { finalPath, cookies: cookieParts.join("; "), encodedHeaders };
+    }
+
+    private resolveFullUrl(request: OpenAPIRequest, finalPath: string): string {
+        const origin = resolveRequestOrigin(request.servers, {
+            baseUrl: RootOperation[OPTIONS].baseUrl,
+            serverVariables: RootOperation[OPTIONS].serverVariables,
+            documentServers: RootOperation.documentServers,
+            explicitVariablesOnly: RootOperation[OPTIONS].baseUrlExplicitVariables,
+        });
+        return joinOriginAndPath(origin, finalPath);
+    }
+
+    /** Prefer OR-branch containing `preferred`, else undefined (caller supplies fallback). */
+    private preferRequirement(
+        list: SecurityRequirement[],
+        preferred: string | undefined,
+    ): SecurityRequirement | undefined {
+        if (!preferred) return undefined;
+        return list.find((req) => preferred in req);
+    }
+
+    /**
+     * Resolve the security requirement for this operation.
+     * - `undefined` security on the op → document default (OR list / single)
+     * - `[]` → `null` (explicitly optional; no credential placement)
+     * - otherwise → OR-branch matching `OPTIONS.authScheme`, else first branch
+     */
+    private requirementForRequest(
+        request: OpenAPIRequest,
+    ): SecurityRequirement | undefined | null {
+        const preferred = RootOperation[OPTIONS].authScheme;
+        if (request.security !== undefined) {
+            if (request.security.length === 0) return null;
+            return this.preferRequirement(request.security, preferred) ?? request.security[0];
+        }
+        const docOr = RootOperation[OPTIONS].documentSecurity;
+        if (docOr?.length) {
+            const match = this.preferRequirement(docOr, preferred);
+            if (match) return match;
+        }
+        return RootOperation.defaultSecurity;
     }
 
     public async execute(headers: Record<string, string> = {}) {
@@ -183,18 +694,24 @@ export class RootOperation {
             throw new Error("RootOperation has no registered collector");
         }
 
-        // Auth wins over static OPTIONS.headers and execute() arg headers
-        const authHeaders = await this.resolveAuthHeaders(this.authArg);
-        const staticHeaders = {
-            ...RootOperation[OPTIONS].headers,
-            ...headers,
-        };
-        headers = {
-            ...staticHeaders,
-            ...authHeaders,
+        type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
+        const varsByLocation = (sel: selection, loc: string) =>
+            Object.fromEntries(
+                Object.entries(sel.variableDefinitions)
+                    .filter(([_, v]) => v.location === loc)
+                    .map(([k]) => [k, sel.variables[k]]),
+            );
+        const pickBody = (sel: selection) => {
+            const defs = sel.variableDefinitions;
+            const bodyEntries = Object.entries(defs).filter(([_, v]) => v.location === "body");
+            if (bodyEntries.length === 0) return undefined;
+            if (bodyEntries.length === 1 && Object.keys(defs).length === 1) return sel.variables;
+            if (bodyEntries.length === 1 && "$body" in defs && "$body" in sel.variables) {
+                return sel.variables["$body"];
+            }
+            return Object.fromEntries(bodyEntries.map(([k]) => [k, sel.variables[k]]));
         };
 
-        type selection = ReturnType<typeof OperationSelectionCollector.prototype.renderSelections>;
         const operations: {
             [key: string]: {
                 selection: selection;
@@ -214,71 +731,59 @@ export class RootOperation {
         }
 
         const ops = Object.entries(operations).reduce(
-            (acc, [opName, { selection, rootSlw }]) => {
-                const bodyVarDefCount = Object.entries(selection.variableDefinitions).filter(
-                    ([_, v]) => v.location === "body",
-                ).length;
-                const body =
-                    bodyVarDefCount === 0
-                        ? undefined
-                        : bodyVarDefCount === 1 && Object.keys(selection.variableDefinitions).length === 1
-                            ? selection.variables
-                            : bodyVarDefCount === 1 &&
-                                "$body" in selection.variableDefinitions &&
-                                "$body" in selection.variables
-                                ? selection.variables["$body"]
-                                : Object.fromEntries(
-                                    Object.entries(selection.variableDefinitions)
-                                        .filter(([_, v]) => v.location === "body")
-                                        .map(([k, _]) => [k, selection.variables[k]]),
-                                );
-
-                return {
-                    ...acc,
-                    [opName]: {
-                        path: rootSlw[ROOT_OP_META]!.path,
-                        method: rootSlw[ROOT_OP_META]!.method,
-                        isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
-                        header: Object.fromEntries(
-                            Object.entries(selection.variableDefinitions)
-                                .filter(([_, v]) => v.location === "header")
-                                .map(([k, v]) => [k, selection.variables[k]]),
-                        ),
-                        params: {
-                            path: Object.fromEntries(
-                                Object.entries(selection.variableDefinitions)
-                                    .filter(([_, v]) => v.location === "path")
-                                    .map(([k, v]) => [k, selection.variables[k]]),
-                            ),
-                            query: Object.fromEntries(
-                                Object.entries(selection.variableDefinitions)
-                                    .filter(([_, v]) => v.location === "query")
-                                    .map(([k, v]) => [k, selection.variables[k]]),
-                            ),
-                        },
-                        body,
-                        cookie: Object.fromEntries(
-                            Object.entries(selection.variableDefinitions)
-                                .filter(([_, v]) => v.location === "cookie")
-                                .map(([k, v]) => [k, selection.variables[k]]),
-                        ),
+            (acc, [opName, { selection, rootSlw }]) => ({
+                ...acc,
+                [opName]: {
+                    path: rootSlw[ROOT_OP_META]!.path,
+                    method: rootSlw[ROOT_OP_META]!.method,
+                    isEventStream: rootSlw[ROOT_OP_META]!.isEventStream,
+                    requestContentType: rootSlw[ROOT_OP_META]!.requestContentType,
+                    security: rootSlw[ROOT_OP_META]!.security,
+                    servers: rootSlw[ROOT_OP_META]!.servers,
+                    paramMeta: selection.variableDefinitions as Record<string, ParamEncodingMeta>,
+                    header: varsByLocation(selection, "header"),
+                    params: {
+                        path: varsByLocation(selection, "path"),
+                        query: varsByLocation(selection, "query"),
                     },
-                };
-            },
+                    body: pickBody(selection),
+                    cookie: varsByLocation(selection, "cookie"),
+                },
+            }),
             {} as Record<string, OpenAPIRequest>,
         );
 
+        const staticHeaders = {
+            ...RootOperation[OPTIONS].headers,
+            ...headers,
+        };
+
         const results = Object.fromEntries(
             await Promise.all([
-                ...Object.entries(ops).map(
-                    async ([opName, op]) =>
-                        [
-                            opName,
-                            op.isEventStream
-                                ? await this.subscribeOperation(op, headers)
-                                : await this.executeOperation(op, headers),
-                        ] as const,
-                ),
+                ...Object.entries(ops).map(async ([opName, op]) => {
+                    const applied = await this.resolveAuth(
+                        this.authArg,
+                        this.requirementForRequest(op),
+                    );
+                    const requestWithAuth: OpenAPIRequest = {
+                        ...op,
+                        params: {
+                            ...op.params,
+                            query: { ...op.params.query, ...(applied?.query ?? {}) },
+                        },
+                        cookie: { ...op.cookie, ...(applied?.cookie ?? {}) },
+                    };
+                    const requestHeaders = {
+                        ...staticHeaders,
+                        ...(applied?.headers ?? {}),
+                    };
+                    return [
+                        opName,
+                        op.isEventStream
+                            ? await this.subscribeOperation(requestWithAuth, requestHeaders)
+                            : await this.executeOperation(requestWithAuth, requestHeaders),
+                    ] as const;
+                }),
             ]),
         );
 
@@ -286,26 +791,63 @@ export class RootOperation {
     }
 
     private async executeOperation(request: OpenAPIRequest, headers: Record<string, string> = {}) {
-        const { finalPath, cookies } = this.buildRequestUrl(request);
+        const { finalPath, cookies, encodedHeaders } = this.buildRequestUrl(request);
+        const bodyContentType =
+            request.requestContentType ??
+            Object.values(request.paramMeta ?? {}).find((m) => m.location === "body")?.contentType;
+        const { payload, contentTypeHeader } = encodeRequestBody(request.body, bodyContentType);
+        const url = this.resolveFullUrl(request, finalPath);
 
-        const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(`[ENDPOINT]${finalPath}`, {
+        const res = await (RootOperation[OPTIONS].fetcher ?? globalThis.fetch)(url, {
             method: request.method,
             headers: {
-                ...(request.body ? { "Content-Type": "application/json" } : {}),
-                ...(request.header ? request.header : {}),
+                ...(contentTypeHeader ? { "Content-Type": contentTypeHeader } : {}),
+                ...encodedHeaders,
                 ...(cookies ? { Cookie: cookies } : {}),
                 ...headers,
             },
-            body: request.body ? JSON.stringify(request.body) : undefined,
+            body: payload,
         });
 
-        if (!res.ok) {
-            throw new Error(`${res.statusText}: ${await res.text()}`);
+        if (res && typeof res === "object" && "ok" in res && res.ok === false) {
+            const errText = typeof res.text === "function" ? await res.text() : "";
+            throw new Error(`${res.statusText ?? "Request failed"}: ${errText}`);
         }
 
-        const data = (await res.json()) as any;
-
-        return data;
+        // Prefer content-type when present; fall back to `.json()` for minimal fetch mocks in tests.
+        const responseType =
+            res?.headers && typeof res.headers.get === "function"
+                ? (res.headers.get("content-type") ?? "")
+                : "";
+        if (!responseType) {
+            if (typeof res?.json === "function") return (await res.json()) as any;
+            if (typeof res?.text === "function") {
+                const text = await res.text();
+                if (!text) return undefined as any;
+                try {
+                    return JSON.parse(text) as any;
+                } catch {
+                    return text as any;
+                }
+            }
+            return res as any;
+        }
+        if (responseType.includes("application/json") || responseType.includes("+json")) {
+            const text = await res.text();
+            if (!text) return undefined as any;
+            try {
+                return JSON.parse(text) as any;
+            } catch {
+                return text as any;
+            }
+        }
+        if (responseType.includes("text/")) {
+            return (await res.text()) as any;
+        }
+        if (typeof res.arrayBuffer === "function") {
+            return (await res.arrayBuffer()) as any;
+        }
+        return (await res.json()) as any;
     }
 
     /**
@@ -321,7 +863,8 @@ export class RootOperation {
         [SLW_IS_ASYNC_ITERABLE]: true;
     }> {
         const abortState = { controller: undefined as AbortController | undefined };
-        const { finalPath, cookies } = this.buildRequestUrl(request);
+        const { finalPath, cookies, encodedHeaders } = this.buildRequestUrl(request);
+        const resolvedUrl = this.resolveFullUrl(request, finalPath);
 
         const generator = (async function* () {
             let reader: import("stream/web").ReadableStreamDefaultReader<any> | undefined = undefined;
@@ -329,12 +872,12 @@ export class RootOperation {
             try {
                 abortState.controller = new AbortController();
 
-                const defaultUrl = `[ENDPOINT]${finalPath}`;
+                const defaultUrl = resolvedUrl;
                 const defaultInit: RequestInit = {
                     method: request.method,
                     headers: {
                         ...(request.body ? { "Content-Type": "application/json" } : {}),
-                        ...(request.header ? request.header : {}),
+                        ...encodedHeaders,
                         ...(cookies ? { Cookie: cookies } : {}),
                         ...headers,
                         Accept: "text/event-stream",
@@ -464,13 +1007,7 @@ export class OperationSelectionCollector {
         path: string[] = [],
         renderOnlyTheseSelections: SelectionWrapperImpl<string, string, number, any>[] = [],
     ) {
-        const varDefs: Record<
-            string,
-            {
-                type: string;
-                location: "path" | "query" | "header" | "cookie" | "body";
-            }
-        > = {};
+        const varDefs: Record<string, ParamEncodingMeta> = {};
         const variables: Record<string, any> = {};
 
         for (const [key, value] of [...this.selections.entries()].filter(
@@ -637,16 +1174,13 @@ export class SelectionWrapperImpl<
         path: string;
         method: "get" | "post" | "put" | "delete" | "patch" | "head" | "options" | "trace";
         isEventStream?: boolean;
+        requestContentType?: string;
+        security?: SecurityRequirement[];
+        servers?: ServerRuntime[];
     };
 
     [SLW_ARGS]?: argsT;
-    [SLW_ARGS_META]?: Record<
-        string,
-        {
-            type: string;
-            location: "path" | "query" | "header" | "cookie" | "body";
-        }
-    >;
+    [SLW_ARGS_META]?: Record<string, ParamEncodingMeta>;
 
     [SLW_PARENT_SLW]?: SelectionWrapperImpl<string, string, number, any, any>;
     [SLW_LAZY_FLAG]?: boolean;
@@ -665,13 +1199,7 @@ export class SelectionWrapperImpl<
         collector?: OperationSelectionCollector,
         parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
-        argsMeta?: Record<
-            string,
-            {
-                type: string;
-                location: "path" | "query" | "header" | "cookie" | "body";
-            }
-        >,
+        argsMeta?: Record<string, ParamEncodingMeta>,
         reCreateValueCallback?: () => valueT,
         isScalarOp?: boolean,
     ) {
@@ -732,29 +1260,18 @@ export class SelectionWrapperImpl<
                     : args
                         ? Object.keys(args).reduce(
                             (acc, key) => {
-                                acc[key] = argsMeta?.[key];
+                                const meta = argsMeta?.[key];
+                                if (meta) acc[key] = meta;
                                 return acc;
                             },
-                            {} as Record<
-                                string,
-                                {
-                                    type: string;
-                                    location: "path" | "query" | "header" | "cookie" | "body";
-                                }
-                            >,
+                            {} as Record<string, ParamEncodingMeta>,
                         )
                         : {},
             };
         }
         return {
             variables: {},
-            variableDefinitions: {} as Record<
-                string,
-                {
-                    type: string;
-                    location: "path" | "query" | "header" | "cookie" | "body";
-                }
-            >,
+            variableDefinitions: {} as Record<string, ParamEncodingMeta>,
         };
     }
 }
@@ -773,13 +1290,7 @@ export class SelectionWrapper<
         collector?: OperationSelectionCollector,
         parent?: OperationSelectionCollector | OperationSelectionCollectorRef,
         args?: argsT,
-        argsMeta?: Record<
-            string,
-            {
-                type: string;
-                location: "path" | "query" | "header" | "cookie" | "body";
-            }
-        >,
+        argsMeta?: Record<string, ParamEncodingMeta>,
         reCreateValueCallback?: () => valueT,
         isScalarOp?: boolean,
     ) {

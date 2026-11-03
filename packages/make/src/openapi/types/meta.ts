@@ -14,10 +14,76 @@ export interface ExternalRuntimeConfig {
     wrapperModule: string;
 }
 
+/** One OpenAPI security requirement object (AND of named schemes → scopes). */
+export type SecurityRequirementMeta = Record<string, string[]>;
+
+export type OAuthFlowMeta = {
+    authorizationUrl?: string;
+    tokenUrl?: string;
+    refreshUrl?: string;
+    scopes: Record<string, string>;
+};
+
+export type SecuritySchemeMeta =
+    | {
+          name: string;
+          type: "apiKey";
+          description?: string;
+          apiKeyName: string;
+          apiKeyIn: "header" | "query" | "cookie";
+      }
+    | {
+          name: string;
+          type: "http";
+          description?: string;
+          scheme: string;
+          bearerFormat?: string;
+      }
+    | {
+          name: string;
+          type: "oauth2";
+          description?: string;
+          flows: {
+              implicit?: OAuthFlowMeta;
+              password?: OAuthFlowMeta;
+              clientCredentials?: OAuthFlowMeta;
+              authorizationCode?: OAuthFlowMeta;
+          };
+      }
+    | {
+          name: string;
+          type: "openIdConnect";
+          description?: string;
+          openIdConnectUrl: string;
+      }
+    | {
+          name: string;
+          type: "mutualTLS";
+          description?: string;
+      };
+
+/** Server variable fields needed for URL substitution / typed init. */
+export type ServerVariableMeta = {
+    default: string;
+    enum?: string[];
+};
+
+/** Server Object fields needed for runtime URL resolution (no docs fluff). */
+export type ServerMeta = {
+    url: string;
+    variables?: Record<string, ServerVariableMeta>;
+};
+
 export interface SchemaMeta {
     types: TypeMeta[];
     operations: OperationMeta[];
     customScalars: TypeMeta[];
+    /** `components.securitySchemes` keyed by scheme name. */
+    securitySchemes: Record<string, SecuritySchemeMeta>;
+    /** Document-level `security` (OR of AND-requirement objects). */
+    security?: SecurityRequirementMeta[];
+    /** Document-level `servers`. */
+    servers?: ServerMeta[];
 }
 
 export type OperationMethod = "get" | "post" | "put" | "delete" | "patch" | "options" | "head" | "trace";
@@ -32,13 +98,42 @@ export interface OperationMeta {
     isEventStream?: boolean;
     /** Response content-type used for the operation body/event payload type */
     responseContentType?: string;
+    /** Request body content-type chosen for encoding (json / form / multipart / …) */
+    requestContentType?: string;
+    /**
+     * Operation-level `security` when present (including `[]` = optional / no auth).
+     * `undefined` means inherit document-level security.
+     */
+    security?: SecurityRequirementMeta[];
+    /**
+     * Effective servers for this operation: operation `servers`, else path-item
+     * `servers`. Document servers live on `SchemaMeta.servers` and are used when
+     * this is undefined.
+     */
+    servers?: ServerMeta[];
 }
+
+/** OpenAPI 3 parameter `style` values (serialization). */
+export type OpenAPIParameterStyle =
+    | "matrix"
+    | "label"
+    | "form"
+    | "simple"
+    | "spaceDelimited"
+    | "pipeDelimited"
+    | "deepObject";
 
 export interface ParameterMeta {
     name: string;
     description: string | undefined;
     location: "path" | "query" | "header" | "cookie" | "body" | "$";
     type: TypeMeta;
+    /** OpenAPI `style` (form, simple, deepObject, …). */
+    style?: OpenAPIParameterStyle;
+    /** OpenAPI `explode`. */
+    explode?: boolean;
+    /** Media type when the parameter/body uses `content` instead of `schema`. */
+    contentType?: string;
 }
 
 export interface TypeMeta {
@@ -46,6 +141,13 @@ export interface TypeMeta {
     description: string | undefined;
     isList: number;
     isNonNull: boolean;
+    /**
+     * Schema-level nullability (`type: ["T","null"]`, `nullable: true`,
+     * `anyOf`/`oneOf` with `{ type: "null" }`). Distinct from `isNonNull`
+     * (OpenAPI `required`): required + nullable → `T | null`; optional +
+     * nullable → `T?`.
+     */
+    isNullable?: boolean;
     isScalar: boolean; // type with "format"
     scalarTSType?: string;
 
@@ -74,4 +176,6 @@ export interface EnumValueMeta {
     name: string;
     description: string | undefined;
     type: TypeMeta;
+    /** Original enum/`const` value so mixed enums emit `"ok" | 1`, not `"ok" | "1"`. */
+    value?: string | number | boolean | null;
 }

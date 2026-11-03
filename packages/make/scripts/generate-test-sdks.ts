@@ -29,17 +29,17 @@ import { GeneratorSelectionTypeFlavorDefault as OpenapiFlavor } from "../src/ope
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAKE_ROOT = path.resolve(__dirname, "..");
-const GRAPHQL_TESTS_ROOT = path.join(MAKE_ROOT, "src/graphql/flavors/default/__tests__");
-const OPENAPI_TESTS_ROOT = path.join(MAKE_ROOT, "src/openapi/flavors/default/__tests__");
+const GRAPHQL_TESTS_ROOT = path.join(MAKE_ROOT, "tests/graphql");
+const OPENAPI_TESTS_ROOT = path.join(MAKE_ROOT, "tests/openapi");
 
 type Flavor = "graphql" | "openapi";
 
 type GraphqlFixture = {
     flavor: "graphql";
     id: string;
-    /** Relative to GraphQL __tests__/ */
+    /** Relative to tests/graphql/ */
     schemaPath: string;
-    /** Relative to GraphQL __tests__/ */
+    /** Relative to tests/graphql/ */
     outPath: string;
     authHeaderName?: string;
     /**
@@ -52,9 +52,9 @@ type GraphqlFixture = {
 type OpenapiFixture = {
     flavor: "openapi";
     id: string;
-    /** Relative to OpenAPI __tests__/ */
+    /** Relative to tests/openapi/ */
     schemaPath: string;
-    /** Relative to OpenAPI __tests__/ */
+    /** Relative to tests/openapi/ */
     outPath: string;
     authHeaderName?: string;
     /** Skip Prettier — used for huge real-world specs. */

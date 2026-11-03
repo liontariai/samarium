@@ -17,6 +17,16 @@ import type {
     OperationObject,
 } from "openapi-typescript";
 import { Collector } from "./collector";
+import {
+    isTupleSchema,
+    mapJsonSchemaTypeToSamariumScalar,
+    normalizeOpenAPISchema,
+    parseTypescriptTypeFromDescription,
+    parseTypescriptTypeFromSchema,
+    pickContentSchema,
+    resolveRef,
+    type OpenAPISchemaNode,
+} from "./normalize";
 
 import {
     type FieldMeta,
@@ -28,7 +38,29 @@ import {
     type OperationMethod,
     type SdkRuntimeMode,
     type ExternalRuntimeConfig,
+    type OpenAPIParameterStyle,
+    type SecuritySchemeMeta,
+    type SecurityRequirementMeta,
+    type OAuthFlowMeta,
+    type ServerMeta,
+    type ServerVariableMeta,
 } from "../types/meta";
+
+const OPENAPI_PARAMETER_STYLES: ReadonlySet<string> = new Set<OpenAPIParameterStyle>([
+    "matrix",
+    "label",
+    "form",
+    "simple",
+    "spaceDelimited",
+    "pipeDelimited",
+    "deepObject",
+]);
+
+function asOpenAPIParameterStyle(style: string | undefined): OpenAPIParameterStyle | undefined {
+    if (style && OPENAPI_PARAMETER_STYLES.has(style)) return style as OpenAPIParameterStyle;
+    return undefined;
+}
+
 export {
     type FieldMeta,
     type SchemaMeta,
@@ -39,6 +71,10 @@ export {
     type OperationMethod,
     type SdkRuntimeMode,
     type ExternalRuntimeConfig,
+    type SecuritySchemeMeta,
+    type SecurityRequirementMeta,
+    type ServerMeta,
+    type ServerVariableMeta,
 };
 
 const camelCaps = (arr: string[], separator: string = "$") => {
@@ -59,11 +95,204 @@ const camelCaps = (arr: string[], separator: string = "$") => {
  * @param options Codegen options
  * @returns
  */
+const PATH_ITEM_METHODS: OperationMethod[] = [
+    "get",
+    "post",
+    "put",
+    "delete",
+    "patch",
+    "options",
+    "head",
+    "trace",
+];
+
+/** Resolve a path item `$ref` (or return the object as-is). */
+const resolvePathItem = (schema: OpenAPI3, value: PathItemObject | ReferenceObject): PathItemObject | undefined => {
+    if (!("$ref" in value)) return value;
+    const resolved = resolveRef(schema, value);
+    if (!resolved || typeof resolved !== "object" || "$ref" in (resolved as object)) {
+        console.warn(`Unresolved path item $ref: ${(value as ReferenceObject).$ref}`);
+        return undefined;
+    }
+    return resolved as PathItemObject;
+};
+
+/** Resolve an operation-object `$ref` if present. */
+const resolveOperation = (
+    schema: OpenAPI3,
+    methodValue: OperationObject | ReferenceObject,
+): OperationObject | undefined => {
+    if (!("$ref" in methodValue)) return methodValue;
+    const resolved = resolveRef(schema, methodValue);
+    if (!resolved || typeof resolved !== "object" || "$ref" in (resolved as object)) {
+        console.warn(`Unresolved operation $ref: ${(methodValue as ReferenceObject).$ref}`);
+        return undefined;
+    }
+    return resolved as OperationObject;
+};
+
+function gatherOAuthFlow(flow: Record<string, unknown> | undefined): OAuthFlowMeta | undefined {
+    if (!flow || typeof flow !== "object") return undefined;
+    const scopesRaw = flow.scopes;
+    const scopes: Record<string, string> = {};
+    if (scopesRaw && typeof scopesRaw === "object") {
+        for (const [k, v] of Object.entries(scopesRaw as Record<string, unknown>)) {
+            scopes[k] = typeof v === "string" ? v : "";
+        }
+    }
+    return {
+        authorizationUrl: typeof flow.authorizationUrl === "string" ? flow.authorizationUrl : undefined,
+        tokenUrl: typeof flow.tokenUrl === "string" ? flow.tokenUrl : undefined,
+        refreshUrl: typeof flow.refreshUrl === "string" ? flow.refreshUrl : undefined,
+        scopes,
+    };
+}
+
+export function gatherSecurityRequirement(
+    req: unknown,
+): SecurityRequirementMeta | undefined {
+    if (!req || typeof req !== "object" || Array.isArray(req)) return undefined;
+    const out: SecurityRequirementMeta = {};
+    for (const [schemeName, scopes] of Object.entries(req as Record<string, unknown>)) {
+        out[schemeName] = Array.isArray(scopes)
+            ? scopes.filter((s): s is string => typeof s === "string")
+            : [];
+    }
+    return out;
+}
+
+export function gatherSecurityRequirements(
+    security: unknown,
+): SecurityRequirementMeta[] | undefined {
+    if (security === undefined) return undefined;
+    if (!Array.isArray(security)) return undefined;
+    return security
+        .map(gatherSecurityRequirement)
+        .filter((r): r is SecurityRequirementMeta => r !== undefined);
+}
+
+export function gatherSecuritySchemeMeta(
+    schema: OpenAPI3,
+    name: string,
+    raw: unknown,
+): SecuritySchemeMeta | undefined {
+    const value = resolveRef(schema, raw);
+    if (!value || typeof value !== "object" || "$ref" in value) return undefined;
+    const scheme = value as Record<string, unknown>;
+    const type = scheme.type;
+    const description = typeof scheme.description === "string" ? scheme.description : undefined;
+
+    if (type === "apiKey") {
+        const apiKeyIn = scheme.in;
+        if (apiKeyIn !== "header" && apiKeyIn !== "query" && apiKeyIn !== "cookie") return undefined;
+        if (typeof scheme.name !== "string") return undefined;
+        return {
+            name,
+            type: "apiKey",
+            description,
+            apiKeyName: scheme.name,
+            apiKeyIn,
+        };
+    }
+    if (type === "http") {
+        if (typeof scheme.scheme !== "string") return undefined;
+        return {
+            name,
+            type: "http",
+            description,
+            scheme: scheme.scheme,
+            bearerFormat: typeof scheme.bearerFormat === "string" ? scheme.bearerFormat : undefined,
+        };
+    }
+    if (type === "oauth2") {
+        const flowsRaw = (scheme.flows ?? {}) as Record<string, unknown>;
+        return {
+            name,
+            type: "oauth2",
+            description,
+            flows: {
+                implicit: gatherOAuthFlow(flowsRaw.implicit as Record<string, unknown> | undefined),
+                password: gatherOAuthFlow(flowsRaw.password as Record<string, unknown> | undefined),
+                clientCredentials: gatherOAuthFlow(
+                    flowsRaw.clientCredentials as Record<string, unknown> | undefined,
+                ),
+                authorizationCode: gatherOAuthFlow(
+                    flowsRaw.authorizationCode as Record<string, unknown> | undefined,
+                ),
+            },
+        };
+    }
+    if (type === "openIdConnect") {
+        if (typeof scheme.openIdConnectUrl !== "string") return undefined;
+        return {
+            name,
+            type: "openIdConnect",
+            description,
+            openIdConnectUrl: scheme.openIdConnectUrl,
+        };
+    }
+    if (type === "mutualTLS") {
+        return { name, type: "mutualTLS", description };
+    }
+    return undefined;
+}
+
+export function gatherSecuritySchemes(
+    schema: OpenAPI3,
+): Record<string, SecuritySchemeMeta> {
+    const out: Record<string, SecuritySchemeMeta> = {};
+    const raw = schema.components?.securitySchemes ?? {};
+    for (const [name, value] of Object.entries(raw)) {
+        const meta = gatherSecuritySchemeMeta(schema, name, value);
+        if (meta) out[name] = meta;
+    }
+    return out;
+}
+
+export function gatherServerVariableMeta(raw: unknown): ServerVariableMeta | undefined {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.default !== "string") return undefined;
+    const meta: ServerVariableMeta = { default: obj.default };
+    if (Array.isArray(obj.enum)) {
+        const values = obj.enum.filter((v): v is string => typeof v === "string");
+        if (values.length > 0) meta.enum = values;
+    }
+    return meta;
+}
+
+export function gatherServerMeta(raw: unknown): ServerMeta | undefined {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+    const obj = raw as Record<string, unknown>;
+    if (typeof obj.url !== "string") return undefined;
+    const meta: ServerMeta = { url: obj.url };
+    if (obj.variables && typeof obj.variables === "object" && !Array.isArray(obj.variables)) {
+        const variables: Record<string, ServerVariableMeta> = {};
+        for (const [name, value] of Object.entries(obj.variables as Record<string, unknown>)) {
+            const variable = gatherServerVariableMeta(value);
+            if (variable) variables[name] = variable;
+        }
+        if (Object.keys(variables).length > 0) meta.variables = variables;
+    }
+    return meta;
+}
+
+export function gatherServers(raw: unknown): ServerMeta[] | undefined {
+    if (!Array.isArray(raw)) return undefined;
+    const servers = raw
+        .map(gatherServerMeta)
+        .filter((s): s is ServerMeta => s !== undefined);
+    return servers.length > 0 ? servers : undefined;
+}
+
 export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector: Collector): SchemaMeta => {
     const meta: SchemaMeta = {
         types: [],
         operations: [],
         customScalars: [],
+        securitySchemes: gatherSecuritySchemes(schema),
+        security: gatherSecurityRequirements(schema.security),
+        servers: gatherServers(schema.servers),
     };
 
     for (const [key, value] of Object.entries(schema?.components?.schemas ?? {})) {
@@ -71,28 +300,38 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
     }
 
     for (const [key, value] of Object.entries(schema?.paths ?? {})) {
-        if ("$ref" in value) {
+        const pathItem = resolvePathItem(schema, value as PathItemObject | ReferenceObject);
+        if (!pathItem) {
             continue;
         }
 
-        for (const [method, methodValue] of Object.entries(value) as [
-            OperationMethod,
-            PathItemObject[OperationMethod],
-        ][]) {
+        const pathLevelParams = pathItem.parameters ?? [];
+        const pathServers = gatherServers(pathItem.servers);
+
+        for (const method of PATH_ITEM_METHODS) {
+            const methodValue = pathItem[method];
             if (!methodValue) {
                 continue;
             }
-            if ("$ref" in methodValue) {
-                // TODO: Handle $ref in methodValue
-                console.warn(`TODO: Handle $ref in methodValue for ${key}`);
-                continue;
-            }
-
-            const operation = gatherMetaForPathOperation(schema, key, method, methodValue, options, collector);
+            const operation = resolveOperation(schema, methodValue as OperationObject | ReferenceObject);
             if (!operation) {
                 continue;
             }
-            meta.operations.push(operation);
+
+            const operationMeta = gatherMetaForPathOperation(
+                schema,
+                key,
+                method,
+                operation,
+                options,
+                collector,
+                pathLevelParams,
+                pathServers,
+            );
+            if (!operationMeta) {
+                continue;
+            }
+            meta.operations.push(operationMeta);
         }
     }
 
@@ -101,15 +340,16 @@ export const gatherMeta = (schema: OpenAPI3, options: CodegenOptions, collector:
 
 const createACustomScalarType = (
     name: string,
-    description: string,
+    description: string | undefined,
     scalarTSType: string,
     collector: Collector,
 ): TypeMeta => {
+    const fromTypedef = parseTypescriptTypeFromDescription(description);
     const meta: TypeMeta = {
         name,
         description,
         isScalar: true,
-        scalarTSType,
+        scalarTSType: fromTypedef ?? scalarTSType,
         isEnum: false,
         isObject: false,
         isUnion: false,
@@ -127,6 +367,55 @@ const createACustomScalarType = (
     collector.addCustomScalar(meta);
 
     return meta;
+};
+
+const SAMARIUM_SCALAR_TO_TS: Record<string, string> = {
+    String: "string",
+    Int: "number",
+    Float: "number",
+    Boolean: "boolean",
+    ID: "string",
+    Date: "Date",
+    DateTime: "Date",
+    DateTimeISO: "Date",
+    Time: "Date",
+    JSON: "Record<string, any>",
+};
+
+const applyNullable = (meta: TypeMeta, isNullable: boolean): TypeMeta => {
+    if (!isNullable || meta.isNullable) return meta;
+    return { ...meta, isNullable: true };
+};
+
+const typeMetaToTypescript = (meta: TypeMeta): string => {
+    if (meta.scalarTSType) {
+        let ts = meta.scalarTSType;
+        if (meta.isList) {
+            ts = `${"Array<".repeat(meta.isList)}${ts}${">".repeat(meta.isList)}`;
+        }
+        return ts;
+    }
+    const pure = meta.name.replaceAll("!", "").replaceAll("[", "").replaceAll("]", "");
+    let ts =
+        SAMARIUM_SCALAR_TO_TS[pure] ??
+        (meta.isEnum
+            ? meta.enumValues.map((e) => enumValueToTsLiteral(e.value !== undefined ? e.value : e.name)).join(" | ") ||
+            pure
+            : pure);
+    if (meta.isList) {
+        ts = `${"Array<".repeat(meta.isList)}${ts}${">".repeat(meta.isList)}`;
+    }
+    if (meta.isNonNull && meta.isNullable) {
+        ts = `${ts} | null`;
+    }
+    return ts;
+};
+
+export const enumValueToTsLiteral = (value: unknown): string => {
+    if (typeof value === "string") return JSON.stringify(value);
+    if (value === null) return "null";
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    return JSON.stringify(String(value));
 };
 
 const makeIdentifyingTypeName = (meta: TypeMeta, override?: { isInput?: boolean; isNonNull?: boolean }): string => {
@@ -201,6 +490,23 @@ export const gatherMetaForType = (
         const ref = schema[components]?.[componentType]?.[refname];
 
         if (ref) {
+            // Schema components use a stable name so cyclic `$ref`s reuse the same
+            // TypeMeta instead of composing names until the stack overflows.
+            if (componentType === "schemas") {
+                const existing = collector.findCollectedSchema(refname);
+                if (existing) {
+                    return existing;
+                }
+                return gatherMetaForType(
+                    schema,
+                    refname,
+                    ref,
+                    componentType,
+                    { isNonNull: false, operationResponseType: options.operationResponseType },
+                    collector,
+                );
+            }
+
             return gatherMetaForType(
                 schema,
                 // if it is an operation response type, don't include the operationName in the name
@@ -214,6 +520,36 @@ export const gatherMetaForType = (
 
         throw new Error(`Reference ${_type.$ref} not found`);
     }
+
+    // OAS 3.1 query/header/cookie params may use `content` instead of `schema`.
+    // Unwrap here so they classify as the inner schema (not as Input types).
+    // Request bodies keep the isInput + content path below.
+    const isParameterLike =
+        ("in" in _type && typeof (_type as ParameterObject).in === "string") ||
+        typeType === "parameters" ||
+        typeType === "headers";
+    if (
+        isParameterLike &&
+        "content" in _type &&
+        !("schema" in _type) &&
+        (_type as ParameterObject | HeaderObject).content
+    ) {
+        const mediaSchema = pickContentSchema((_type as ParameterObject | HeaderObject).content);
+        if (mediaSchema) {
+            return gatherMetaForType(
+                schema,
+                name,
+                mediaSchema,
+                "schemas",
+                {
+                    isNonNull: options.isNonNull,
+                    operationResponseType: options.operationResponseType,
+                },
+                collector,
+            );
+        }
+    }
+
     if ("schema" in _type) {
         const t = _type as MediaTypeObject;
         return gatherMetaForType(
@@ -228,24 +564,40 @@ export const gatherMetaForType = (
             collector,
         );
     }
-    const type = _type as SchemaObject | ParameterObject | ResponseObject | RequestBodyObject | HeaderObject;
 
-    // fix corrupted type definition, seems to occur sometimes
-    if ("properties" in type && !("type" in type)) {
-        (type as ObjectSubtype)["type"] = "object";
+    const { schema: normalized, isNullable: schemaNullable } = normalizeOpenAPISchema(schema, _type);
+    if (normalized && typeof normalized === "object" && "$ref" in normalized) {
+        return applyNullable(
+            gatherMetaForType(
+                schema,
+                name,
+                normalized as ReferenceObject,
+                typeType,
+                {
+                    isNonNull: options.isNonNull,
+                    operationResponseType: options.operationResponseType,
+                },
+                collector,
+            ),
+            schemaNullable,
+        );
     }
+
+    const type = normalized as OpenAPISchemaNode;
+
+    const isObjectType =
+        type.type === "object" ||
+        (!!(type as { properties?: unknown }).properties && type.type !== "array" && !type.oneOf && !type.anyOf);
 
     let meta: TypeMeta = {
         name: options.operationResponseType ? name : options.isNonNull ? `${name}!` : name,
 
         description: type.description,
 
-        isObject:
-            "type" in type &&
-            (type.type === "object" || JSON.stringify(type.type) === JSON.stringify(["object", "null"])),
+        isObject: isObjectType,
         fields: [],
 
-        isUnion: !!(type as SchemaObject).oneOf || !!(type as SchemaObject).anyOf || !!(type as SchemaObject).allOf,
+        isUnion: !!type.oneOf || !!type.anyOf,
         possibleTypes: [],
 
         isList: 0,
@@ -253,13 +605,7 @@ export const gatherMetaForType = (
         isScalar: false,
         scalarTSType: undefined,
 
-        isEnum: {
-            schemas: !!(type as SchemaObject).enum,
-            parameters: false,
-            responses: false,
-            requestBodies: false,
-            headers: false,
-        }[typeType],
+        isEnum: !!type.enum,
 
         enumValues: [],
 
@@ -273,10 +619,16 @@ export const gatherMetaForType = (
     const identifyingTypeName = makeIdentifyingTypeName(meta);
     // Handle already processed types
     if (collector.hasType(identifyingTypeName)) {
-        return collector.getType(identifyingTypeName);
+        return applyNullable(collector.getType(identifyingTypeName), schemaNullable);
     } else {
         meta.name = identifyingTypeName;
+        meta.ofType = meta;
         collector.addType(meta);
+        // Also index by the gather name so `$ref` → component lookups cut cycles
+        // before/while fields are walked (identifyingTypeName may add `!` / Input).
+        if (typeType === "schemas" && name) {
+            collector.beginSchema(name, meta);
+        }
     }
 
     meta.ofType = meta;
@@ -289,7 +641,8 @@ export const gatherMetaForType = (
             meta.enumValues.push({
                 name: String(enumValue as any),
                 description: type.description,
-                type: gatherMetaForType(schema, name, type, typeType, { isNonNull: options.isNonNull }, collector),
+                type: gatherMetaForType(schema, name, type as SchemaObject, typeType, { isNonNull: options.isNonNull }, collector),
+                value: enumValue as string | number | boolean | null,
             });
         }
     }
@@ -323,12 +676,12 @@ export const gatherMetaForType = (
                     collector.removeType(identifyingTypeName);
                     meta = bodyType.fields[0].type;
                     collector.addType(meta);
-                    return meta;
+                    return applyNullable(meta, schemaNullable);
                 } else {
                     collector.removeType(identifyingTypeName);
                     meta = bodyType;
                     collector.addType(meta);
-                    return meta;
+                    return applyNullable(meta, schemaNullable);
                 }
             }
         }
@@ -415,6 +768,23 @@ export const gatherMetaForType = (
     // Handle object types
     if (meta.isObject) {
         const t = type as ObjectSubtype;
+        const propCount = Object.keys(t.properties ?? {}).length;
+        if (
+            propCount === 0 &&
+            (t.additionalProperties === true || JSON.stringify(t.additionalProperties) === JSON.stringify({}))
+        ) {
+            collector.removeType(identifyingTypeName);
+            meta.isObject = false;
+            meta.isScalar = true;
+            meta.name = options.isNonNull ? "JSON!" : "JSON";
+            meta.name = makeIdentifyingTypeName(meta);
+            collector.addType(meta);
+            if (typeType === "schemas" && name) {
+                collector.endSchema(name);
+            }
+            return applyNullable(meta, schemaNullable);
+        }
+
         // Gather meta for each field
         const fields = t.properties;
         for (const [key, value] of Object.entries(fields ?? {})) {
@@ -504,8 +874,8 @@ export const gatherMetaForType = (
                     typescriptConformTypeOfRefWithoutArray +
                     (valueTypeMeta.isList
                         ? Array.from({ length: valueTypeMeta.isList })
-                              .map((_) => "[]")
-                              .join("")
+                            .map((_) => "[]")
+                            .join("")
                         : "");
 
                 if (valueTypeMeta.isScalar && valueTypeMeta.scalarTSType) {
@@ -534,7 +904,12 @@ export const gatherMetaForType = (
         if (additionalFieldsType && meta.fields.length === 1) {
             collector.removeType(identifyingTypeName);
             collector.addType(additionalFieldsType);
-            return additionalFieldsType;
+            // Clear the in-progress stub so later `$ref` lookups re-gather
+            // (and receive the collapsed scalar) instead of the stale object meta.
+            if (typeType === "schemas" && name) {
+                collector.endSchema(name);
+            }
+            return applyNullable(additionalFieldsType, schemaNullable);
         }
     }
 
@@ -576,65 +951,122 @@ export const gatherMetaForType = (
     }
 
     if (meta.isScalar) {
-        const t = type as SchemaObject;
-        if (t.type === "array") {
-            // the name added up until now can in no way be the final name, because
-            // it will either be something not existing and having it in the collector
-            // will prevent it from being collected in the next step
-            // or it will not reflect the final name anyways because we will add the
-            // array brackets to the name
-            // however, there are schemas that have direct self-referencing array-types,
-            // so we will need to check if $ref in items is the same as the name of the current type
-            // and if so, we will not remove the type from the collector
-            const isRefObject = ("$ref" in (type as ArraySubtype).items!) as unknown as ReferenceObject;
+        const t = type as OpenAPISchemaNode;
+        // the name added up until now can in no way be the final name, because
+        // it will either be something not existing and having it in the collector
+        // will prevent it from being collected in the next step
+        // or it will not reflect the final name anyways because we will add the
+        // array brackets to the name
+        // however, there are schemas that have direct self-referencing array-types,
+        // so we will need to check if $ref in items is the same as the name of the current type
+        // and if so, we will not remove the type from the collector
+
+        if (isTupleSchema(t)) {
+            collector.removeType(identifyingTypeName);
+
+            const elements = (t.prefixItems ?? []).map((item, i) => {
+                const itemSchema = item as OpenAPISchemaNode | ReferenceObject;
+                const title =
+                    itemSchema && typeof itemSchema === "object" && !("$ref" in itemSchema)
+                        ? (itemSchema as OpenAPISchemaNode).title
+                        : undefined;
+                const elMeta = gatherMetaForType(
+                    schema,
+                    title ? camelCaps([name, title]) : camelCaps([name, `El${i}`]),
+                    item,
+                    "schemas",
+                    { isNonNull: true },
+                    collector,
+                );
+                const elTs = typeMetaToTypescript(elMeta);
+                return title ? `${title}: ${elTs}` : elTs;
+            });
+
+            const restItems: unknown = (t as { items?: unknown }).items;
+            let tupleTS = `[${elements.join(", ")}]`;
+            if (restItems && restItems !== false && typeof restItems === "object") {
+                const restMeta = gatherMetaForType(
+                    schema,
+                    camelCaps([name, "Rest"]),
+                    restItems as ReferenceObject | SchemaObject,
+                    "schemas",
+                    { isNonNull: false },
+                    collector,
+                );
+                tupleTS = `[${elements.join(", ")}, ...${typeMetaToTypescript(restMeta)}[]]`;
+            }
+
+            const tupleName = identifyingTypeName.replace(/!$/, "");
+            meta = createACustomScalarType(tupleName, t.description, tupleTS, collector);
+            meta.isNonNull = options.isNonNull;
+            if (options.isNonNull && !meta.name.endsWith("!")) {
+                meta = { ...meta, name: `${meta.name}!`, isNonNull: true };
+                meta.ofType = meta;
+            }
+        } else if (t.type === "array") {
+            const items = (t as ArraySubtype).items;
+            const itemsIsObject = !!items && typeof items === "object";
+            const isRefObject = itemsIsObject && "$ref" in items;
 
             if (
                 !isRefObject ||
-                ((type as ArraySubtype).items as ReferenceObject).$ref !==
-                    `#/components/${typeType}/${identifyingTypeName}`
+                (items as ReferenceObject).$ref !== `#/components/${typeType}/${identifyingTypeName}`
             ) {
                 collector.removeType(identifyingTypeName);
             }
 
-            meta.isList++;
-            const arraymeta = gatherMetaForType(
-                schema,
-                // it will get the name of the ref object if it is a ref object
-                isRefObject ? "" : name,
-                (type as ArraySubtype).items as ReferenceObject | SchemaObject,
-                "schemas",
-                { isNonNull: options.isNonNull },
-                collector,
-            );
+            if (!itemsIsObject) {
+                const unknownArr = createACustomScalarType(
+                    identifyingTypeName.replace(/!$/, ""),
+                    t.description,
+                    "unknown[]",
+                    collector,
+                );
+                meta = unknownArr;
+                meta.isNonNull = options.isNonNull;
+            } else {
+                meta.isList++;
+                const arraymeta = gatherMetaForType(
+                    schema,
+                    isRefObject ? "" : name,
+                    items as ReferenceObject | SchemaObject,
+                    "schemas",
+                    { isNonNull: options.isNonNull },
+                    collector,
+                );
 
-            const depth = (meta.isList += arraymeta?.isList ?? 0);
-            meta = { ...arraymeta, isList: depth, name: `[${arraymeta.name}]` };
-            meta.ofType = meta;
-        } else if (typeof t.type === "string") {
-            collector.removeType(identifyingTypeName);
-
-            meta.name = camelCaps([t.type]);
-
-            const mapFormatToType = {
-                double: "Float",
-                float: "Float",
-                integer: "Int",
-                long: "Int",
-                int32: "Int",
-                int64: "Int",
-                number: "Float",
-                byte: "Int",
-                "date-time": "DateTime",
-                date: "Date",
-                time: "Time",
-            };
-            if (t.format && t.format.toLowerCase() in mapFormatToType) {
-                meta.name = mapFormatToType[t.format.toLowerCase() as keyof typeof mapFormatToType];
+                const depth = (meta.isList += arraymeta?.isList ?? 0);
+                meta = { ...arraymeta, isList: depth, name: `[${arraymeta.name}]` };
+                meta.ofType = meta;
             }
-        } else if (Array.isArray(t)) {
+        } else {
+            const tsOverride = parseTypescriptTypeFromSchema(t);
+            const mappedName = mapJsonSchemaTypeToSamariumScalar(t);
+
             collector.removeType(identifyingTypeName);
 
-            meta.name = camelCaps(t);
+            if (tsOverride) {
+                const typedefToSamarium: Record<string, string> = {
+                    string: "String",
+                    number: "Float",
+                    boolean: "Boolean",
+                    ...Object.fromEntries(Object.keys(SAMARIUM_SCALAR_TO_TS).map((k) => [k, k])),
+                };
+                const knownScalar = typedefToSamarium[tsOverride];
+                if (knownScalar) {
+                    meta.name = knownScalar;
+                } else {
+                    const scalarName = identifyingTypeName.replace(/!$/, "");
+                    meta.scalarTSType = tsOverride;
+                    meta.name = scalarName;
+                    meta.ofType = meta;
+                    collector.addCustomScalar(meta);
+                }
+            } else if (mappedName) {
+                meta.name = mappedName;
+            } else if (typeof t.type === "string") {
+                meta.name = camelCaps([t.type]);
+            }
         }
 
         if (options.isNonNull && !meta.name.endsWith("!")) {
@@ -647,8 +1079,11 @@ export const gatherMetaForType = (
     }
 
     collector.addType(meta);
+    if (typeType === "schemas" && name) {
+        collector.endSchema(name);
+    }
 
-    return meta;
+    return applyNullable(meta, schemaNullable);
 };
 
 export const gatherMetaForParameter = (
@@ -666,14 +1101,47 @@ export const gatherMetaForParameter = (
     location: "query" | "path" | "header" | "cookie" | "body",
     options: {
         isNonNull: boolean;
+        style?: OpenAPIParameterStyle;
+        explode?: boolean;
+        contentType?: string;
     },
     collector: Collector,
 ): ParameterMeta => {
+    const style =
+        options.style ??
+        ("style" in type && typeof (type as ParameterObject).style === "string"
+            ? asOpenAPIParameterStyle((type as ParameterObject).style)
+            : undefined);
+    const explode =
+        options.explode ??
+        ("explode" in type && typeof (type as ParameterObject).explode === "boolean"
+            ? (type as ParameterObject).explode
+            : undefined);
+    let contentType = options.contentType;
+    if (!contentType && "content" in type && (type as ParameterObject | RequestBodyObject).content) {
+        const content = (type as ParameterObject | RequestBodyObject).content!;
+        contentType =
+            (content["application/json"] && "application/json") ||
+            (content["application/x-www-form-urlencoded"] && "application/x-www-form-urlencoded") ||
+            (content["multipart/form-data"] && "multipart/form-data") ||
+            (content["application/octet-stream"] && "application/octet-stream") ||
+            (content["text/plain"] && "text/plain") ||
+            Object.keys(content)[0];
+    }
+    let typeMeta = gatherMetaForType(schema, name, type, typeType, options, collector);
+    // Shared component schemas are gathered once (often optional). Parameter
+    // `required` must still control the arg's `?` / non-null marker.
+    if (typeMeta.isNonNull !== options.isNonNull) {
+        typeMeta = { ...typeMeta, isNonNull: options.isNonNull };
+    }
     return {
         name,
         description: type.description,
         location,
-        type: gatherMetaForType(schema, name, type, typeType, options, collector),
+        type: typeMeta,
+        style,
+        explode,
+        contentType,
     };
 };
 
@@ -718,6 +1186,59 @@ const methodToVerbs = {
  * @param options Codegen options
  * @returns
  */
+const resolveParameterObject = (
+    schema: OpenAPI3,
+    arg: ReferenceObject | ParameterObject,
+): ParameterObject | undefined => {
+    if (!("$ref" in arg)) return arg;
+    const resolved = resolveRef(schema, arg);
+    if (!resolved || typeof resolved !== "object" || !("in" in (resolved as object))) {
+        console.warn(`Unresolved parameter $ref: ${arg.$ref}`);
+        return undefined;
+    }
+    return resolved as ParameterObject;
+};
+
+const resolveRequestBodyObject = (
+    schema: OpenAPI3,
+    body: ReferenceObject | RequestBodyObject,
+): RequestBodyObject | undefined => {
+    if (!("$ref" in body)) return body;
+    const resolved = resolveRef(schema, body);
+    if (!resolved || typeof resolved !== "object") {
+        console.warn(`Unresolved requestBody $ref: ${body.$ref}`);
+        return undefined;
+    }
+    return resolved as RequestBodyObject;
+};
+
+const resolveResponseObject = (
+    schema: OpenAPI3,
+    response: ReferenceObject | ResponseObject,
+): ResponseObject | undefined => {
+    if (!("$ref" in response)) return response;
+    const resolved = resolveRef(schema, response);
+    if (!resolved || typeof resolved !== "object") {
+        console.warn(`Unresolved response $ref: ${response.$ref}`);
+        return undefined;
+    }
+    return resolved as ResponseObject;
+};
+
+/** Prefer exact 2xx, then pattern keys like `2XX`, then `default`. */
+const pickSuccessResponse = (
+    responses: OperationObject["responses"],
+): ReferenceObject | ResponseObject | undefined => {
+    if (!responses) return undefined;
+    const exact2xx = Object.entries(responses)
+        .filter(([code]) => /^\d+$/.test(code) && code.startsWith("2"))
+        .sort(([a], [b]) => +a - +b);
+    if (exact2xx.length > 0) return exact2xx[0][1];
+    const patterned = Object.entries(responses).find(([code]) => /^2XX$/i.test(code));
+    if (patterned) return patterned[1];
+    return responses.default;
+};
+
 export const gatherMetaForPathOperation = (
     schema: OpenAPI3,
     path: string,
@@ -725,20 +1246,18 @@ export const gatherMetaForPathOperation = (
     operation: OperationObject,
     options: CodegenOptions,
     collector: Collector,
+    pathLevelParams: (ReferenceObject | ParameterObject)[] = [],
+    pathServers?: ServerMeta[],
 ): OperationMeta | undefined => {
     if (!operation.responses) {
         console.warn("Operation has no responses!");
         return undefined;
     }
 
-    const okResponses = Object.entries(operation.responses)
-        .filter(([statusCode, _]) => statusCode.toString().startsWith("2"))
-        .sort(([codeA, _], [codeB, __]) => +codeA - +codeB);
-    const successResponse = okResponses.length > 0 ? okResponses[0][1] : operation.responses.default;
-
-    const errorResponses = Object.entries(operation.responses).filter(
-        ([statusCode, _]) => statusCode.toString().startsWith("4") || statusCode.toString().startsWith("5"),
-    );
+    const successResponseRaw = pickSuccessResponse(operation.responses);
+    const successResponse = successResponseRaw
+        ? resolveResponseObject(schema, successResponseRaw as ReferenceObject | ResponseObject)
+        : undefined;
 
     if (!successResponse) {
         console.warn("Operation has no success response!", operation);
@@ -747,13 +1266,11 @@ export const gatherMetaForPathOperation = (
 
     const operationName =
         operation.operationId?.replaceAll(".", "_").replaceAll("/", "_").replaceAll("-", "_") ??
-        // TODO: the following fallback is bad, needs more logic
         camelCaps(
             [
                 methodToVerbs[method],
                 ...path
                     .split("/")
-                    // remove curly braces and use the param name like 'By{Param}'
                     .flatMap((p) =>
                         [p.includes("{") ? "By" : "", p.replace(/{([^}]+)}/g, "$1")].filter((s) => s.length > 0),
                     ),
@@ -784,6 +1301,8 @@ export const gatherMetaForPathOperation = (
         }
     }
 
+    const operationServers = gatherServers(operation.servers) ?? pathServers;
+
     const meta: OperationMeta = {
         name: operationName,
         description: operation.description,
@@ -792,66 +1311,90 @@ export const gatherMetaForPathOperation = (
         args: [],
         isEventStream,
         responseContentType,
+        security: gatherSecurityRequirements(operation.security),
+        servers: operationServers,
         type: gatherMetaForType(
             schema,
             operationName,
-            "content" in successResponse
+            responseMedia
                 ? (responseMedia as MediaTypeObject | ReferenceObject)
-                : (successResponse as ReferenceObject),
+                : (successResponse as ResponseObject),
             "responses",
             { isNonNull: false, operationResponseType: true },
             collector,
         ),
     };
 
-    // Gather meta for each argument, first from parameters
-    for (const arg of operation.parameters ?? ([] as (ReferenceObject | ParameterObject)[])) {
-        const name = "$ref" in arg ? arg.$ref.split("/").pop() : arg.name;
-        const rawLocation =
-            "in" in arg ? arg.in : (arg.$ref.split("/").at(-2)! as "parameters" | "requestBodies" | "headers");
+    // Path-item parameters are inherited; operation parameters override by (name, in).
+    const mergedParams = [...pathLevelParams, ...(operation.parameters ?? [])];
+    const seenParamKeys = new Set<string>();
+    // Walk in reverse so operation-level wins, then reverse again for stable order.
+    const resolvedParams: ParameterObject[] = [];
+    for (const arg of [...mergedParams].reverse()) {
+        const param = resolveParameterObject(schema, arg);
+        if (!param) continue;
+        const key = `${param.in}:${param.name}`;
+        if (seenParamKeys.has(key)) continue;
+        seenParamKeys.add(key);
+        resolvedParams.push(param);
+    }
+    resolvedParams.reverse();
+
+    for (const param of resolvedParams) {
         const location = (
             {
-                parameters: "query",
-                requestBodies: "body",
-                headers: "header",
                 cookie: "cookie",
                 path: "path",
                 query: "query",
                 header: "header",
             } as const
-        )[rawLocation];
+        )[param.in];
+        const defaultStyle: OpenAPIParameterStyle | undefined =
+            param.in === "path" || param.in === "header"
+                ? "simple"
+                : param.in === "query" || param.in === "cookie"
+                  ? "form"
+                  : undefined;
+        const style = asOpenAPIParameterStyle(param.style) ?? defaultStyle;
 
         meta.args.push(
             gatherMetaForParameter(
                 schema,
-                name!,
-                arg,
+                param.name,
+                param,
                 "parameters",
                 location,
                 {
-                    isNonNull: "$ref" in arg ? false : (arg.required ?? false),
+                    isNonNull: param.required ?? param.in === "path",
+                    style,
+                    explode: param.explode ?? style === "form",
                 },
                 collector,
             ),
         );
     }
 
-    // then from requestBody
     if (operation.requestBody) {
-        const t = operation.requestBody as RequestBodyObject;
-        const body = gatherMetaForParameter(
+        const t = resolveRequestBodyObject(
             schema,
-            `${operationName}RequestBody`,
-            t,
-            "requestBodies",
-            "body",
-            {
-                isNonNull: t.required ?? false,
-            },
-            collector,
+            operation.requestBody as ReferenceObject | RequestBodyObject,
         );
-        body.name = "$";
-        meta.args.push(body);
+        if (t) {
+            const body = gatherMetaForParameter(
+                schema,
+                `${operationName}RequestBody`,
+                t,
+                "requestBodies",
+                "body",
+                {
+                    isNonNull: t.required ?? false,
+                },
+                collector,
+            );
+            body.name = "$";
+            meta.args.push(body);
+            meta.requestContentType = body.contentType ?? "application/json";
+        }
     }
 
     return meta;

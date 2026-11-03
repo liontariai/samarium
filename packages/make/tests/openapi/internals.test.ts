@@ -98,7 +98,7 @@ describe("Internal structure and functionality of the SelectionWrapper and Opera
         expect(renderedOp1.variables).toEqual({ limit: 10 });
         expect(renderedOp1.variableDefinitions).toEqual({
             limit: {
-                type: "Integer",
+                type: "Int",
                 location: "query",
             },
         });

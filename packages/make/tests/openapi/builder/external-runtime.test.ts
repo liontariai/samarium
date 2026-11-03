@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import type { OpenAPI3 } from "openapi-typescript";
-import { Generator } from "../generator";
-import { GeneratorSelectionTypeFlavorDefault } from "../../flavors/default/generator-flavor";
+import { Generator } from "@/openapi/builder/generator";
+import { GeneratorSelectionTypeFlavorDefault } from "@/openapi/flavors/default/generator-flavor";
 
 const booksSpec = {
     openapi: "3.0.3",

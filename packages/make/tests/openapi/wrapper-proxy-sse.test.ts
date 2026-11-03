@@ -6,9 +6,9 @@ import {
     RootOperation,
     SelectionWrapper,
     SLW_OP_PATH,
-} from "../wrapper";
-import { gatherMetaForPathOperation } from "../../../builder/meta";
-import { Collector } from "../../../builder/collector";
+} from "@/openapi/flavors/default/wrapper";
+import { gatherMetaForPathOperation } from "@/openapi/builder/meta";
+import { Collector } from "@/openapi/builder/collector";
 import type { OpenAPI3, OperationObject } from "openapi-typescript";
 
 function resetRootOptions() {
@@ -17,7 +17,7 @@ function resetRootOptions() {
     RootOperation[OPTIONS].headers = {};
     RootOperation[OPTIONS]._auth_fn = undefined;
     RootOperation[OPTIONS]._auth_token = undefined;
-    RootOperation.authHeaderName = "Authorization";
+    RootOperation.resetSecurity();
 }
 
 describe("OpenAPI SelectionWrapper proxy + SSE", () => {

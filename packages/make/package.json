@@ -1,6 +1,6 @@
 {
     "name": "@samarium.sdk/make",
-    "version": "0.30.3",
+    "version": "0.31.0",
     "exports": {
         ".": {
             "import": "./dist/esm/index.js",
@@ -44,13 +44,13 @@
     },
     "files": [
         "dist/**/*",
-        "!dist/**/__tests__/*",
+        "!dist/types/tests/**",
         "README.md",
         "package.json"
     ],
     "scripts": {
         "prettier": "prettier --write .",
-        "bundle": "bun bundle.ts && tsc && rm -rf `find ./dist/ -type d -name __tests__`",
+        "bundle": "bun bundle.ts && tsc && rm -rf dist/types/tests",
         "prepublishOnly": "bun run bundle",
         "test": "bun run generate:test-sdks && bun test",
         "generate:test-sdks": "bun scripts/generate-test-sdks.ts",
