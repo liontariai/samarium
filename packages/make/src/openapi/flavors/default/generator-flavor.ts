@@ -26,6 +26,8 @@ const TS_TYPE_INTRINSICS = new Set([
     "object",
     "undefined",
     "null",
+    "symbol",
+    "bigint",
     "Record",
     "Array",
     "Date",
