@@ -23,5 +23,13 @@
         },
         "verbatimModuleSyntax": true
     },
-    "include": ["src/**/*", "src/**/*.json", "tests/**/*", "package.json", "bundle.ts", "scripts/**/*"]
+    "include": [
+        "src/**/*",
+        "src/**/*.json",
+        "tests/**/*",
+        "tests/**/*.json",
+        "package.json",
+        "bundle.ts",
+        "scripts/**/*"
+    ]
 }
