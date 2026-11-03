@@ -779,6 +779,9 @@ export const gatherMetaForType = (
             meta.name = options.isNonNull ? "JSON!" : "JSON";
             meta.name = makeIdentifyingTypeName(meta);
             collector.addType(meta);
+            if (typeType === "schemas" && name) {
+                collector.endSchema(name);
+            }
             return applyNullable(meta, schemaNullable);
         }
 
@@ -901,6 +904,11 @@ export const gatherMetaForType = (
         if (additionalFieldsType && meta.fields.length === 1) {
             collector.removeType(identifyingTypeName);
             collector.addType(additionalFieldsType);
+            // Clear the in-progress stub so later `$ref` lookups re-gather
+            // (and receive the collapsed scalar) instead of the stale object meta.
+            if (typeType === "schemas" && name) {
+                collector.endSchema(name);
+            }
             return applyNullable(additionalFieldsType, schemaNullable);
         }
     }
