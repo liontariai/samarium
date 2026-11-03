@@ -1246,19 +1246,22 @@ ${unresolvedAliases}
 
         let helperFunctions = "";
         if (this.typeMeta.isUnion && this.typeMeta.possibleTypes.filter((t) => !t.isScalar && !t.isEnum).length) {
-            helperFunctions = `
-            $on: {
-                ${this.typeMeta.possibleTypes
-                    .filter((t) => !t.isScalar && !t.isEnum)
-                    .map(
-                        (
-                            t,
-                        ) => `"${t.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "")}": ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
+            const seenOnTypes = new Set<string>();
+            const onEntries = this.typeMeta.possibleTypes
+                .filter((t) => !t.isScalar && !t.isEnum)
+                .map((t) => {
+                    const key = t.name.replaceAll("[", "").replaceAll("]", "").replaceAll("!", "");
+                    if (seenOnTypes.has(key)) return null;
+                    seenOnTypes.add(key);
+                    return `"${key}": ${this.originalTypeNameToTypescriptFriendlyName(t.name)}Selection.bind({
                         collector: this,
                         fieldName: "",
-                    }),`,
-                    )
-                    .join("\n")}
+                    }),`;
+                })
+                .filter((entry): entry is string => entry !== null);
+            helperFunctions = `
+            $on: {
+                ${onEntries.join("\n")}
                 }
             `;
         } else {
