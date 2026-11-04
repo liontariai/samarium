@@ -1,0 +1,42 @@
+name: OpenAPI oracle
+
+on:
+    push:
+        paths:
+            - "packages/make/src/openapi/**"
+            - "tools/oas-gen/**"
+            - ".github/workflows/oas-oracle.yml"
+    pull_request:
+        paths:
+            - "packages/make/src/openapi/**"
+            - "tools/oas-gen/**"
+            - ".github/workflows/oas-oracle.yml"
+
+jobs:
+    oas-gen-and-oracle:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v4
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+            - name: Install
+              run: bun install --frozen-lockfile
+            - name: OpenAPI make unit tests
+              working-directory: packages/make
+              run: bun test tests/openapi/builder/cyclic-schema.test.ts tests/openapi/runtime-encoding.test.ts tests/openapi/security-auth.test.ts tests/openapi/builder/schema-dialects.test.ts tests/openapi/features.test.ts
+            - name: oas-gen suite
+              working-directory: tools/oas-gen
+              run: bun test
+            - name: Short full-random soak
+              run: |
+                  mkdir -p repro
+                  bun tools/oas-gen/src/cli.ts soak --minutes 1 --oracle samarium --profile full-random --out ./repro
+            - name: Upload soak repros
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: oas-soak-repros
+                  path: repro/
+                  if-no-files-found: ignore
