@@ -23,6 +23,9 @@ jobs:
                   bun-version: latest
             - name: Install
               run: bun install --frozen-lockfile
+            - name: Generate OpenAPI test SDKs
+              working-directory: packages/make
+              run: bun run generate:test-sdks --flavor=openapi
             - name: OpenAPI make unit tests
               working-directory: packages/make
               run: bun test tests/openapi/builder/cyclic-schema.test.ts tests/openapi/runtime-encoding.test.ts tests/openapi/security-auth.test.ts tests/openapi/builder/schema-dialects.test.ts tests/openapi/features.test.ts
