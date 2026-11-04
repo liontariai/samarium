@@ -43,6 +43,7 @@
     },
     "workspaces": [
         "examples/frontend/react/remix-todo-app",
-        "packages/**/*"
+        "packages/**/*",
+        "tools/**/*"
     ]
 }

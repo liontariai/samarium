@@ -1,0 +1,59 @@
+{
+    "name": "@samarium.sdk/oas-gen",
+    "version": "0.1.0",
+    "description": "Seeded OpenAPI document generator for Samarium coverage testing",
+    "type": "module",
+    "bin": {
+        "oas-gen": "./src/cli.ts"
+    },
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "files": [
+        "src/**/*",
+        "vendor/**/*",
+        "README.md",
+        "package.json"
+    ],
+    "scripts": {
+        "test": "bun test",
+        "phase1-report": "bun tests/phase1-report.ts",
+        "phase2-report": "bun tests/phase2-report.ts",
+        "phase3-report": "bun tests/phase3-report.ts",
+        "phase4-report": "bun tests/phase4-report.ts",
+        "phase5-report": "bun tests/phase5-report.ts",
+        "phase6-report": "bun tests/phase6-report.ts",
+        "soak": "bun src/cli.ts soak --minutes 1 --oracle samarium --profile full-random --out ../../repro"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/liontariai/samarium",
+        "directory": "packages/oas-gen"
+    },
+    "keywords": [
+        "openapi",
+        "oas",
+        "generator",
+        "property-based-testing"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
+    "prettier": {
+        "tabWidth": 4,
+        "printWidth": 120
+    },
+    "dependencies": {
+        "@apidevtools/swagger-parser": "^12.1.0",
+        "@samarium.sdk/make": "workspace:*",
+        "ajv": "^8.17.1",
+        "ajv-draft-04": "^1.0.0",
+        "ajv-formats": "^3.0.1",
+        "commander": "^11.1.0",
+        "yaml": "^2.6.0"
+    },
+    "devDependencies": {
+        "bun-types": "^1.2.19",
+        "typescript": "^5.0.0"
+    }
+}

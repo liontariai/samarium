@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: OAuth demo
+  version: "1.0.0"
+security:
+  - oauth: [read]
+paths:
+  /me:
+    get:
+      operationId: me
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/token
+          scopes:
+            read: Read
+            write: Write

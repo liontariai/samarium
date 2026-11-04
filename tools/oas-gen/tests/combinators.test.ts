@@ -1,0 +1,151 @@
+import { describe, expect, it } from "bun:test";
+import { generate } from "../src/generate.ts";
+import { pathTemplateTokens } from "../src/cons/repair.ts";
+import { documentToJson } from "../src/ser/index.ts";
+import { HTTP_METHODS } from "../src/ast/index.ts";
+
+function operations(json: Record<string, unknown>) {
+    const paths = (json.paths ?? {}) as Record<string, Record<string, unknown>>;
+    const out: Array<{ path: string; method: string; op: Record<string, unknown> }> = [];
+    for (const [path, item] of Object.entries(paths)) {
+        for (const method of HTTP_METHODS) {
+            if (item[method] && typeof item[method] === "object") {
+                out.push({ path, method, op: item[method] as Record<string, unknown> });
+            }
+        }
+    }
+    return out;
+}
+
+function paramsOf(item: Record<string, unknown>, op: Record<string, unknown>) {
+    const a = Array.isArray(item.parameters) ? item.parameters : [];
+    const b = Array.isArray(op.parameters) ? op.parameters : [];
+    return [...a, ...b] as Array<Record<string, unknown>>;
+}
+
+describe("combinators", () => {
+    it("path parameters are always required:true and in:path", () => {
+        for (let seed = 0; seed < 40; seed++) {
+            for (const dialect of ["3.0", "3.1"] as const) {
+                const spec = generate({ seed, dialect, profile: "core-rest" });
+                const json = documentToJson(spec.ir) as Record<string, unknown>;
+                const paths = (json.paths ?? {}) as Record<string, Record<string, unknown>>;
+                for (const { path, op } of operations(json)) {
+                    const item = paths[path]!;
+                    for (const p of paramsOf(item, op)) {
+                        if (p.in === "path") {
+                            expect(p.required).toBe(true);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    it("every {template} token has a matching path parameter", () => {
+        for (let seed = 0; seed < 40; seed++) {
+            const spec = generate({ seed, dialect: "3.1", profile: "core-rest" });
+            const json = documentToJson(spec.ir) as Record<string, unknown>;
+            const paths = (json.paths ?? {}) as Record<string, Record<string, unknown>>;
+            for (const { path, op } of operations(json)) {
+                const tokens = pathTemplateTokens(path);
+                const names = paramsOf(paths[path]!, op)
+                    .filter((p) => p.in === "path")
+                    .map((p) => p.name);
+                for (const t of tokens) {
+                    expect(names).toContain(t);
+                }
+            }
+        }
+    });
+
+    it("schema-heavy emits composition and discriminator", () => {
+        const spec = generate({ seed: 3, dialect: "3.1", profile: "schema-heavy" });
+        const json = documentToJson(spec.ir) as Record<string, unknown>;
+        const schemas = ((json.components as { schemas?: Record<string, Record<string, unknown>> } | undefined)?.schemas ??
+            {}) as Record<string, Record<string, unknown>>;
+        expect(Object.values(schemas).some((s) => Array.isArray(s.allOf))).toBe(true);
+        expect(Object.values(schemas).some((s) => Array.isArray(s.oneOf) && isObj(s.discriminator))).toBe(true);
+        expect(spec.meta.features).toContain("schema.discriminator");
+        expect(spec.meta.features).toContain("schema.format.uuid");
+    });
+
+    it("security-matrix covers scheme types and AND/OR/optional", () => {
+        const spec = generate({ seed: 1, dialect: "3.1", profile: "security-matrix" });
+        const json = documentToJson(spec.ir) as Record<string, unknown>;
+        const schemes = (json.components as { securitySchemes?: Record<string, Record<string, unknown>> }).securitySchemes!;
+        expect(schemes.apiKeyHeader?.in).toBe("header");
+        expect(schemes.apiKeyQuery?.in).toBe("query");
+        expect(schemes.apiKeyCookie?.in).toBe("cookie");
+        expect(schemes.basicAuth?.scheme).toBe("basic");
+        expect(schemes.digestAuth?.scheme).toBe("digest");
+        expect(schemes.digestAuth?.bearerFormat).toBeUndefined();
+        expect(isObj(schemes.oauth2?.flows) && "authorizationCode" in schemes.oauth2.flows).toBe(true);
+        expect(schemes.mtls?.type).toBe("mutualTLS");
+        const optional = (json.paths as Record<string, Record<string, Record<string, unknown>>>)["/optional"]?.get;
+        expect(optional?.security).toEqual([]);
+        const andOp = (json.paths as Record<string, Record<string, Record<string, unknown>>>)["/and"]?.get;
+        const andReq = andOp?.security as Array<Record<string, unknown>> | undefined;
+        expect(andReq?.[0] && Object.keys(andReq[0]).length).toBeGreaterThan(1);
+        expect(spec.meta.features).toContain("security.requirement.and");
+        expect(spec.meta.features).toContain("op.security.optional");
+    });
+
+    it("callback-webhook links are XOR and 3.0 has no webhooks", () => {
+        for (const dialect of ["3.0", "3.1"] as const) {
+            const spec = generate({ seed: 2, dialect, profile: "callback-webhook" });
+            const json = documentToJson(spec.ir) as Record<string, unknown>;
+            expect(json.webhooks === undefined || dialect === "3.1").toBe(true);
+            const post = (json.paths as Record<string, Record<string, Record<string, unknown>>>)["/items"]?.post;
+            expect(post?.callbacks).toBeDefined();
+            const created = (post?.responses as Record<string, Record<string, unknown>>)?.["200"];
+            const links = created?.links as Record<string, Record<string, unknown>>;
+            expect(links).toBeDefined();
+            for (const link of Object.values(links)) {
+                if (link.$ref) continue;
+                expect(!!link.operationId !== !!link.operationRef).toBe(true);
+            }
+            expect(spec.meta.features).toContain("callback.expression");
+            expect(spec.meta.features).toContain("link.runtime-expression");
+        }
+        const v31 = generate({ seed: 2, dialect: "3.1", profile: "callback-webhook" });
+        expect(v31.meta.features).toContain("webhook.map");
+        expect(v31.meta.features).toContain("path-item.ref.components");
+    });
+
+    it("ref-graph emits escaped path-item $ref, cycles, and unused components", () => {
+        for (const dialect of ["3.0", "3.1"] as const) {
+            const spec = generate({ seed: 3, dialect, profile: "ref-graph", keyOrder: "stable" });
+            const json = documentToJson(spec.ir) as Record<string, unknown>;
+            const paths = json.paths as Record<string, Record<string, unknown>>;
+            const alias = paths["/foo~bar-alias"];
+            expect(alias).toBeTruthy();
+            expect(String(alias!.$ref)).toContain("~0");
+            expect(String(alias!.$ref)).toContain("~1");
+            expect(spec.meta.features).toContain("ref.json-pointer.escaped");
+            expect(spec.meta.features).toContain("ref.cyclic-schema");
+            expect(spec.meta.features).toContain("components.unused");
+            expect(spec.meta.features).toContain("op.requestBody.ref");
+            expect(spec.meta.features).toContain("ser.unicode");
+            const schemas = (json.components as Record<string, Record<string, unknown>>).schemas;
+            expect(schemas["Unused.Model"]).toBeTruthy();
+            expect(isObj(schemas.CycleNode) && isObj(schemas.CycleNode.properties)).toBe(true);
+        }
+    });
+
+    it("multi-file splits components into sidecar $ref files that bundle", async () => {
+        const spec = generate({ seed: 4, dialect: "3.0", profile: "multi-file", format: "yaml", keyOrder: "stable" });
+        expect(Object.keys(spec.files).length).toBeGreaterThan(1);
+        expect(Object.keys(spec.files).some((k) => k.startsWith("schemas/"))).toBe(true);
+        expect(spec.meta.features).toContain("multifile.relative");
+        expect(spec.meta.features).toContain("multifile.absolute");
+        expect(spec.meta.features).toContain("ref.external");
+        const root = spec.files["openapi.yaml"]!;
+        expect(root).toMatch(/\$ref:\s*['"]?\.\/schemas\//);
+        expect(root).toMatch(/\$ref:\s*['"]?\/params\//);
+    });
+});
+
+function isObj(x: unknown): x is Record<string, unknown> {
+    return !!x && typeof x === "object" && !Array.isArray(x);
+}

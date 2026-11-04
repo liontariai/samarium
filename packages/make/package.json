@@ -3,6 +3,7 @@
     "version": "0.31.0",
     "exports": {
         ".": {
+            "bun": "./src/index.ts",
             "import": "./dist/esm/index.js",
             "require": "./dist/cjs/index.js",
             "types": "./dist/types/src/index.d.ts"
@@ -61,7 +62,8 @@
         "printWidth": 120
     },
     "devDependencies": {
-        "bun-types": "^1.2.19"
+        "bun-types": "^1.2.19",
+        "@samarium.sdk/oas-gen": "workspace:*"
     },
     "peerDependencies": {
         "graphql": "^16.9.0",
