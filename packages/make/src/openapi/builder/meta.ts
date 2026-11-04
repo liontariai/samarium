@@ -422,7 +422,7 @@ const makeIdentifyingTypeName = (meta: TypeMeta, override?: { isInput?: boolean;
     const isInput = override?.isInput ?? meta.isInput;
     const isNonNull = override?.isNonNull ?? meta.isNonNull;
     const identifyingTypeName = `${meta.name.slice(0, isInput && isNonNull ? -1 : undefined)}${isInput ? `${isNonNull ? "Input!" : "Input"}` : ""}`;
-    return identifyingTypeName.replaceAll("-", "_");
+    return identifyingTypeName.replaceAll("-", "_").replaceAll(".", "_");
 };
 
 const turnObjectIntoInput = (meta: TypeMeta, collector: Collector): TypeMeta => {

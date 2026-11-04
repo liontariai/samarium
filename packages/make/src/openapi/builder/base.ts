@@ -70,7 +70,13 @@ export abstract class GeneratorSelectionTypeFlavor {
             originalTypeName = `_${originalTypeName}`;
         }
 
-        return originalTypeName.replaceAll("/", "_").replaceAll("[", "").replaceAll("]", "Array").replaceAll("!", "");
+        return originalTypeName
+            .replaceAll("/", "_")
+            .replaceAll("-", "_")
+            .replaceAll(".", "_")
+            .replaceAll("[", "")
+            .replaceAll("]", "Array")
+            .replaceAll("!", "");
     }
     protected originalTypeNameToTypescriptFriendlyName(originalTypeName: string): string {
         return GeneratorSelectionTypeFlavor.originalTypeNameToTypescriptFriendlyName(originalTypeName);
@@ -82,6 +88,8 @@ export abstract class GeneratorSelectionTypeFlavor {
     ): string {
         return `${originalTypeName
             .replaceAll("/", "_")
+            .replaceAll("-", "_")
+            .replaceAll(".", "_")
             .replaceAll("[", "")
             .replaceAll("]", "")
             .replaceAll("!", "")}${suffix}`;

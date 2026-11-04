@@ -397,4 +397,21 @@ describe("OpenAPI schema dialects (OAS 3.0 / 3.1)", () => {
         expect(code).not.toMatch(/"Null"/);
         expect(code).toMatch(/title\?:\s*string;/);
     });
+
+    it("dotted/dashed component name → valid TS identifiers (Unused_Model_v2)", async () => {
+        const code = await generateSdk(
+            usersSpec({
+                response: { $ref: "#/components/schemas/Unused.Model-v2" },
+                schemas: {
+                    "Unused.Model-v2": {
+                        oneOf: [{ type: "string" }, { type: "string" }],
+                    },
+                },
+            }),
+        );
+
+        expect(code).toMatch(/Unused_Model_v2/);
+        expect(code).toMatch(/makeUnused_Model_v2SelectionInput/);
+        expect(code).not.toMatch(/Unused\.Model/);
+    });
 });
