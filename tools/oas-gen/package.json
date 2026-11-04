@@ -45,6 +45,7 @@
     },
     "dependencies": {
         "@apidevtools/swagger-parser": "^12.1.0",
+        "@samarium.sdk/make": "workspace:*",
         "ajv": "^8.17.1",
         "ajv-draft-04": "^1.0.0",
         "ajv-formats": "^3.0.1",

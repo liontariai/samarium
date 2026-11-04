@@ -3,6 +3,7 @@
     "version": "0.31.0",
     "exports": {
         ".": {
+            "bun": "./src/index.ts",
             "import": "./dist/esm/index.js",
             "require": "./dist/cjs/index.js",
             "types": "./dist/types/src/index.d.ts"
