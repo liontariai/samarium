@@ -50,6 +50,7 @@
         "openapi-typescript": "^7.4.1",
       },
       "devDependencies": {
+        "@samarium.sdk/oas-gen": "workspace:*",
         "bun-types": "^1.2.19",
       },
       "peerDependencies": {
@@ -78,7 +79,7 @@
         "typescript": "^5.0.0",
       },
     },
-    "packages/oas-gen": {
+    "tools/oas-gen": {
       "name": "@samarium.sdk/oas-gen",
       "version": "0.1.0",
       "bin": {
@@ -409,7 +410,7 @@
 
     "@samarium.sdk/new": ["@samarium.sdk/new@workspace:packages/new"],
 
-    "@samarium.sdk/oas-gen": ["@samarium.sdk/oas-gen@workspace:packages/oas-gen"],
+    "@samarium.sdk/oas-gen": ["@samarium.sdk/oas-gen@workspace:tools/oas-gen"],
 
     "@ts-morph/common": ["@ts-morph/common@0.24.0", "", { "dependencies": { "fast-glob": "^3.3.2", "minimatch": "^9.0.4", "mkdirp": "^3.0.1", "path-browserify": "^1.0.1" } }, "sha512-c1xMmNHWpNselmpIqursHeOHHBTIsJLbB+NuovbTTRCNiTLEr/U9dbJ8qy0jd/O2x5pc3seWuOUN5R2IoOTp8A=="],
 

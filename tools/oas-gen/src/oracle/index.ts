@@ -4,7 +4,7 @@
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { OpenAPIGenerator, Flavors } from "../../../make/src/index.ts";
+import { OpenAPIGenerator, Flavors } from "@samarium.sdk/make";
 import type { GeneratedSpec } from "../types.ts";
 import { documentToJson, bundleFiles } from "../ser/index.ts";
 import { typecheckSdk } from "./typecheck.ts";
@@ -97,11 +97,7 @@ export type ReproFiles = {
     meta: string;
 };
 
-export async function writeRepro(
-    dir: string,
-    spec: GeneratedSpec,
-    verdict: OracleVerdict,
-): Promise<ReproFiles> {
+export async function writeRepro(dir: string, spec: GeneratedSpec, verdict: OracleVerdict): Promise<ReproFiles> {
     await mkdir(dir, { recursive: true });
     const yamlPath = join(dir, `${spec.meta.hash}.yaml`);
     const metaPath = join(dir, `${spec.meta.hash}.json`);
