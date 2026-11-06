@@ -1,0 +1,45 @@
+name: GraphQL oracle
+
+on:
+    push:
+        paths:
+            - "packages/make/src/graphql/**"
+            - "tools/gql-gen/**"
+            - ".github/workflows/gql-oracle.yml"
+    pull_request:
+        paths:
+            - "packages/make/src/graphql/**"
+            - "tools/gql-gen/**"
+            - ".github/workflows/gql-oracle.yml"
+
+jobs:
+    gql-gen-and-oracle:
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v4
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+            - name: Install
+              run: bun install --frozen-lockfile
+            - name: Generate GraphQL test SDKs
+              working-directory: packages/make
+              run: bun run generate:test-sdks --flavor=graphql
+            - name: GraphQL make unit tests
+              working-directory: packages/make
+              run: bun test tests/graphql/features.test.ts tests/graphql/custom-scalars.test.ts tests/graphql/builder/meta.test.ts tests/graphql/builder/external-runtime.test.ts
+            - name: gql-gen suite
+              working-directory: tools/gql-gen
+              run: bun test
+            - name: Short full-random soak
+              run: |
+                  mkdir -p repro
+                  bun tools/gql-gen/src/cli.ts soak --minutes 1 --oracle samarium --profile full-random --out ./repro
+            - name: Upload soak repros
+              if: failure()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: gql-soak-repros
+                  path: repro/
+                  if-no-files-found: ignore

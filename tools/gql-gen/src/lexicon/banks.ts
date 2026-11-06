@@ -1,0 +1,131 @@
+export const TYPE_NAMES = [
+    "User",
+    "Post",
+    "Comment",
+    "Book",
+    "Article",
+    "Author",
+    "Product",
+    "Order",
+    "Item",
+    "Node",
+    "Edge",
+    "Profile",
+    "Account",
+    "Message",
+    "Event",
+    "Tag",
+    "Category",
+    "Media",
+    "Document",
+    "Session",
+] as const;
+
+export const FIELD_NAMES = [
+    "id",
+    "name",
+    "title",
+    "body",
+    "email",
+    "status",
+    "count",
+    "createdAt",
+    "updatedAt",
+    "active",
+    "score",
+    "url",
+    "description",
+    "author",
+    "items",
+    "parent",
+    "children",
+    "owner",
+    "tags",
+    "meta",
+] as const;
+
+export const ARG_NAMES = ["id", "limit", "offset", "query", "filter", "sort", "first", "after", "input"] as const;
+
+export const ENUM_NAMES = ["Status", "Role", "Kind", "Priority", "Visibility"] as const;
+
+export const ENUM_VALUES = ["ACTIVE", "INACTIVE", "PENDING", "ARCHIVED", "DRAFT", "PUBLISHED", "HIGH", "LOW"] as const;
+
+export const INPUT_NAMES = ["CreateInput", "UpdateInput", "FilterInput", "SearchInput", "ByInput"] as const;
+
+export const INTERFACE_NAMES = ["Node", "Named", "Timestamped", "Searchable"] as const;
+
+export const UNION_NAMES = ["SearchResult", "FeedItem", "Content", "Entity"] as const;
+
+export const CUSTOM_SCALARS = ["DateTime", "JSON", "URL", "UUID", "Cursor"] as const;
+
+export const DESCRIPTIONS = [
+    "A generated type.",
+    "Optional human-readable note.",
+    "Used by Samarium gql-gen soak.",
+] as const;
+
+export const TS_RESERVED = new Set([
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "enum",
+    "export",
+    "extends",
+    "false",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "new",
+    "null",
+    "return",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "as",
+    "implements",
+    "interface",
+    "let",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "static",
+    "yield",
+    "any",
+    "boolean",
+    "constructor",
+    "declare",
+    "get",
+    "module",
+    "require",
+    "number",
+    "set",
+    "string",
+    "symbol",
+    "type",
+    "from",
+    "of",
+    "namespace",
+    "async",
+    "await",
+]);
