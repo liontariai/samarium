@@ -79,6 +79,22 @@
         "typescript": "^5.0.0",
       },
     },
+    "tools/gql-gen": {
+      "name": "@samarium.sdk/gql-gen",
+      "version": "0.1.0",
+      "bin": {
+        "gql-gen": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@samarium.sdk/make": "workspace:*",
+        "commander": "^11.1.0",
+        "graphql": "^16.9.0",
+      },
+      "devDependencies": {
+        "bun-types": "^1.2.19",
+        "typescript": "^5.0.0",
+      },
+    },
     "tools/oas-gen": {
       "name": "@samarium.sdk/oas-gen",
       "version": "0.1.0",
@@ -406,6 +422,8 @@
     "@rollup/rollup-win32-ia32-msvc": ["@rollup/rollup-win32-ia32-msvc@4.45.1", "", { "os": "win32", "cpu": "ia32" }, "sha512-lxV2Pako3ujjuUe9jiU3/s7KSrDfH6IgTSQOnDWr9aJ92YsFd7EurmClK0ly/t8dzMkDtd04g60WX6yl0sGfdw=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.45.1", "", { "os": "win32", "cpu": "x64" }, "sha512-M/fKi4sasCdM8i0aWJjCSFm2qEnYRR8AMLG2kxp6wD13+tMGA4Z1tVAuHkNRjud5SW2EM3naLuK35w9twvf6aA=="],
+
+    "@samarium.sdk/gql-gen": ["@samarium.sdk/gql-gen@workspace:tools/gql-gen"],
 
     "@samarium.sdk/make": ["@samarium.sdk/make@workspace:packages/make"],
 
@@ -1630,6 +1648,8 @@
     "@redocly/openapi-core/minimatch": ["minimatch@5.1.6", "", { "dependencies": { "brace-expansion": "^2.0.1" } }, "sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g=="],
 
     "@remix-run/dev/prettier": ["prettier@2.8.8", "", { "bin": { "prettier": "bin-prettier.js" } }, "sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q=="],
+
+    "@samarium.sdk/gql-gen/commander": ["commander@11.1.0", "", {}, "sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ=="],
 
     "@samarium.sdk/new/commander": ["commander@11.1.0", "", {}, "sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ=="],
 
